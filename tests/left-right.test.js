@@ -6,7 +6,7 @@ const C = require('./config');
     const ctx = await b.newContext(o); const p = await ctx.newPage(); const errs = []; p.on('pageerror', e => errs.push(e.message));
     await p.goto(C.URL);
     await p.waitForFunction(() => !document.getElementById('startBtn').disabled, null, { timeout: 30000 });
-    await p.evaluate(() => goTitle()); await p.click('#nextBtn'); await p.click('#dNormal'); await p.click('#startBtn'); await p.waitForFunction(() => mode === 'play', null, { timeout: 20000 });
+    await p.evaluate(() => goTitle()); await p.click('#nextBtn'); await p.click('#dNormal'); await p.click('#startBtn'); await p.waitForFunction(() => mode === 'intro', null, { timeout: 20000 }); await p.click('#skipBtn'); await p.waitForFunction(() => mode === 'play', null, { timeout: 20000 });
     await p.evaluate(() => { S.startAt -= (OPEN.start + 0.8 - songTime()); }); await p.waitForTimeout(500);
     // real taps: left half then right half
     if (n === 'desk') { await p.keyboard.press('KeyF'); await p.waitForTimeout(60); await p.keyboard.press('ArrowRight'); }

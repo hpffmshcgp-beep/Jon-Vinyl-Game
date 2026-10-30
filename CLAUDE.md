@@ -11,15 +11,20 @@ Read README.md for layout, build and test commands. This file holds the decision
 
 ## Story and look
 - Old-Hollywood romance on an ocean liner ("DiCaprio and Winslet on Titanic, classic"). Sepia verses, colour choruses,
-  film grain, letterbox. Cold open: they meet, a crowd sweeps her into the casino salon, she drops a queen of hearts.
-- Acts: I The Bluff (poker chips), II Act Like It, III Old Soul (phones/likes), IV No Fool (jokers), Finale Star-Crossed.
-- Cold open adds **the stranger**: a faceless figure (long coat, fedora, face a void; speaker label "???", purple box)
-  silhouetted in the lit casino doorway: "She can't be with you." / "Let her go, Jon." He is the only villain.
-- Chase meter against a PAR. Win → the playable **bow scene**: walk to her (hold right), dialogue (tap: he hands back
-  the queen of hearts), reunion (they hold hands, a heart rises). **No Sterling — the owner removed him from the game.**
-  Then the stranger walks in and hands over the album **Lost in You** (Jon Vinyl, 2021, the real cover in
-  `album/lost-in-you/cover.jpg`); close-up, hold right to slide the record out, it spins up, a vortex pulls Jon in
-  (her: "Jon—!"), whiteout → results ("Prologue", button "Into the record") → the map. Lose → "To Be Continued…".
+  film grain, letterbox. Acts: I The Bluff (poker chips), II Act Like It, III Old Soul, IV No Fool, Finale Star-Crossed.
+- **The prologue only sets up the story: no score, no pass/fail, no results card — whatever you hit, you move on.**
+  The HUD shows combo, difficulty, the act, and a chase line (time, not points) toward a heart.
+- **Opening** (playable, before the music, sea + band ambience, Skip button): Jon walks over to her at the rail (hold
+  right); they already know and like each other and make plans for when the ship docks (his record store, dinner, "the
+  long way home" — no "date" said outright); a heart, colour blooms. Then **the stranger** (faceless: long coat, fedora,
+  face a void; speaker "???", purple box) steps out of the casino door: "I'm afraid she can't be with you," and drags her
+  away; "Jon—!"; Jon runs after them; fade → the song starts (title cards over Jon alone, "She's somewhere on this ship.").
+- **The chase** (Star-Crossed): glimpses (`GLIMPSE`) show him dragging her by the wrist while she pulls back toward Jon
+  (Bowser/Peach). At the end he holds her at the bow.
+- **The bow**: hold right to walk up; she breaks free and runs to Jon; reunion lines call back the plans; the stranger
+  strolls over all smiles ("Alright, you win. Fair and square." / "No hard feelings?") and gives the album **Lost in
+  You** (real cover, `album/lost-in-you/cover.jpg`); close-up, hold right to slide the record out, it spins up, a vortex
+  pulls Jon in (her: "Jon—!"), whiteout → straight to the map. **No Sterling and no queen-of-hearts card — both removed.**
 - **The record map** (`game/map.js`, Three.js): made to match the real pressing — black vinyl, the real orange label
   (`album/lost-in-you/label.jpg`, cut from the owner's photo: "Jon Vinyl" signature, LOST IN YOU, VINYL RECORDINGS, INC.,
   33⅓ RPM, the tracklist, the legal text round the rim) turned to read upright toward the camera, and visible smooth gaps

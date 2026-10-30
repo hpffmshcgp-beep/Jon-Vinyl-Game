@@ -2,11 +2,11 @@
 
 A fan-made, old-Hollywood rhythm picture set to Jon Vinyl's music. Unofficial — music by Jon Vinyl.
 
-**The story.** *Prologue — Star-Crossed:* Jon meets her on an ocean liner, a crowd sweeps her away, and a faceless stranger
-in the casino doorway tells him she can't be with him. Jon chases her across the ship on the beat and wins her back at the
-bow. Then the stranger returns with a gift: the album *Lost in You*. Jon slides the
-record out, it starts to spin, and it pulls him in. *The record:* a 3D map of the vinyl, one ring of grooves per song,
-only the next ring revealed. Three stars on every song brings him back to life; the Outro is the escape.
+**The story.** *Prologue — Star-Crossed:* on an ocean liner at sunset Jon walks over to the girl he's falling for and
+they make plans for when the ship docks — until a faceless stranger steps out of the casino and takes her. Jon chases them
+across the ship on the beat (no score to beat: the story always goes on) and gets her back at the bow. The stranger plays
+the gracious loser and hands over a gift: the album *Lost in You*. Jon slides the record out, it starts to spin, and it
+pulls him in. *The record:* a 3D map of the vinyl, one ring of grooves per song, only the next ring revealed.
 
 **Play:** open `dist/Star-Crossed.html` after building, or upload `dist/Star-Crossed-itch.zip` to itch.io.
 
@@ -14,7 +14,7 @@ only the next ring revealed. Three stars on every song brings him back to life; 
 - **Phone:** tap the **left** side for stars (snare and hi-hats), the **right** side for the kick drum.
 - **Computer:** left hand **A S D F / ←**, right hand **J K L ; / →**.
 - Five levels, like Beat Saber: Easy, Normal, Hard, Expert, Expert+.
-- Hit enough of the song on time to reach her at the bow. Then walk to her, talk, and see what the stranger brings.
+- Play the chase on the beat; whatever you score, you reach the bow. Then walk to her and see what the stranger brings.
 
 ## Project layout
 | Path | What it is |
@@ -44,7 +44,7 @@ Needs Python 3 with `librosa`, `numpy`, `scipy`; `ffmpeg`.
 ## Testing
 ```bash
 python3 -m http.server 8765 &     # from the repo root
-cd tests && node left-right.test.js && node losing-ending.test.js && node cold-open.test.js && node bow-scene.test.js && node map.test.js && node levels.test.js
+cd tests && node left-right.test.js && node cold-open.test.js && node prologue.test.js && node map.test.js && node levels.test.js
 python3 ../tools/build.py && node standalone-file.test.js
 ```
 Screenshots land in `test-output/`.
