@@ -1,0 +1,16 @@
+{
+  "title": "Lost in You",
+  "artist": "Jon Vinyl",
+  "year": 2021,
+  "note": "Track order and titles get filled in as each song is added. Track 8 is the 54-second Outro: the escape cutscene, unlocked by 3 stars on every song.",
+  "tracks": [
+    { "n": 1, "title": null, "song": null },
+    { "n": 2, "title": null, "song": null },
+    { "n": 3, "title": null, "song": null },
+    { "n": 4, "title": null, "song": null },
+    { "n": 5, "title": null, "song": null },
+    { "n": 6, "title": null, "song": null },
+    { "n": 7, "title": null, "song": null },
+    { "n": 8, "title": "Outro", "song": null, "outro": true }
+  ]
+}

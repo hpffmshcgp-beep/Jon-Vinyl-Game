@@ -7,15 +7,26 @@ Read README.md for layout, build and test commands. This file holds the decision
   Jon and publish it on **itch.io** as a browser game. Their one priority: **quality**.
 - Plain HTML5 canvas + Web Audio in one file (`game/src.html`). No framework, no bundler. Built by `tools/build.py`.
 - A claude.ai artifact of the game exists: https://claude.ai/artifact/5uJ4etxKaX4oRgAR5KNujo — publish
-  `dist/artifact/index.html` with `songplay.mp3` + `below.mp3` as files (read it first from a new conversation).
+  `dist/artifact/index.html` with `songplay.mp3`, `below.mp3`, `three.module.min.js` as files (read it first from a new conversation).
 
 ## Story and look
 - Old-Hollywood romance on an ocean liner ("DiCaprio and Winslet on Titanic, classic"). Sepia verses, colour choruses,
   film grain, letterbox. Cold open: they meet, a crowd sweeps her into the casino salon, she drops a queen of hearts.
 - Acts: I The Bluff (poker chips), II Act Like It, III Old Soul (phones/likes), IV No Fool (jokers), Finale Star-Crossed.
+- Cold open adds **the stranger**: a faceless figure (long coat, fedora, face a void; speaker label "???", purple box)
+  silhouetted in the lit casino doorway: "She can't be with you." / "Let her go, Jon." He is NOT Sterling.
 - Chase meter against a PAR. Win → the playable **bow scene**: walk to her (hold right), dialogue (tap), Sterling the
-  rival cuts in ("Mind if I cut in?"), tap fast to push through, he gets spun off his feet, walk to her, The End.
-  Lose → "To Be Continued…".
+  rival cuts in ("Mind if I cut in?"), tap fast to push through, he gets spun off his feet, walk to her, reunion.
+  Then the stranger walks in and hands over the album **Lost in You** (Jon Vinyl, 2021, the real cover in
+  `album/lost-in-you/cover.jpg`); close-up, hold right to slide the record out, it spins up, a vortex pulls Jon in
+  (her: "Jon—!"), whiteout → results ("Prologue", button "Into the record") → the map. Lose → "To Be Continued…".
+- **The record map** (`game/map.js`, Three.js): Jon is the painted 2D figure on a billboard; one band of grooves per
+  track (8 equal bands: 7 songs + Outro), locked bands under a dark veil, only the next band revealed; dotted spiral path,
+  a stop per track with its stars, tonearm swinging over your band, heart over the label (home), amber void like the cover.
+- **Stars**: any difficulty; 1★ clear, 2★ ≥ 85 % accuracy, 3★ ≥ 95 % (`starsFor`). Beating a song (1★) reveals the next
+  band; the **Outro** is an escape cutscene, unlocked by 3★ on all 7 songs. Progress in localStorage `jv-progress`.
+- Track titles/order are not known yet: album.json has `title: null` until each song is added. Apple Music lists
+  Lost in You as 8 tracks (~16 min), track 8 = "Outro" (54 s); "Void", "Deflect", "Told You" are on it.
 - Jon: one cohesive two-pass painted figure (ink silhouette, then fills). Photo-like ribbed V-neck sweater vest (coral
   blobs, pale blue patches), coil-textured hair, shades, jeans, chunky retro sand high-top sneakers. No watch.
 
@@ -37,7 +48,10 @@ Read README.md for layout, build and test commands. This file holds the decision
 - The game plays the original song file (`songplay.mp3`); `below.mp3` is the band stem used muffled on the title screen.
 
 ## Roadmap the owner described
-- A longer game (~16 more minutes of songs, ~5–6 tracks) in the browser for itch.io: Sterling gives Jon an album as a fake
+- Built in parts. Part 1 (done): story beats, gift, pull-in, map, progress. Part 2: a general album-song level engine
+  + the first album song (its own setting), results with 3 stars. Part 3: map polish (walking between stops, unlock
+  animations). Then one song at a time; finally the Outro escape.
+- A longer game (~16 more minutes of songs, ~5–6 tracks) in the browser for itch.io: the stranger gives Jon an album as a fake
   gift, Jon is pulled into the vinyl as he slides it out, and must beat each song to escape. A 3D level map across the
   record (Three.js, Mario 3D World-style camera); records play outside-in, so Jon walks the groove from the rim toward the
   label, one song per band, forward only.

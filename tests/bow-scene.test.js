@@ -34,10 +34,23 @@ const C = require('./config');
     await shot('spin', 350); await p.waitForFunction(() => S.sc.ph === 'walk2', null, { timeout: 8000 }); await shot('walk2', 300);
     await hold(true); await p.waitForFunction(() => S.sc.ph === 'end', null, { timeout: 8000 }); await hold(false); await shot('end', 1300);
     for (let i = 0; i < 6 && await p.evaluate(() => S.sc.ph === 'end'); i++) { await tap(); await p.waitForTimeout(250); }
-    await shot('iris', 1600); await shot('theend', 2200);
+    // the stranger walks in and hands over the album
+    await shot('stranger', 900); await p.waitForFunction(() => S.sc.ph === 'gift', null, { timeout: 10000 });
+    await shot('gift1', 1000);
+    for (let i = 0; i < 16 && await p.evaluate(() => S.sc.ph === 'gift'); i++) { await tap(); await p.waitForTimeout(260); if (i === 6) await shot('gift-offer'); if (i === 9) await shot('gift-got', 300); }
+    await shot('album', 900);
+    await hold(true); await p.waitForTimeout(700); await shot('album-sliding'); await p.waitForFunction(() => S.sc.ph !== 'album', null, { timeout: 8000 }); await hold(false);
+    await shot('spinup', 1200);
+    await p.waitForFunction(() => S.sc.ph === 'pull', null, { timeout: 8000 });
+    await shot('pull1', 700); await shot('pull2', 900); await shot('pull3', 700); await shot('pull4', 900);
     await p.waitForFunction(() => !document.getElementById('results').hidden, null, { timeout: 10000 });
-    const r = await p.evaluate(() => [document.getElementById('resTitle').textContent, document.getElementById('resEyebrow').textContent]);
-    console.log(n, JSON.stringify(r), errs);
+    const r = await p.evaluate(() => [document.getElementById('resTitle').textContent, document.getElementById('resEyebrow').textContent, !document.getElementById('intoBtn').hidden]);
+    await shot('results');
+    // into the record
+    await p.click('#intoBtn'); await p.waitForFunction(() => mode === 'map' && MAP.ready, null, { timeout: 30000 });
+    await shot('map-fall', 500); await shot('map-land', 2600);
+    const m = await p.evaluate(() => [reachedIndex(), document.getElementById('stopTitle').textContent, document.getElementById('stopPlay').textContent, JSON.parse(localStorage.getItem('jv-progress')).prologue]);
+    console.log(n, JSON.stringify(r), JSON.stringify(m), errs);
     await ctx.close();
   }
   await b.close();
