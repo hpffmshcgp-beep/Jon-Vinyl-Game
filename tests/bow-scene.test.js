@@ -1,0 +1,44 @@
+const { chromium } = require('playwright');
+const C = require('./config');
+(async () => {
+  const b = await chromium.launch({ args: ['--autoplay-policy=no-user-gesture-required'] });
+  const devs = process.argv[2] === 'phone' ? [['phone', { viewport: {width:390,height:780}, hasTouch: true, isMobile: true, deviceScaleFactor: 2 }]] : process.argv[2] === 'desk' ? [['desk', { viewport: {width:1280,height:800} }]] :
+    [['desk', { viewport: {width:1280,height:800} }], ['phone', { viewport: {width:390,height:780}, hasTouch: true, isMobile: true, deviceScaleFactor: 2 }]];
+  for (const [n, o] of devs) {
+    const ctx = await b.newContext(o); const p = await ctx.newPage(); const errs = []; p.on('pageerror', e => errs.push(e.message)); p.on('console', m => { if (m.type() === 'error') errs.push(m.text()); });
+    await p.goto(process.env.USE_FILE ? C.FILE_URL : C.URL);
+    await p.waitForFunction(() => !document.getElementById('startBtn').disabled, null, { timeout: 30000 });
+    await p.evaluate(() => goTitle()); await p.click('#nextBtn'); await p.click('#dEasy'); await p.waitForTimeout(300);
+    await p.screenshot({ path: C.OUT + `sc-${n}-how.png` });
+    await p.click('#startBtn'); await p.waitForFunction(() => mode === 'play', null, { timeout: 20000 });
+    await p.evaluate(() => { S.startAt -= (OPEN.start + 1.2 - songTime()); }); await p.waitForTimeout(700);
+    await p.screenshot({ path: C.OUT + `sc-${n}-split.png` });
+    const shot = async (name, ms = 0) => { if (ms) await p.waitForTimeout(ms); await p.screenshot({ path: C.OUT + `sc-${n}-${name}.png` }); };
+    // win: mark everything hit, jump near the end
+    await p.evaluate(() => { S.notes.forEach(x => { if (x.t < LAST_NOTE - 1) { x.judged = true; x.hit = true; S.wsum += 1; } }); S.nextIdx = 0; S.startAt -= (LAST_NOTE - 1 - songTime());
+      setInterval(() => { const t = songTime(); for (const x of S.notes) if (!x.judged && Math.abs(x.t - t) < 0.012) press(x.lane === 2 ? 0 : x.lane, performance.now()); }, 2); });
+    await p.waitForFunction(() => S.sc && S.sc.ph === 'walk', null, { timeout: 15000 });
+    await shot('walk', 400);
+    const hold = async (on) => { if (n === 'desk') { on ? await p.keyboard.down('ArrowRight') : await p.keyboard.up('ArrowRight'); }
+      else await p.evaluate(on => cv.dispatchEvent(new PointerEvent(on ? 'pointerdown' : 'pointerup', { pointerId: 7, pointerType: 'touch', clientX: innerWidth*0.8, clientY: innerHeight/2, bubbles: true })), on); };
+    const tap = async () => { if (n === 'desk') await p.keyboard.press('Space'); else { await hold(true); await hold(false); } };
+    await hold(true); await p.waitForTimeout(500); await shot('walking'); await p.waitForFunction(() => S.sc.ph === 'talk', null, { timeout: 8000 }); await hold(false);
+    await shot('talk1', 1200);
+    for (let i = 0; i < 8 && await p.evaluate(() => S.sc.ph === 'talk'); i++) { await tap(); await p.waitForTimeout(250); if (i === 2) await shot('talk2'); }
+    await shot('enter', 900); await p.waitForFunction(() => S.sc.ph === 'face', null, { timeout: 8000 });
+    await shot('face', 1500);
+    for (let i = 0; i < 10 && await p.evaluate(() => S.sc.ph === 'face'); i++) { await tap(); await p.waitForTimeout(250); }
+    await shot('push0', 600);
+    for (let i = 0; i < 5; i++) { await tap(); await p.waitForTimeout(90); } await shot('push1');
+    for (let i = 0; i < 12 && await p.evaluate(() => S.sc.spin < 0); i++) { await tap(); await p.waitForTimeout(90); }
+    await shot('spin', 350); await p.waitForFunction(() => S.sc.ph === 'walk2', null, { timeout: 8000 }); await shot('walk2', 300);
+    await hold(true); await p.waitForFunction(() => S.sc.ph === 'end', null, { timeout: 8000 }); await hold(false); await shot('end', 1300);
+    for (let i = 0; i < 6 && await p.evaluate(() => S.sc.ph === 'end'); i++) { await tap(); await p.waitForTimeout(250); }
+    await shot('iris', 1600); await shot('theend', 2200);
+    await p.waitForFunction(() => !document.getElementById('results').hidden, null, { timeout: 10000 });
+    const r = await p.evaluate(() => [document.getElementById('resTitle').textContent, document.getElementById('resEyebrow').textContent]);
+    console.log(n, JSON.stringify(r), errs);
+    await ctx.close();
+  }
+  await b.close();
+})().catch(e => { console.error('FAIL', e.message); process.exit(1); });

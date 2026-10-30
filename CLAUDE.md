@@ -1,0 +1,50 @@
+# Notes for Claude — Star-Crossed (Jon Vinyl rhythm game)
+
+Read README.md for layout, build and test commands. This file holds the decisions and the person's preferences.
+
+## Who and what
+- Fan-made rhythm game for the artist **Jon Vinyl** (J-O-N-V-I-N-Y-L), song "Star-Crossed". The owner wants to show it to
+  Jon and publish it on **itch.io** as a browser game. Their one priority: **quality**.
+- Plain HTML5 canvas + Web Audio in one file (`game/src.html`). No framework, no bundler. Built by `tools/build.py`.
+- A claude.ai artifact of the game exists: https://claude.ai/artifact/5uJ4etxKaX4oRgAR5KNujo — publish
+  `dist/artifact/index.html` with `songplay.mp3` + `below.mp3` as files (read it first from a new conversation).
+
+## Story and look
+- Old-Hollywood romance on an ocean liner ("DiCaprio and Winslet on Titanic, classic"). Sepia verses, colour choruses,
+  film grain, letterbox. Cold open: they meet, a crowd sweeps her into the casino salon, she drops a queen of hearts.
+- Acts: I The Bluff (poker chips), II Act Like It, III Old Soul (phones/likes), IV No Fool (jokers), Finale Star-Crossed.
+- Chase meter against a PAR. Win → the playable **bow scene**: walk to her (hold right), dialogue (tap), Sterling the
+  rival cuts in ("Mind if I cut in?"), tap fast to push through, he gets spun off his feet, walk to her, The End.
+  Lose → "To Be Continued…".
+- Jon: one cohesive two-pass painted figure (ink silhouette, then fills). Photo-like ribbed V-neck sweater vest (coral
+  blobs, pale blue patches), coil-textured hair, shades, jeans, chunky retro sand high-top sneakers. No watch.
+
+## Things the owner asked for / against (keep honouring these)
+- No intermission, no 3-2-1 film leader. No "the house wins" ending text. No sunglasses power-up (he still wears shades).
+- Sound effects are tuned to E♭ minor; reuse the existing ones rather than adding new sounds unless asked.
+- Shoes: generic retro high-top — do not copy the Jordan 4 design 1:1 (Nike's design).
+- Title/how-to screens: few words, three bubbles, silent-mode reminder as an icon on phones.
+- Controls: **left side / left hand = stars (lane 0: snare, hi-hats); right side / right hand = kick (lane 1)**.
+  Final heart note (lane 2) takes either side.
+
+## Timing and charts (hard-won — don't regress)
+- Tempo 94.5 BPM, phase 0.077 s. The groove is **swung with triplet kicks**: never snap notes to a 16th grid.
+  Notes sit on the measured attack of each hit in the drumsep stems (`tools/find_hits.py`), 20 % of the rise on a 2 ms
+  envelope; kick needs a ≥14 dB rise (808 body retriggers reach ~11 dB).
+- Five levels from `tools/make_charts.py`: easy 123, normal 215, hard 295, expert 403, expertplus 507 notes.
+- Audio clock: `heardCtx()` uses `getOutputTimestamp()` with latency fallback; per-player calibration (`sc-delay`),
+  results screen offers "Fix my timing".
+- The game plays the original song file (`songplay.mp3`); `below.mp3` is the band stem used muffled on the title screen.
+
+## Roadmap the owner described
+- A longer game (~16 more minutes of songs, ~5–6 tracks) in the browser for itch.io: Sterling gives Jon an album as a fake
+  gift, Jon is pulled into the vinyl as he slides it out, and must beat each song to escape. A 3D level map across the
+  record (Three.js, Mario 3D World-style camera); records play outside-in, so Jon walks the groove from the rim toward the
+  label, one song per band, forward only.
+- For each new song we need: the MP3, its drumsep stems (kick/snare/hh/crash/toms/ride/residual), ideally Demucs
+  vocals/other, and a line about what the song means.
+
+## Working rules
+- After a change: `python3 tools/build.py`, serve the repo root on 8765, run the tests in `tests/`, look at screenshots in
+  `test-output/` before calling it done. Check both desktop and phone sizes.
+- Commit with a clear message and push to `main` when a piece of work is finished.
