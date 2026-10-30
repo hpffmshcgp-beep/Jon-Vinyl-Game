@@ -23,7 +23,7 @@ pulls him in. *The record:* a 3D map of the vinyl, one ring of grooves per song,
 | `game/src.html` | The whole game: code, drawing, audio, story. `__CHART__`, `__ALBUM__`, `__COVER__` are filled in at build time. |
 | `game/map.js` | The 3D record map (Three.js), pulled into the page by the build. |
 | `album/lost-in-you/` | `album.json` (tracklist and song lengths), `cover.jpg`, and `label.jpg` (the real record label). |
-| `vendor/three.module.min.js` | Three.js 0.169.0 (MIT), shipped next to the page and embedded in the single-file build. |
+| `vendor/three.module.min.js` | Three.js 0.169.0 (MIT); the build turns it into a plain script inside every page. |
 | `songs/star-crossed/chart.json` | Tempo, story timings and the five difficulty charts. |
 | `songs/star-crossed/songplay.mp3`, `below.mp3` | The song, and the muffled band heard on the title screen. |
 | `songs/star-crossed/stems/` | Separated drums (drumsep: kick, snare, hh, crash, toms, ride, residual), Demucs stems, vocals. |
@@ -47,12 +47,12 @@ Needs Python 3 with `librosa`, `numpy`, `scipy`; `ffmpeg`.
 ## Testing
 ```bash
 python3 -m http.server 8765 &     # from the repo root
-cd tests && node left-right.test.js && node cold-open.test.js && node prologue.test.js && node map.test.js && node deflect.test.js && node levels.test.js
+cd tests && node left-right.test.js && node cold-open.test.js && node prologue.test.js && node map.test.js && node three-inline.test.js && node deflect.test.js && node levels.test.js
 python3 ../tools/build.py && node standalone-file.test.js
 ```
 Screenshots land in `test-output/`.
 
 ## Publishing to itch.io
-New project → Kind of project: **HTML** → upload `dist/Star-Crossed-itch.zip` (index.html, three.module.min.js and the audio) → tick **"This file will be played in the
+New project → Kind of project: **HTML** → upload `dist/Star-Crossed-itch.zip` (index.html and the audio) → tick **"This file will be played in the
 browser"** → embed size about 960 × 600, **Mobile friendly** and **Fullscreen button** on. Keep the page Draft/Restricted
 until Jon has given his OK.

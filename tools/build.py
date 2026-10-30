@@ -33,6 +33,17 @@ body = (src.replace('__CHART__', json.dumps(chart, separators=(',', ':')))
            .replace('__SONGS__', json.dumps(songs, separators=(',', ':'))))
 for k in ['__CHART__', '__ALBUM__', '__COVER__', '__LABEL__', '__SONGS__', '@include']: assert k not in body, k
 
+# three.js travels inside the page as an ordinary script (no module import), so it also runs in previews and sandboxes
+# that block dynamic imports: the module's closing export{a as B,...} becomes window.THREE_MOD = {B: a, ...}
+import re
+three_mod = open(THREE).read(); i = three_mod.rfind('export{'); j = three_mod.index('}', i)
+pairs = [p.strip().split(' as ') for p in three_mod[i + 7:j].split(',')]
+three_classic = ("(function(){'use strict';" + three_mod[:i] + "window.THREE_MOD={" + ','.join(f'{b}:{a}' for a, b in pairs) + "};})();")
+assert '</script' not in three_classic and 'export{' not in three_classic
+main_tag = '<script>\nconst CHART = '
+assert body.count(main_tag) == 1
+body = body.replace(main_tag, '<script>' + three_classic + '</script>\n' + main_tag)
+
 def page(b, head_extra=''):
     k = b.index('</style>') + len('</style>')
     return ('<!doctype html>\n<html lang="en">\n<head>\n<meta charset="utf-8">\n'
@@ -46,11 +57,10 @@ for d in ['web', 'artifact']: os.makedirs(os.path.join(DIST, d))
 open(os.path.join(DIST, 'web', 'index.html'), 'w').write(page(body))
 for a in AUDIO:
     for d in ['web', 'artifact']: shutil.copy(os.path.join(SONG, a + '.mp3'), os.path.join(DIST, d, a + '.mp3'))
-for d in ['web', 'artifact']: shutil.copy(THREE, os.path.join(DIST, d, 'three.module.min.js'))   # 3D for the record map
 for n in ALBUM_SONGS:
     for d in ['web', 'artifact']: shutil.copy(os.path.join(ROOT, 'songs', n, n + '.mp3'), os.path.join(DIST, d, n + '.mp3'))
 with zipfile.ZipFile(os.path.join(DIST, 'Star-Crossed-itch.zip'), 'w', zipfile.ZIP_DEFLATED) as z:
-    for f in ['index.html', 'three.module.min.js'] + [a + '.mp3' for a in AUDIO + ALBUM_SONGS]: z.write(os.path.join(DIST, 'web', f), f)
+    for f in ['index.html'] + [a + '.mp3' for a in AUDIO + ALBUM_SONGS]: z.write(os.path.join(DIST, 'web', f), f)
 
 # artifact body (the claude.ai publisher wraps it in its own page)
 open(os.path.join(DIST, 'artifact', 'index.html'), 'w').write(body)
@@ -66,8 +76,7 @@ emb = body.replace(old, """async function fetchProg(name){
     loadP[name] = 1; return out.buffer;
   }
   const r = await fetch(name + '.mp3');""")
-three_src = open(THREE).read(); assert '</script' not in three_src
-embed = '<script type="text/plain" id="three-src">' + three_src + '</script>\n' + '<script>window.EMBED = ' + json.dumps({**{a: base64.b64encode(open(os.path.join(SONG, a + '.mp3'), 'rb').read()).decode() for a in AUDIO}, **{n: base64.b64encode(open(os.path.join(ROOT, 'songs', n, n + '.mp3'), 'rb').read()).decode() for n in ALBUM_SONGS}}) + ';</script>\n'
+embed = '<script>window.EMBED = ' + json.dumps({**{a: base64.b64encode(open(os.path.join(SONG, a + '.mp3'), 'rb').read()).decode() for a in AUDIO}, **{n: base64.b64encode(open(os.path.join(ROOT, 'songs', n, n + '.mp3'), 'rb').read()).decode() for n in ALBUM_SONGS}}) + ';</script>\n'
 open(os.path.join(DIST, 'Star-Crossed.html'), 'w').write(page(emb, embed))
 
 for f in ['web/index.html', 'Star-Crossed-itch.zip', 'Star-Crossed.html', 'artifact/index.html']:

@@ -11,11 +11,8 @@ const spiralAt = (i, k) => { const r = bandMid(i) + (bandMid(i + 1) - bandMid(i)
 let THREE_MOD = null;
 async function loadThree(){
   if (THREE_MOD) return THREE_MOD;
-  const emb = document.getElementById('three-src');
-  if (emb && emb.textContent.length > 1000) {                      // single-file build: the library travels inside the page
-    const url = URL.createObjectURL(new Blob([emb.textContent], { type: 'text/javascript' }));
-    THREE_MOD = await import(url);
-  } else {
+  if (window.THREE_MOD) return (THREE_MOD = window.THREE_MOD);    // built into the page (tools/build.py)
+  {
     try { THREE_MOD = await import(new URL('three.module.min.js', location.href).href); }                 // shipped next to the page
     catch(e) { THREE_MOD = await import('https://cdn.jsdelivr.net/npm/three@0.169.0/build/three.module.min.js'); }   // or the public copy of the same version
   }

@@ -7,7 +7,7 @@ Read README.md for layout, build and test commands. This file holds the decision
   Jon and publish it on **itch.io** as a browser game. Their one priority: **quality**.
 - Plain HTML5 canvas + Web Audio in one file (`game/src.html`). No framework, no bundler. Built by `tools/build.py`.
 - A claude.ai artifact of the game exists: https://claude.ai/artifact/5uJ4etxKaX4oRgAR5KNujo — publish
-  `dist/artifact/index.html` with `songplay.mp3`, `below.mp3`, `three.module.min.js` as files (read it first from a new conversation).
+  `dist/artifact/index.html` with `songplay.mp3`, `below.mp3` and each album song's mp3 (e.g. `deflect.mp3`) as files (read it first from a new conversation).
 
 ## Story and look
 - Old-Hollywood romance on an ocean liner ("DiCaprio and Winslet on Titanic, classic"). Sepia verses, colour choruses,
@@ -85,6 +85,10 @@ Read README.md for layout, build and test commands. This file holds the decision
   label, one song per band, forward only.
 - For each new song we need: the MP3, its drumsep stems (kick/snare/hh/crash/toms/ride/residual), ideally Demucs
   vocals/other, and a line about what the song means.
+
+## Gotchas
+- three.js is built INTO every page as a plain script (`window.THREE_MOD`), never a dynamic `import()`: the Claude
+  app's file preview and other sandboxes block blob/module imports ("Failed to fetch dynamically imported module").
 
 ## Working rules
 - After a change: `python3 tools/build.py`, serve the repo root on 8765, run the tests in `tests/`, look at screenshots in
