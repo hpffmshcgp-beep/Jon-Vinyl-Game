@@ -151,10 +151,17 @@ async function buildMap(){
 /* progress: how far round the record you are */
 const songTracks = () => ALBUM.tracks.filter(t => !t.outro);
 const allThreeStars = () => songTracks().every(t => (PROG.stars[t.n] || 0) >= 3);
-function reachedIndex(){   // the furthest stop you can stand on: beat a song (1★+) to reach the next; the Outro needs 3★ everywhere
-  let i = 0; const tr = ALBUM.tracks;
-  while (i < tr.length - 1 && (PROG.stars[tr[i].n] || 0) >= 1 && (!tr[i + 1].outro || allThreeStars())) i++;
+function reachedIndex(){   // the furthest stop you can reach: beat a song (1★+) to go on; songs not added yet don't stand in the way;
+  let i = 0; const tr = ALBUM.tracks;   // the Outro needs 3★ on every song
+  while (i < tr.length - 1 && ((PROG.stars[tr[i].n] || 0) >= 1 || !tr[i].song) && (!tr[i + 1].outro || allThreeStars())) i++;
   return i;
+}
+function homeStop(){   // where Jon waits when you open the record: the furthest song you can actually play
+  const r = reachedIndex(); for (let i = r; i >= 0; i--) if (ALBUM.tracks[i].song) return i; return r;
+}
+function mapStep(d){   // walk to the next or previous stop you've reached (one stop at a time, along the groove)
+  if (!MAP.ready || MAP.walk) return; const to = MAP.at + d; if (to < 0 || to > reachedIndex()) return;
+  MAP.walk = { from: MAP.at, to, k: 0 }; $('stopPlay').disabled = true;
 }
 function tagFor(i){
   const t = ALBUM.tracks[i], st = PROG.stars[t.n] || 0;
@@ -170,17 +177,17 @@ function refreshMap(instant){
   MAP.veils.forEach((v, i) => { v.userData.target = i <= at ? 0 : 0.9; if (instant) v.material.opacity = v.userData.target; });
   MAP.stops.forEach((s, i) => { s.grp.visible = i <= at; const st = PROG.stars[ALBUM.tracks[i].n] || 0; if (s.stars !== st) { s.stars = st; s.tag.material.map = tagFor(i); s.tag.material.needsUpdate = true; } });
   const vis = MAP.pathPts.filter(p => p.i < at).length; MAP.path.geometry.setDrawRange(0, vis);
-  if (instant) MAP.at = at;
+  MAP.at = homeStop();
   MAP.armTarget = MAP.needleTo(edgeR(at) - 0.3);
-  showStop(at);
+  showStop(MAP.at);
 }
 function mapFrame(now){
   if (!MAP.ready) return;
   const { T, cam } = MAP, dt = clamp(now - (MAP.last || now), 0, 0.1); MAP.last = now;
   // Jon's spot: standing on a stop, or walking the groove to the next one
-  if (MAP.walk) { MAP.walk.k = Math.min(1, MAP.walk.k + dt/2.4); if (MAP.walk.k >= 1) { MAP.at = MAP.walk.to; MAP.walk = null; showStop(MAP.at); } }
+  if (MAP.walk) { MAP.walk.k = Math.min(1, MAP.walk.k + dt/1.6); if (MAP.walk.k >= 1) { MAP.at = MAP.walk.to; MAP.walk = null; showStop(MAP.at); } }
   let jx, jz, moving = false;
-  if (MAP.walk) { [jx, jz] = spiralAt(MAP.walk.from, easeIO(MAP.walk.k)); moving = true; } else { const a = nodeAng(MAP.at), r = bandMid(MAP.at); jx = r*Math.cos(a); jz = r*Math.sin(a); }
+  if (MAP.walk) { const fw = MAP.walk.to > MAP.walk.from, k = easeIO(MAP.walk.k); [jx, jz] = spiralAt(Math.min(MAP.walk.from, MAP.walk.to), fw ? k : 1 - k); moving = true; } else { const a = nodeAng(MAP.at), r = bandMid(MAP.at); jx = r*Math.cos(a); jz = r*Math.sin(a); }
   const fallY = MAP.fall > 0 ? Math.pow(MAP.fall, 2)*9 : 0;
   if (MAP.fall > 0) MAP.fall = Math.max(0, MAP.fall - dt/1.4);
   MAP.jon.position.set(jx, REC.top + 0.06 + fallY, jz); MAP.blob.position.set(jx, REC.top + 0.03, jz); MAP.blob.scale.setScalar(1 - Math.min(0.7, fallY/9));
@@ -227,7 +234,7 @@ async function enterMap(first){
   $('mapLoading').hidden = true; cv.hidden = true; $('map').hidden = false; $('mapUI').hidden = false;
   MAP.first = !!first; MAP.enterT = nowS(); MAP.fall = first ? 1 : 0; MAP.walk = null;
   MAP.camPos.set(0, 30, 0.1); MAP.camLook.set(0, 0, 0);
-  refreshMap(true); updateMapStars();
+  refreshMap(!!first); updateMapStars();
   startAmbience();
 }
 function leaveMap(){ $('map').hidden = true; $('mapUI').hidden = true; cv.hidden = false; }
@@ -237,7 +244,9 @@ function showStop(i){
   $('stopNum').textContent = t.outro ? 'The Outro' : `Track ${t.n} of ${ALBUM.tracks.length}`;
   $('stopTitle').textContent = t.title || `Track ${t.n}`;
   $('stopStars').innerHTML = t.outro ? '' : '★'.repeat(st) + '<i>' + '★'.repeat(3 - st) + '</i>';
-  const ready = !!t.song;
+  const ready = !!t.song, r = reachedIndex();
   $('stopPlay').disabled = !ready; $('stopPlay').textContent = ready ? (t.outro ? 'Go home' : 'Play') : 'Coming soon';
-  $('stopNote').textContent = t.outro ? 'Three stars on every song opens the way out.' : ready ? 'Three stars on every song to get back to her.' : 'This song hasn’t been pressed yet.';
+  $('stopPrev').disabled = i <= 0; $('stopNext').disabled = i >= r;
+  const best = ready ? Math.max(0, ...Object.keys(PROG.best).filter(k => k.startsWith(t.n + '-')).map(k => PROG.best[k])) : 0;
+  $('stopNote').textContent = t.outro ? 'Three stars on every song opens the way out.' : ready ? (best ? `High score ${best.toLocaleString()} · three stars on every song to get back to her` : 'Three stars on every song to get back to her.') : 'This song hasn’t been pressed yet.';
 }

@@ -173,7 +173,7 @@ kbd { font-family: var(--type); font-size: 10px; border: 1px solid rgba(243,230,
       <button class="diffBtn" data-d="expert" role="radio" aria-checked="false">Expert</button>
       <button class="diffBtn" data-d="expertplus" role="radio" aria-checked="false">Expert+</button>
     </div>
-    <div class="stopRow"><button class="btn" id="stopPlay" disabled>Coming soon</button></div>
+    <div class="stopRow"><button class="chip" id="stopPrev" aria-label="Previous song">&#9664;</button><button class="btn" id="stopPlay" disabled>Coming soon</button><button class="chip" id="stopNext" aria-label="Next song">&#9654;</button></div>
     <div class="fine" id="stopNote"></div>
     <div class="stopRow"><button class="ghost" id="stopPrologue">Replay the prologue</button><button class="ghost" id="stopTitleBtn">Title</button></div>
   </div>
@@ -516,6 +516,8 @@ function toTitle(){
   stopSources(); if (S) { S.running = false; S.paused = false; }
   if (ac && ac.state === 'suspended') ac.resume();
   if (mode === 'map') leaveMap();
+  if (S && S.kind === 'level') { S = null; LV = null; }
+  $('menuBtn').hidden = false;
   $('howPop').hidden = true; $('actBtn').hidden = true;
   mode = 'title'; titleT0 = nowS(); startAmbience();
   ['pause','results','calib'].forEach(id => $(id).hidden = true); showPanel('how'); $('title').hidden = false; titleButtons();
@@ -589,6 +591,7 @@ const KEYS_L = new Set(['KeyA','KeyS','KeyD','KeyF','ArrowLeft','ArrowUp']);
 const KEYS_R = new Set(['KeyJ','KeyK','KeyL','Semicolon','ArrowRight','ArrowDown']);
 const inScene = () => S && S.sc && S.running && !S.paused;
 addEventListener('keydown', e => {
+  if (mode === 'level') { if (/^(Arrow|Key[WASD])/.test(e.code)) { AIM.keys.add(e.code); e.preventDefault(); } return; }
   const L0 = KEYS_L.has(e.code), R0 = KEYS_R.has(e.code);
   if (inScene()) {
     if (L0 && e.code !== 'ArrowUp') HOLD.kl = true; if (R0 && e.code !== 'ArrowDown') HOLD.kr = true;
@@ -603,7 +606,8 @@ addEventListener('keydown', e => {
   if (L0) { press(0, evTime(e)); tapFx(0); e.preventDefault(); }
   else if (R0) { press(1, evTime(e)); tapFx(1); e.preventDefault(); }
 });
-addEventListener('keydown', e => { if (!$('howPop').hidden && (e.code === 'Enter' || e.code === 'Space')) { e.preventDefault(); $('goBtn').click(); return; } if (mode === 'map' && (e.code === 'Enter' || e.code === 'Space') && !$('stopPlay').disabled) { e.preventDefault(); $('stopPlay').click(); } });
+addEventListener('keydown', e => { if (mode === 'map' && !e.repeat && (e.code === 'ArrowLeft' || e.code === 'ArrowRight')) { mapStep(e.code === 'ArrowLeft' ? -1 : 1); return; } if (!$('howPop').hidden && (e.code === 'Enter' || e.code === 'Space')) { e.preventDefault(); $('goBtn').click(); return; } if (mode === 'map' && (e.code === 'Enter' || e.code === 'Space') && !$('stopPlay').disabled) { e.preventDefault(); $('stopPlay').click(); } });
+addEventListener('keyup', e => { AIM.keys.delete(e.code); });
 addEventListener('keyup', e => { if (KEYS_L.has(e.code)) HOLD.kl = false; if (KEYS_R.has(e.code)) HOLD.kr = false; });
 addEventListener('blur', () => { HOLD.kl = HOLD.kr = false; HOLD.ptr.clear(); });
 let TAPFX = [-9, -9];
@@ -611,14 +615,18 @@ function tapFx(side){ TAPFX[side] = nowS(); }
 cv.addEventListener('pointerdown', e => {
   grabKeys(); if (e.pointerType === 'touch') { e.preventDefault(); if (!TOUCH) { TOUCH = true; document.body.classList.add('touch'); } }
   if (skipIntro()) return;
+  if (mode === 'level') { AIM.mouse = true; levelAimFromPoint(e.clientX, e.clientY); return; }
   const right = e.clientX >= innerWidth/2;
   if (inScene()) { HOLD.ptr.set(e.pointerId, right); sceneTap(); return; }
   press(right ? 1 : 0, evTime(e)); tapFx(right ? 1 : 0);
 });
 ['pointerup', 'pointercancel', 'pointerleave'].forEach(n => cv.addEventListener(n, e => HOLD.ptr.delete(e.pointerId)));
+cv.addEventListener('pointermove', e => { if (mode !== 'level') return; if (e.pointerType === 'touch') e.preventDefault(); AIM.mouse = true; levelAimFromPoint(e.clientX, e.clientY); });
 $('startBtn').onclick = startGame; $('againBtn').onclick = startGame; $('menuBtn').onclick = toTitle;
 $('intoBtn').onclick = () => enterMap(true); $('goBtn').onclick = () => startSong(); $('actBtn').onclick = () => cabinAct(); $('recordBtn').onclick = () => enterMap(false);
 $('stopPrologue').onclick = () => { leaveMap(); toTitle(); };
+$('stopPlay').onclick = () => { const t = ALBUM.tracks[MAP.at]; if (t && t.song) startLevel(t.n); };
+$('stopPrev').onclick = () => mapStep(-1); $('stopNext').onclick = () => mapStep(1);
 $('stopTitleBtn').onclick = () => { leaveMap(); toTitle(); showPanel('poster'); };
 $('resumeBtn').onclick = resumeGame; $('quitBtn').onclick = toTitle;
 document.addEventListener('visibilitychange', () => { if (document.hidden) pauseGame(); });
@@ -1590,6 +1598,7 @@ function frame(){
   const now = nowS();
   if (mode === 'boot') { drawBoot(); return; }
   if (mode === 'map') { mapFrame(now); return; }
+  if (mode === 'level' || (mode === 'results' && S && S.kind === 'level')) { levelFrame(now); return; }
   const L = layout();
   if (nodes && S && S.running && !S.paused) nodes.an.getByteFrequencyData(spec);
   if (mode === 'intro' && S && S.sc) { introFrame(L, now); return; }
@@ -2238,6 +2247,7 @@ function idleScene(L, now){
 }
 
 /*@include map.js*/
+/*@include deflect.js*/
 
 /* ---------- sound check: tap along to clicks, keep the median offset ---------- */
 let CAL = null;

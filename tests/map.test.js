@@ -2,7 +2,7 @@
 const { chromium } = require('playwright');
 const C = require('./config');
 (async () => {
-  const b = await chromium.launch({ args: ['--autoplay-policy=no-user-gesture-required', '--use-angle=swiftshader', '--enable-unsafe-swiftshader'] });
+  const b = await chromium.launch({ args: ['--autoplay-policy=no-user-gesture-required'] });
   const cases = process.env.ONLY === 'phone' ? [['phone', C.PHONE, {}]] : process.env.ONLY ? [['desk3', C.DESK, { 1: 3, 2: 2, 3: 1 }]] : [['desk', C.DESK, {}], ['phone', C.PHONE, {}], ['desk3', C.DESK, { 1: 3, 2: 2, 3: 1 }]];
   for (const [n, o, stars] of cases) {
     const ctx = await b.newContext(o); const p = await ctx.newPage(); const errs = []; p.on('pageerror', e => errs.push(e.message));

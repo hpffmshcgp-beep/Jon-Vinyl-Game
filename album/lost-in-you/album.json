@@ -21,9 +21,10 @@
     {
       "n": 3,
       "title": "Deflect",
-      "song": null,
-      "seconds": 129,
-      "measured": false
+      "song": "deflect",
+      "seconds": 126,
+      "measured": true,
+      "mode": "deflect"
     },
     {
       "n": 4,

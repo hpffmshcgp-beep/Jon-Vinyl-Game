@@ -45,6 +45,19 @@ Read README.md for layout, build and test commands. This file holds the decision
 - Jon: one cohesive two-pass painted figure (ink silhouette, then fills). Photo-like ribbed V-neck sweater vest (coral
   blobs, pale blue patches), coil-textured hair, shades, jeans, chunky retro sand high-top sneakers. No watch.
 
+## Album levels
+- **Track 3 · Deflect** (`songs/deflect`, `game/deflect.js`): Beatblock-style. Jon stands on the record's label; a golden
+  shield circles him; **hearts = rhythm guitar strums, heartbreaks = lead guitar notes**, both deflected; they fly in from
+  8 directions and land on the measured attack. Aim: mouse, drag a finger anywhere (phones), or arrows/WASD (8 dirs).
+  Centre of the shield (±14°) = PERFECT, edge (±34°) = GOOD, 70 ms grace. Directions follow the lead melody (up the neck →
+  clockwise) and strum runs spin around; each level caps turn size/speed (`tools/make_deflect_chart.py`).
+  Charts: easy 92, normal 135, hard 207, expert 278, expertplus 388. The song is played live (no strict grid).
+  Owner's files: full song + lead and rhythm guitar stems (mvsep); background vocals are only in the full song.
+- Results (album songs): 3 stars from accuracy (perfect 1, good 0.7), score, high score per track+difficulty; "Back to
+  the record" / "Play again". Songs not added yet don't block the way on the map; ◀ ▶ walk between reached stops.
+- Pipeline for a guitar song: `find_guitar_hits.py songs/<s> <stems…>` → `make_deflect_chart.py songs/<s>`; set
+  `song`, `seconds`, `measured` in album.json; the build ships `songs/<s>/<s>.mp3` (160 kbps) and the chart.
+
 ## Things the owner asked for / against (keep honouring these)
 - No intermission, no 3-2-1 film leader. No "the house wins" ending text. No sunglasses power-up (he still wears shades).
 - Sound effects are tuned to E♭ minor; reuse the existing ones rather than adding new sounds unless asked.

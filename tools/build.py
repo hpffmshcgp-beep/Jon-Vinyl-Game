@@ -19,7 +19,9 @@ AUDIO = ['songplay', 'below']
 ALBUM_DIR = os.path.join(ROOT, 'album', 'lost-in-you')
 THREE = os.path.join(ROOT, 'vendor', 'three.module.min.js')
 src = open(os.path.join(ROOT, 'game', 'src.html')).read()
-src = src.replace('/*@include map.js*/', open(os.path.join(ROOT, 'game', 'map.js')).read())
+for inc in ['map.js', 'deflect.js']: src = src.replace('/*@include ' + inc + '*/', open(os.path.join(ROOT, 'game', inc)).read())
+ALBUM_SONGS = [t['song'] for t in json.load(open(os.path.join(ROOT, 'album', 'lost-in-you', 'album.json')))['tracks'] if t.get('song')]
+songs = {n: json.load(open(os.path.join(ROOT, 'songs', n, 'chart.json'))) for n in ALBUM_SONGS}   # each album song's chart
 chart = json.load(open(os.path.join(SONG, 'chart.json')))
 album = json.load(open(os.path.join(ALBUM_DIR, 'album.json')))
 cover = 'data:image/jpeg;base64,' + base64.b64encode(open(os.path.join(ALBUM_DIR, 'cover.jpg'), 'rb').read()).decode()
@@ -27,8 +29,9 @@ label = 'data:image/jpeg;base64,' + base64.b64encode(open(os.path.join(ALBUM_DIR
 body = (src.replace('__CHART__', json.dumps(chart, separators=(',', ':')))
            .replace('__ALBUM__', json.dumps(album, separators=(',', ':')))
            .replace('__COVER__', cover)
-           .replace('__LABEL__', label))
-for k in ['__CHART__', '__ALBUM__', '__COVER__', '__LABEL__', '@include']: assert k not in body, k
+           .replace('__LABEL__', label)
+           .replace('__SONGS__', json.dumps(songs, separators=(',', ':'))))
+for k in ['__CHART__', '__ALBUM__', '__COVER__', '__LABEL__', '__SONGS__', '@include']: assert k not in body, k
 
 def page(b, head_extra=''):
     k = b.index('</style>') + len('</style>')
@@ -44,8 +47,10 @@ open(os.path.join(DIST, 'web', 'index.html'), 'w').write(page(body))
 for a in AUDIO:
     for d in ['web', 'artifact']: shutil.copy(os.path.join(SONG, a + '.mp3'), os.path.join(DIST, d, a + '.mp3'))
 for d in ['web', 'artifact']: shutil.copy(THREE, os.path.join(DIST, d, 'three.module.min.js'))   # 3D for the record map
+for n in ALBUM_SONGS:
+    for d in ['web', 'artifact']: shutil.copy(os.path.join(ROOT, 'songs', n, n + '.mp3'), os.path.join(DIST, d, n + '.mp3'))
 with zipfile.ZipFile(os.path.join(DIST, 'Star-Crossed-itch.zip'), 'w', zipfile.ZIP_DEFLATED) as z:
-    for f in ['index.html', 'three.module.min.js'] + [a + '.mp3' for a in AUDIO]: z.write(os.path.join(DIST, 'web', f), f)
+    for f in ['index.html', 'three.module.min.js'] + [a + '.mp3' for a in AUDIO + ALBUM_SONGS]: z.write(os.path.join(DIST, 'web', f), f)
 
 # artifact body (the claude.ai publisher wraps it in its own page)
 open(os.path.join(DIST, 'artifact', 'index.html'), 'w').write(body)
@@ -62,7 +67,7 @@ emb = body.replace(old, """async function fetchProg(name){
   }
   const r = await fetch(name + '.mp3');""")
 three_src = open(THREE).read(); assert '</script' not in three_src
-embed = '<script type="text/plain" id="three-src">' + three_src + '</script>\n' + '<script>window.EMBED = ' + json.dumps({a: base64.b64encode(open(os.path.join(SONG, a + '.mp3'), 'rb').read()).decode() for a in AUDIO}) + ';</script>\n'
+embed = '<script type="text/plain" id="three-src">' + three_src + '</script>\n' + '<script>window.EMBED = ' + json.dumps({**{a: base64.b64encode(open(os.path.join(SONG, a + '.mp3'), 'rb').read()).decode() for a in AUDIO}, **{n: base64.b64encode(open(os.path.join(ROOT, 'songs', n, n + '.mp3'), 'rb').read()).decode() for n in ALBUM_SONGS}}) + ';</script>\n'
 open(os.path.join(DIST, 'Star-Crossed.html'), 'w').write(page(emb, embed))
 
 for f in ['web/index.html', 'Star-Crossed-itch.zip', 'Star-Crossed.html', 'artifact/index.html']:

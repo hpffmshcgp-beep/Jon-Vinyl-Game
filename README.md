@@ -29,6 +29,8 @@ pulls him in. *The record:* a 3D map of the vinyl, one ring of grooves per song,
 | `songs/star-crossed/stems/` | Separated drums (drumsep: kick, snare, hh, crash, toms, ride, residual), Demucs stems, vocals. |
 | `songs/star-crossed/analysis/` | Every detected drum hit, used to make the charts. |
 | `tools/` | `find_hits.py` → `make_charts.py` → `build.py`. |
+| `songs/deflect/` | Track 3, Deflect: the song, guitar stems, guitar-hit analysis and its Beatblock-style chart. |
+| `game/deflect.js` | The Deflect level: turn the shield around Jon to knock away hearts and heartbreaks. |
 | `tests/` | Automated play-tests (Playwright). |
 
 ## Building
@@ -45,7 +47,7 @@ Needs Python 3 with `librosa`, `numpy`, `scipy`; `ffmpeg`.
 ## Testing
 ```bash
 python3 -m http.server 8765 &     # from the repo root
-cd tests && node left-right.test.js && node cold-open.test.js && node prologue.test.js && node map.test.js && node levels.test.js
+cd tests && node left-right.test.js && node cold-open.test.js && node prologue.test.js && node map.test.js && node deflect.test.js && node levels.test.js
 python3 ../tools/build.py && node standalone-file.test.js
 ```
 Screenshots land in `test-output/`.
