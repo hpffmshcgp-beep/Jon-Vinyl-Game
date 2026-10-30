@@ -17,18 +17,23 @@ const C = require('./config');
     const tap = async () => { if (n === 'desk') await p.keyboard.press('Space'); else { await hold(true); await hold(false); } };
     const tapWhile = async (ph, max, each) => { for (let i = 0; i < max && await p.evaluate(ph => S.sc && S.sc.ph === ph, ph); i++) { await tap(); await p.waitForTimeout(260); if (each) await each(i); } };
 
-    // 1. the opening
-    await p.click('#startBtn'); await p.waitForFunction(() => mode === 'intro', null, { timeout: 20000 });
-    await shot('1-start', 600);
-    await hold(true); await p.waitForTimeout(500); await shot('2-walking'); await p.waitForFunction(() => S.sc.ph === 'italk', null, { timeout: 10000 }); await hold(false);
-    await shot('3-talk', 1200);
-    await tapWhile('italk', 30, async i => { if (i === 9) await shot('4-plans'); });
-    await shot('5-plan-heart', 400);
-    await p.waitForFunction(() => S.sc && S.sc.ph === 'iwords', null, { timeout: 10000 }); await shot('6-stranger', 900);
-    await tapWhile('iwords', 6);
-    await shot('7-taken', 1300);
-    await p.waitForFunction(() => mode === 'play', null, { timeout: 10000 });
-    await shot('8-titles', 2500);
+    const act = async () => { if (n === 'desk') await p.keyboard.press('KeyE'); else await p.click('#actBtn'); };
+    const holdUntil = async (fn, ms = 15000) => { await hold(true); await p.waitForFunction(fn, null, { timeout: ms, polling: 50 }); await hold(false); };
+    // 1. the cabin: walk to the door first (not without her), then to her, talk, then out the door
+    await p.click('#startBtn'); await p.waitForFunction(() => mode === 'intro' && S.sc.kind === 'cabin', null, { timeout: 20000 });
+    await shot('01-cabin', 800);
+    await holdUntil(() => S.sc.spot && S.sc.spot.id === 'tt'); await shot('02-turntable'); await act(); await shot('03-look', 900); await tapWhile('free', 0); await tap(); await p.waitForTimeout(300);
+    await holdUntil(() => S.sc.spot && S.sc.spot.id === 'her'); await shot('04-near-her'); await act();
+    await shot('05-talk', 1300);
+    await (async () => { for (let i = 0; i < 30 && await p.evaluate(() => !!S.sc.dlg); i++) { await tap(); await p.waitForTimeout(240); if (i === 8) await shot('06-just-us'); } })();
+    await shot('07-after-talk', 500);
+    await holdUntil(() => S.sc.spot && S.sc.spot.id === 'door'); await shot('08-door'); await act();
+    await shot('09-door-open', 1200); await p.waitForFunction(() => S.sc.kind === 'deck', null, { timeout: 10000 });
+    // 2. the deck: a cutscene, then the how-to pop-up
+    await shot('10-deck', 3200); await shot('11-sky', 2400); await shot('12-stranger', 4300); await shot('13-taken', 2600);
+    await p.waitForFunction(() => !document.getElementById('howPop').hidden, null, { timeout: 15000 }); await shot('14-howto', 600);
+    await p.click('#goBtn'); await p.waitForFunction(() => mode === 'play', null, { timeout: 10000 });
+    await shot('15-titles', 2500);
     // 2. the chase: a glimpse of them, then jump to the end of the song (points don't matter: hit nothing)
     await p.evaluate(() => { S.startAt -= (GLIMPSE[0] + 2.2 - songTime()); }); await shot('9-glimpse', 300);
     await p.evaluate(() => { S.startAt -= (LAST_NOTE - 1 - songTime()); });
@@ -43,9 +48,10 @@ const C = require('./config');
     await shot('16-album', 900);
     await hold(true); await p.waitForFunction(() => S.sc.ph !== 'album', null, { timeout: 8000 }); await hold(false);
     await p.waitForFunction(() => S.sc.ph === 'pull', null, { timeout: 8000 }); await shot('17-pull', 1400);
+    await p.waitForFunction(() => S.sc.ph === 'rating', null, { timeout: 10000 }); await shot('18-reviews', 1600); await tap();
     // 4. straight into the record, no score card
     await p.waitForFunction(() => mode === 'map' && MAP.ready, null, { timeout: 60000 });
-    const r = await p.evaluate(() => [document.getElementById('results').hidden, JSON.parse(localStorage.getItem('jv-progress')).prologue, document.getElementById('stopTitle').textContent, S.counts.perfect + S.counts.great + S.counts.ok]);
+    const r = await p.evaluate(() => [document.getElementById('results').hidden && document.getElementById('skipBtn') === null, JSON.parse(localStorage.getItem('jv-progress')).prologue, document.getElementById('stopTitle').textContent, S.counts.perfect + S.counts.great + S.counts.ok]);
     console.log(n, 'results card hidden, prologue saved, first stop, notes hit:', JSON.stringify(r), errs);
     await ctx.close();
   }

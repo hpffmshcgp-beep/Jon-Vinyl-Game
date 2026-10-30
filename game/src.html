@@ -73,7 +73,8 @@ h2 { font-family: var(--deco); font-weight: 400; margin: 0; font-size: clamp(28p
 .diffBtn:focus-visible { outline: 2px solid var(--powder); outline-offset: 2px; }
 .diffBtn[data-d=easy] { --c: #8fcf8a; } .diffBtn[data-d=normal] { --c: #8ab8e6; } .diffBtn[data-d=hard] { --c: #f0a24e; } .diffBtn[data-d=expert] { --c: #e8665e; } .diffBtn[data-d=expertplus] { --c: #c58ae6; }
 #map { position: fixed; inset: 0; width: 100%; height: 100%; display: block; }
-#skipBtn { position: fixed; z-index: 6; top: max(14px, env(safe-area-inset-top, 0px)); right: max(14px, env(safe-area-inset-right, 0px)); background: rgba(8,6,14,.7); }
+#actBtn { position: fixed; z-index: 6; left: 50%; transform: translateX(-50%); bottom: max(18px, calc(env(safe-area-inset-bottom, 0px) + 10px)); padding: 10px 26px; font-size: 18px; }
+body:not(.touch) #actBtn { font-size: 15px; padding: 8px 20px; }
 #mapLoading { position: fixed; inset: 0; display: grid; place-items: center; font-family: var(--serif); font-style: italic; font-size: 20px; color: var(--cream); background: #0b0710; z-index: 6; }
 #mapUI { position: fixed; inset: 0; pointer-events: none; z-index: 4; display: flex; flex-direction: column; justify-content: space-between;
   padding: max(14px, env(safe-area-inset-top, 0px)) max(14px, env(safe-area-inset-right, 0px)) max(14px, env(safe-area-inset-bottom, 0px)) max(14px, env(safe-area-inset-left, 0px)); }
@@ -157,7 +158,7 @@ kbd { font-family: var(--type); font-size: 10px; border: 1px solid rgba(243,230,
 
 <canvas id="stage" aria-label="Game screen" tabindex="0"></canvas>
 <canvas id="map" aria-label="The record" hidden></canvas>
-<button class="ghost" id="skipBtn" hidden>Skip &#9656;</button>
+<button class="btn" id="actBtn" hidden>Talk</button>
 <div id="mapLoading" hidden>Dropping the needle&hellip;</div>
 <div id="mapUI" hidden>
   <div class="mapTop"><div class="eyebrow">Jon Vinyl &middot; Lost in You</div><div id="mapStars">&starf; 0 / 21</div></div>
@@ -202,13 +203,9 @@ kbd { font-family: var(--type); font-size: 10px; border: 1px solid rgba(243,230,
     <div class="billing">A fan-made rhythm picture &middot; unofficial</div>
   </div>
   <div class="panel" id="howPanel" hidden>
-    <div class="eyebrow">How to play</div>
-    <h2>Tap with the beat</h2>
-    <div class="bubbles">
-      <div class="bubble"><canvas id="icoStar" width="96" height="96"></canvas><b>Catch</b><span>snare &amp; hi-hats</span><em class="tap">Tap left side</em><em class="keys"><kbd>F</kbd><kbd>&larr;</kbd></em></div>
-      <div class="bubble"><canvas id="icoRec" width="96" height="96"></canvas><b>Kick</b><span>the kick drum</span><em class="tap">Tap right side</em><em class="keys"><kbd>J</kbd><kbd>&rarr;</kbd></em></div>
-      <div class="bubble"><canvas id="icoHeart" width="96" height="96"></canvas><b>Find her</b><span>stay on beat</span><em>to reach the bow</em></div>
-    </div>
+    <div class="eyebrow">Before the picture</div>
+    <h2>Choose your level</h2>
+
     <div class="diffWrap">
       <div class="diff" role="radiogroup" aria-label="Difficulty">
         <button class="diffBtn" id="dEasy" data-d="easy" role="radio" aria-checked="false">Easy</button>
@@ -223,6 +220,19 @@ kbd { font-family: var(--type); font-size: 10px; border: 1px solid rgba(243,230,
     <div class="row"><span>Timing</span><button class="chip" id="delayDown" aria-label="Earlier">&minus;</button><b id="delayVal">0 ms</b><button class="chip" id="delayUp" aria-label="Later">+</button><button class="ghost" id="calBtn">Sound check</button></div>
     <div class="fine" id="bestLine">Bluetooth? Run a sound check.</div>
     <button class="ghost" id="backBtn">Back</button>
+  </div>
+</div>
+
+<div class="overlay" id="howPop" hidden>
+  <div class="panel">
+    <div class="eyebrow">How to play</div>
+    <h2>Tap with the beat</h2>
+    <div class="bubbles">
+      <div class="bubble"><canvas id="icoStar" width="96" height="96"></canvas><b>Catch</b><span>snare &amp; hi-hats</span><em class="tap">Tap left side</em><em class="keys"><kbd>F</kbd><kbd>&larr;</kbd></em></div>
+      <div class="bubble"><canvas id="icoRec" width="96" height="96"></canvas><b>Kick</b><span>the kick drum</span><em class="tap">Tap right side</em><em class="keys"><kbd>J</kbd><kbd>&rarr;</kbd></em></div>
+      <div class="bubble"><canvas id="icoHeart" width="96" height="96"></canvas><b>Find her</b><span>stay on beat</span><em>to reach the bow</em></div>
+    </div>
+    <button class="btn" id="goBtn">Start the chase</button>
   </div>
 </div>
 
@@ -482,15 +492,15 @@ async function startGame(){
   if (!nodes) buildGraph();
   stopSources();
   S = newState(); S.running = true; S.lastNow = 0;
-  mode = 'intro'; introStart(layout()); grabKeys();   // the opening on the deck plays first, to the sea and the band below
+  mode = 'intro'; introStart(layout()); grabKeys();   // the opening in their cabin plays first, to the sea and the band below
   startAmbience(true);
-  $('title').hidden = true; $('results').hidden = true; $('skipBtn').hidden = false;
+  $('title').hidden = true; $('results').hidden = true;
   $('startBtn').disabled = false; $('againBtn').disabled = false; $('startBtn').textContent = START_LABEL;
   try { navigator.wakeLock && navigator.wakeLock.request('screen').catch(()=>{}); } catch(e){}
 }
 function startSong(){   // she's gone: the music starts and the chase begins
   if (mode !== 'intro') return;
-  $('skipBtn').hidden = true; stopAmbience();
+  $('howPop').hidden = true; $('actBtn').hidden = true; stopAmbience();
   S.sc = null; HOLD.kl = HOLD.kr = false; HOLD.ptr.clear();
   S.startAt = ac.currentTime + PREROLL;
   setLayer(nodes.songplay, 'open');
@@ -506,7 +516,7 @@ function toTitle(){
   stopSources(); if (S) { S.running = false; S.paused = false; }
   if (ac && ac.state === 'suspended') ac.resume();
   if (mode === 'map') leaveMap();
-  $('skipBtn').hidden = true;
+  $('howPop').hidden = true; $('actBtn').hidden = true;
   mode = 'title'; titleT0 = nowS(); startAmbience();
   ['pause','results','calib'].forEach(id => $(id).hidden = true); showPanel('how'); $('title').hidden = false; titleButtons();
   showBest();
@@ -581,10 +591,10 @@ const inScene = () => S && S.sc && S.running && !S.paused;
 addEventListener('keydown', e => {
   const L0 = KEYS_L.has(e.code), R0 = KEYS_R.has(e.code);
   if (inScene()) {
-    if (L0) HOLD.kl = true; if (R0) HOLD.kr = true;
-    const tapKey = L0 || R0 || e.code === 'Space' || e.code === 'Enter';
+    if (L0 && e.code !== 'ArrowUp') HOLD.kl = true; if (R0 && e.code !== 'ArrowDown') HOLD.kr = true;
+    const act = ['Space', 'Enter', 'KeyE', 'ArrowUp', 'KeyW'].includes(e.code), tapKey = act || L0 || R0;
     if (tapKey) e.preventDefault();
-    if (!e.repeat && tapKey && (S.sc.dlg || S.sc.ph === 'album')) sceneTap();
+    if (!e.repeat && tapKey) { if (S.sc.dlg || S.sc.ph === 'album' || S.sc.ph === 'rating') sceneTap(); else if (act) cabinAct(); }
     return;
   }
   if (e.repeat) return;
@@ -593,7 +603,7 @@ addEventListener('keydown', e => {
   if (L0) { press(0, evTime(e)); tapFx(0); e.preventDefault(); }
   else if (R0) { press(1, evTime(e)); tapFx(1); e.preventDefault(); }
 });
-addEventListener('keydown', e => { if (mode === 'map' && (e.code === 'Enter' || e.code === 'Space') && !$('stopPlay').disabled) { e.preventDefault(); $('stopPlay').click(); } });
+addEventListener('keydown', e => { if (!$('howPop').hidden && (e.code === 'Enter' || e.code === 'Space')) { e.preventDefault(); $('goBtn').click(); return; } if (mode === 'map' && (e.code === 'Enter' || e.code === 'Space') && !$('stopPlay').disabled) { e.preventDefault(); $('stopPlay').click(); } });
 addEventListener('keyup', e => { if (KEYS_L.has(e.code)) HOLD.kl = false; if (KEYS_R.has(e.code)) HOLD.kr = false; });
 addEventListener('blur', () => { HOLD.kl = HOLD.kr = false; HOLD.ptr.clear(); });
 let TAPFX = [-9, -9];
@@ -607,7 +617,7 @@ cv.addEventListener('pointerdown', e => {
 });
 ['pointerup', 'pointercancel', 'pointerleave'].forEach(n => cv.addEventListener(n, e => HOLD.ptr.delete(e.pointerId)));
 $('startBtn').onclick = startGame; $('againBtn').onclick = startGame; $('menuBtn').onclick = toTitle;
-$('intoBtn').onclick = () => enterMap(true); $('skipBtn').onclick = () => startSong(); $('recordBtn').onclick = () => enterMap(false);
+$('intoBtn').onclick = () => enterMap(true); $('goBtn').onclick = () => startSong(); $('actBtn').onclick = () => cabinAct(); $('recordBtn').onclick = () => enterMap(false);
 $('stopPrologue').onclick = () => { leaveMap(); toTitle(); };
 $('stopTitleBtn').onclick = () => { leaveMap(); toTitle(); showPanel('poster'); };
 $('resumeBtn').onclick = resumeGame; $('quitBtn').onclick = toTitle;
@@ -1787,6 +1797,7 @@ function sceneTap(){
     if (ac) uiClick(); return true;
   }
   if (sc.ph === 'album') { sc.slide = Math.min(1, sc.slide + 0.2); return true; }
+  if (sc.ph === 'rating' && sc.T - sc.rateT > 1.2) { finishPrologue(); return true; }
   return false;
 }
 const walkTo = (sc, key, target, speed, dt) => { const d = target - sc[key]; sc[key] += Math.sign(d)*Math.min(Math.abs(d), speed*dt); return Math.abs(target - sc[key]) < 1e-3; };
@@ -1814,7 +1825,9 @@ function sceneStep(L, dt, base){
   } else if (sc.ph === 'spinup') {
     if (T - sc.spinT2 > 1.9) { sc.ph = 'pull'; sc.pullT = T; sc.herDir = -1; }
   } else if (sc.ph === 'pull') {
-    if (T - sc.pullT > 4.3 && S.running) finishPrologue();
+    if (T - sc.pullT > 4.3 && S.running) { sc.ph = 'rating'; sc.rateT = T; sc.rate = rateRun(); }
+  } else if (sc.ph === 'rating') {
+    if (T - sc.rateT > 9 && S.running) finishPrologue();
   }
 }
 function drawScene(L, now, base){
@@ -1862,57 +1875,224 @@ function drawCaptive(x, gy, h, k, now){
   g.beginPath(); g.moveTo(f.fx, f.fy); g.lineTo(hx + h*0.09, gy - h*0.5); g.stroke(); g.restore();
 }
 
-/* ---------- the opening: on the deck at sunset, before the music ---------- */
+/* ---------- the opening: their cabin (you play it), then up on deck (a cutscene) ----------
+   Walk around the stateroom, talk to her, look at things; once you've talked, the only thing left is the door. */
+const CABIN_LINES = {
+  her:   [['HER', 'We actually made it. No one knows we’re on this ship.'], ['HER', 'Every time we got close, something pulled us apart.'],
+          ['JON', 'Not this time. It’s just us now.'], ['HER', 'Just us.'],
+          ['JON', 'First thing when we dock: that record store I keep telling you about.'], ['HER', 'Then dinner. Then the long way home.'],
+          ['HER', 'Let’s go up on deck. I could use some fresh air.']],
+  again: [['HER', 'Come on. The door’s right there.']],
+  bags:  [['JON', 'Everything we own, in two suitcases. Still feels light.']],
+  port:  [['JON', 'Nothing out there but ocean. Nobody to stop us now.']],
+  deck:  [['JON', 'Not without her.']],
+  tt:    [['JON', 'Packed the turntable before the toothbrush. Priorities.']],
+};
+const ROOM = { bed: 0.03, tt: 0.33, port: 0.47, port2: 0.66, her: 0.57, bags: 0.77, door: 0.91 };   // across the cabin, as a share of the screen
 function introStart(L){
-  const base = W*(L.portrait ? 0.62 : 0.58);
-  S.sc = Object.assign(scBase(), { kind:'intro', ph:'iwalk', base, jon:(L.jh*0.45 - base)/L.jh, herDir:1, fig:null, takeT:-1, fadeT:-1, desat:0.45 });
+  S.sc = Object.assign(scBase(), { kind:'cabin', ph:'free', jx: 0.16, jdir:1, herDir:-1, talked:false, spot:null, doorT:-1, exitT:-1 });
 }
-function introStep(L, dt){
+function cabinSpots(sc){
+  return [{ id:'her', x: ROOM.her, label: 'Talk' }, { id:'tt', x: ROOM.tt, label: 'Look' }, { id:'port', x: ROOM.port - 0.03, label: 'Look' },
+          { id:'bags', x: ROOM.bags, label: 'Look' }, { id:'door', x: ROOM.door - 0.05, label: sc.talked ? 'Go up on deck' : 'Open the door', goal: sc.talked }];
+}
+function cabinAct(){   // the action button: talk, look, or open the door
+  const sc = S.sc; if (!sc || sc.kind !== 'cabin' || sc.dlg || sc.ph !== 'free' || !sc.spot) return false;
+  const id = sc.spot.id;
+  if (id === 'her') { if (sc.talked) say(CABIN_LINES.again); else { sc.herDir = -1; say(CABIN_LINES.her, () => { sc.talked = true; }, i => { if (i === 3) sc.metT = sc.T; }); } }
+  else if (id === 'door') { if (!sc.talked) say(CABIN_LINES.deck); else { sc.ph = 'exit'; sc.doorT = sc.T; sc.figT = sc.T; } }
+  else say(CABIN_LINES[id]);
+  if (ac) uiClick();
+  return true;
+}
+function cabinStep(L, dt){
+  const sc = S.sc; sc.T += dt; const T = sc.T, sp = 1.25*L.jh/W;
+  sc.moving = false;
+  if (sc.ph === 'free') {
+    const v = sc.dlg ? 0 : walkInput();
+    if (v) { sc.jx = clamp(sc.jx + v*sp*dt, 0.05, ROOM.door - 0.04); sc.jdir = v; sc.moving = true; sc.wph += dt*1.5; }
+    const near = cabinSpots(sc).map(s => ({ s, d: Math.abs(s.x - sc.jx)*W/L.jh })).filter(o => o.d < 0.55).sort((a, b) => a.d - b.d)[0];
+    sc.spot = sc.dlg ? null : near ? near.s : null;
+    if (Math.abs(sc.jx - ROOM.her)*W/L.jh < 1.2 && !sc.dlg) sc.herDir = sc.jx < ROOM.her ? -1 : 1;   // she turns to look at him
+  } else if (sc.ph === 'exit') {   // the door swings open; she joins him and they head out
+    sc.spot = null;
+    const e = T - sc.doorT;
+    if (e > 0.5) { const tgt = ROOM.door - 0.02; sc.jx = Math.min(tgt + 0.08, sc.jx + sp*dt); sc.jdir = 1; sc.moving = true; sc.wph += dt*1.5; }
+    if (e > 0.9) { sc.herX = Math.min(ROOM.door + 0.06, (sc.herX ?? ROOM.her) + sp*1.1*dt); sc.herDir = 1; }
+    if (e > 3.4) deckStart(L);
+  }
+  $('actBtn').hidden = !(sc.spot && sc.ph === 'free');
+  if (sc.spot) $('actBtn').textContent = sc.spot.label;
+}
+// the cabin: warm wood, brass portholes onto the sunset, the bed, their suitcases, the turntable, and the door
+function drawCabin(L, now, sc){
+  const top = L.top, gy = L.groundY, bot = L.bot, jh = L.jh, wh = gy - top;
+  const wall = g.createLinearGradient(0, top, 0, gy); wall.addColorStop(0, '#2b170f'); wall.addColorStop(.5, '#4a2a19'); wall.addColorStop(1, '#5b3420');
+  g.fillStyle = wall; g.fillRect(0, top, W, wh);
+  const pw = Math.max(54, jh*0.62);
+  for (let x = -pw*0.4; x < W; x += pw) {   // raised panels
+    const y0 = top + wh*0.14, h0 = wh*0.46;
+    g.fillStyle = 'rgba(255,190,120,.05)'; g.fillRect(x + 5, y0, pw - 10, h0);
+    g.strokeStyle = 'rgba(10,4,2,.35)'; g.lineWidth = 1.5; g.strokeRect(x + 5.5, y0 + .5, pw - 11, h0);
+    g.strokeStyle = 'rgba(255,210,150,.08)'; g.strokeRect(x + 7.5, y0 + 2.5, pw - 15, h0 - 4);
+  }
+  g.fillStyle = '#24130b'; g.fillRect(0, top, W, wh*0.06); g.fillStyle = 'rgba(230,184,92,.5)'; g.fillRect(0, top + wh*0.06, W, 2);         // crown moulding
+  g.fillStyle = '#2a160d'; g.fillRect(0, gy - wh*0.3, W, wh*0.3); g.fillStyle = 'rgba(230,184,92,.55)'; g.fillRect(0, gy - wh*0.3, W, 2);  // wainscot and rail
+  const fl = g.createLinearGradient(0, gy, 0, bot); fl.addColorStop(0, '#6a1a2a'); fl.addColorStop(1, '#2a0810'); g.fillStyle = fl; g.fillRect(0, gy, W, bot - gy);
+  g.fillStyle = 'rgba(230,184,92,.18)'; for (let x = 0; x < W; x += 26) { g.beginPath(); g.arc(x + (Math.floor((x/26)) % 2)*13, gy + (bot - gy)*0.35, 2, 0, 7); g.fill(); }
+  g.fillStyle = 'rgba(0,0,0,.35)'; g.fillRect(0, gy, W, 3);
+  // sunset light through the portholes, falling across the carpet, and an oval rug where she stands
+  [ROOM.port, ROOM.port2].forEach(f => { const x = W*f, beam = g.createLinearGradient(0, gy, 0, bot);
+    beam.addColorStop(0, 'rgba(255,190,120,.16)'); beam.addColorStop(1, 'rgba(255,190,120,0)'); g.fillStyle = beam;
+    g.beginPath(); g.moveTo(x - jh*0.1, gy); g.lineTo(x + jh*0.14, gy); g.lineTo(x + jh*0.5, bot); g.lineTo(x + jh*0.05, bot); g.closePath(); g.fill(); });
+  g.save(); g.translate(W*ROOM.her, gy + (bot - gy)*0.2); g.scale(1, 0.16);
+  g.fillStyle = '#3d1a28'; g.beginPath(); g.arc(0, 0, jh*0.95, 0, 7); g.fill();
+  g.strokeStyle = 'rgba(230,184,92,.45)'; g.lineWidth = 9; g.beginPath(); g.arc(0, 0, jh*0.8, 0, 7); g.stroke(); g.restore();
+  // a framed picture of the two of them
+  { const fx = W*0.115 + Math.min(jh*1.35, W*0.26)*0.55, fy = top + wh*0.3, fw = jh*0.3, fh2 = jh*0.38;
+    g.fillStyle = '#c99b4a'; g.fillRect(fx - fw/2 - 4, fy - fh2/2 - 4, fw + 8, fh2 + 8); g.fillStyle = '#e9d8b4'; g.fillRect(fx - fw/2, fy - fh2/2, fw, fh2);
+    g.fillStyle = '#5a4030'; g.beginPath(); g.arc(fx - fw*0.16, fy - fh2*0.08, fw*0.13, 0, 7); g.arc(fx + fw*0.16, fy - fh2*0.1, fw*0.12, 0, 7); g.fill();
+    g.fillRect(fx - fw*0.32, fy + fh2*0.06, fw*0.3, fh2*0.4); g.fillStyle = '#8e2335'; g.fillRect(fx + fw*0.03, fy + fh2*0.04, fw*0.28, fh2*0.42); }
+  // sconces
+  [0.24, 0.56, 0.84].forEach(f => { const x = W*f, y = top + wh*0.2;
+    const gl = g.createRadialGradient(x, y, 0, x, y, jh*0.9); gl.addColorStop(0, 'rgba(255,200,130,.35)'); gl.addColorStop(1, 'rgba(255,200,130,0)'); g.fillStyle = gl; g.fillRect(x - jh, y - jh, jh*2, jh*2);
+    g.fillStyle = '#c99b4a'; g.fillRect(x - 2, y, 4, jh*0.12); g.fillStyle = '#fff1cf'; g.beginPath(); g.moveTo(x - jh*0.07, y + jh*0.02); g.lineTo(x + jh*0.07, y + jh*0.02); g.lineTo(x + jh*0.04, y - jh*0.08); g.lineTo(x - jh*0.04, y - jh*0.08); g.closePath(); g.fill(); });
+  // portholes onto the sunset
+  [ROOM.port, ROOM.port2].forEach((f, i) => { const x = W*f, y = top + wh*0.36, r = Math.min(jh*0.2, W*0.06);
+    g.save(); g.beginPath(); g.arc(x, y, r, 0, 7); g.clip();
+    const sky = g.createLinearGradient(0, y - r, 0, y + r); sky.addColorStop(0, '#6b3f6a'); sky.addColorStop(.45, '#f0a65e'); sky.addColorStop(.55, '#f7c98a'); sky.addColorStop(.56, '#2c4d6e'); sky.addColorStop(1, '#173049');
+    g.fillStyle = sky; g.fillRect(x - r, y - r, r*2, r*2);
+    g.fillStyle = 'rgba(255,230,180,.7)'; for (let k = 0; k < 5; k++) g.fillRect(x - r + ((now*12 + k*37 + i*20) % (r*2)), y + r*0.2 + k*r*0.13, r*0.3, 1.5);
+    g.fillStyle = 'rgba(255,255,255,.12)'; g.beginPath(); g.ellipse(x - r*0.35, y - r*0.35, r*0.4, r*0.18, -0.6, 0, 7); g.fill();
+    g.restore();
+    g.lineWidth = Math.max(4, r*0.28); const br = g.createLinearGradient(x - r, y - r, x + r, y + r); br.addColorStop(0, '#f2d08a'); br.addColorStop(.5, '#9a6a2a'); br.addColorStop(1, '#e6b85c');
+    g.strokeStyle = br; g.beginPath(); g.arc(x, y, r + g.lineWidth/2, 0, 7); g.stroke();
+    for (let k = 0; k < 8; k++) { const a = k*Math.PI/4; g.fillStyle = '#5a3a14'; g.beginPath(); g.arc(x + Math.cos(a)*(r + g.lineWidth/2), y + Math.sin(a)*(r + g.lineWidth/2), 1.6, 0, 7); g.fill(); } });
+  // the bed against the far wall
+  const bw = Math.min(jh*1.35, W*0.26), bx = W*ROOM.bed, bh = jh*0.36;
+  g.fillStyle = '#c99b4a'; g.fillRect(bx, gy - jh*0.72, 4, jh*0.72); g.fillRect(bx + bw - 4, gy - jh*0.5, 4, jh*0.5);
+  for (let k = 1; k < 4; k++) g.fillRect(bx, gy - jh*0.72 + k*jh*0.11, jh*0.05, 2);
+  g.fillStyle = '#efe3c8'; rrect(bx + 4, gy - bh, bw - 8, bh*0.45, 6); g.fill();
+  g.fillStyle = '#f6eedb'; rrect(bx + 8, gy - bh - jh*0.08, jh*0.32, jh*0.12, jh*0.05); g.fill();
+  const bl = g.createLinearGradient(0, gy - bh*0.6, 0, gy); bl.addColorStop(0, '#9b2b3e'); bl.addColorStop(1, '#5e1424');
+  g.fillStyle = bl; rrect(bx + jh*0.3, gy - bh*0.62, bw - jh*0.3 - 6, bh*0.62, 5); g.fill();
+  g.fillStyle = 'rgba(230,184,92,.6)'; g.fillRect(bx + jh*0.3, gy - bh*0.4, bw - jh*0.3 - 6, 2);
+  // a side table with the turntable
+  const tx = W*ROOM.tt, tw = jh*0.42, th = jh*0.42;
+  g.fillStyle = '#3a1f12'; g.fillRect(tx - tw/2, gy - th, tw, jh*0.04); g.fillRect(tx - tw/2 + 3, gy - th, 3, th); g.fillRect(tx + tw/2 - 6, gy - th, 3, th);
+  g.fillStyle = '#1a1014'; rrect(tx - tw*0.42, gy - th - jh*0.07, tw*0.84, jh*0.07, 3); g.fill();
+  g.save(); g.translate(tx - tw*0.05, gy - th - jh*0.075); g.scale(1, 0.28); g.fillStyle = '#0b0a0d'; g.beginPath(); g.arc(0, 0, tw*0.3, 0, 7); g.fill();
+  g.fillStyle = '#e8a64e'; g.beginPath(); g.arc(0, 0, tw*0.1, 0, 7); g.fill(); g.restore();
+  g.strokeStyle = '#c9c3b8'; g.lineWidth = 2; g.beginPath(); g.moveTo(tx + tw*0.33, gy - th - jh*0.08); g.lineTo(tx + tw*0.12, gy - th - jh*0.1); g.stroke();
+  // their suitcases, stacked, with a hatbox
+  const sx = W*ROOM.bags, s1 = jh*0.62;
+  const suitcase = (x, y, w, h, col) => { g.fillStyle = col; rrect(x - w/2, y - h, w, h, h*0.18); g.fill(); g.strokeStyle = 'rgba(0,0,0,.35)'; g.lineWidth = 1.5; g.stroke();
+    g.fillStyle = '#4a2a14'; g.fillRect(x - w*0.3, y - h, w*0.07, h); g.fillRect(x + w*0.23, y - h, w*0.07, h);
+    g.fillStyle = '#e6b85c'; g.fillRect(x - w*0.05, y - h - h*0.12, w*0.1, h*0.14); [-1, 1].forEach(sd => g.fillRect(x + sd*w*0.46 - 3, y - h + 2, 6, 6));
+    g.fillStyle = 'rgba(243,230,200,.85)'; g.beginPath(); g.arc(x - w*0.12, y - h*0.55, h*0.2, 0, 7); g.fill(); g.fillStyle = '#8e2335'; g.fillRect(x + w*0.04, y - h*0.72, w*0.14, h*0.3); };
+  suitcase(sx, gy, s1, jh*0.24, '#a9733d'); suitcase(sx - jh*0.04, gy - jh*0.24, s1*0.82, jh*0.2, '#7d4a2a');
+  g.fillStyle = '#d9c39a'; rrect(sx + s1*0.42, gy - jh*0.2, jh*0.26, jh*0.2, jh*0.05); g.fill(); g.fillStyle = '#8e2335'; g.fillRect(sx + s1*0.42, gy - jh*0.17, jh*0.26, 3);
+  // the door out to the deck
+  const dx = W*ROOM.door, dw = jh*0.5, dh = jh*1.22, k = sc && sc.doorT >= 0 ? ease((sc.T - sc.doorT)/0.6) : 0;
+  g.fillStyle = '#1a0d07'; g.fillRect(dx - dw/2 - 6, gy - dh - 6, dw + 12, dh + 6);
+  if (k > 0) { const sky = g.createLinearGradient(0, gy - dh, 0, gy); sky.addColorStop(0, '#f6b46a'); sky.addColorStop(1, '#ffe1a8'); g.fillStyle = sky; g.fillRect(dx - dw/2, gy - dh, dw, dh);
+    const spill = g.createLinearGradient(dx, gy, dx - jh*1.2, gy); spill.addColorStop(0, `rgba(255,214,150,${0.35*k})`); spill.addColorStop(1, 'rgba(255,214,150,0)');
+    g.fillStyle = spill; g.beginPath(); g.moveTo(dx + dw/2, gy); g.lineTo(dx - dw/2, gy); g.lineTo(dx - dw/2 - jh*1.2, bot); g.lineTo(dx + dw/2, bot); g.closePath(); g.fill(); }
+  const leaf = dw*(1 - k*0.85);
+  const dg = g.createLinearGradient(dx - dw/2, 0, dx - dw/2 + leaf, 0); dg.addColorStop(0, '#5a301a'); dg.addColorStop(1, '#3a1d0f');
+  g.fillStyle = dg; g.fillRect(dx - dw/2, gy - dh, leaf, dh);
+  if (leaf > dw*0.4) { g.strokeStyle = 'rgba(0,0,0,.35)'; g.lineWidth = 1.5; g.strokeRect(dx - dw/2 + leaf*0.15, gy - dh*0.92, leaf*0.7, dh*0.36); g.strokeRect(dx - dw/2 + leaf*0.15, gy - dh*0.5, leaf*0.7, dh*0.42);
+    g.fillStyle = '#e6b85c'; g.beginPath(); g.arc(dx - dw/2 + leaf*0.85, gy - dh*0.48, Math.max(2.5, jh*0.025), 0, 7); g.fill(); }
+  g.fillStyle = '#c99b4a'; g.fillRect(dx - dw/2 - 6, gy - dh - 6, dw + 12, 3);
+  if (sc && sc.talked && sc.ph === 'free') { const a = 0.35 + 0.25*Math.sin(now*3); g.strokeStyle = `rgba(255,214,150,${a})`; g.lineWidth = 2; g.strokeRect(dx - dw/2 - 3, gy - dh - 3, dw + 6, dh + 3); }   // the way out
+}
+function cabinFrame(L, now){
+  const sc = S.sc, jh = L.jh;
+  drawCabin(L, now, sc);
+  const herX = W*(sc.herX ?? ROOM.her), jonX = W*sc.jx, out = x => clamp(1 - (x - W*(ROOM.door + 0.01))/(jh*0.25), 0, 1);   // they disappear through the doorway
+  g.save(); g.globalAlpha = out(herX); drawHer(herX, L.groundY - jh*0.05, jh*0.95, sc.herDir, now, sc.dlg && sc.dlg.lines === CABIN_LINES.her); g.restore();
+  g.save(); g.globalAlpha = out(jonX);
+  drawJon(jonX, L.groundY, jh, { running: sc.moving, amp: 0.45, phase: sc.wph % 1, idle: now*0.8, jumpK: -1, kick: false, stumble: 0, reach: 0, dir: sc.jdir,
+    shades: true, glow: 0, holdHand: false, lookUp: false, smile: sc.talked || (sc.dlg && sc.dlg.lines === CABIN_LINES.her) });
+  g.restore();
+  sceneOver(L, now, jonX, herX);
+  if (sc.spot && sc.ph === 'free') {   // what you can do here
+    const x = W*sc.spot.x + (sc.spot.id === 'her' ? 0 : 0), y = L.groundY - jh*(sc.spot.id === 'her' ? 1.2 : sc.spot.id === 'door' ? 1.38 : sc.spot.id === 'port' ? 1.15 : 0.95) + Math.sin(now*4)*3;
+    const txt = (TOUCH ? '' : 'E · ') + sc.spot.label.toUpperCase();
+    g.font = `700 11px ${FONT.type}`; const tw = g.measureText(txt).width + 22;
+    g.fillStyle = 'rgba(8,6,14,.85)'; rrect(x - tw/2, y - 26, tw, 22, 11); g.fill(); g.strokeStyle = PAL.gold; g.lineWidth = 1; g.stroke();
+    g.fillStyle = PAL.cream; g.textAlign = 'center'; g.fillText(txt, x, y - 11);
+    g.fillStyle = PAL.gold; g.beginPath(); g.moveTo(x - 5, y - 4); g.lineTo(x + 5, y - 4); g.lineTo(x, y + 2); g.closePath(); g.fill();
+  }
+  filmPost(1); letterbox(L);
+  // what to do next, in the top bar
+  const goal = sc.ph !== 'free' ? '' : !sc.talked ? 'TALK TO HER' : 'GO UP ON DECK FOR SOME FRESH AIR';
+  if (goal && !sc.dlg) { g.textAlign = 'left'; g.font = `700 10px ${FONT.type}`; g.fillStyle = PAL.gold; g.fillText('▸ ' + goal, 16, SAFE.t + L.barH/2 + 4); }
+  sceneUI(L, now);
+  if (sc.ph === 'exit') { const e = sc.T - sc.doorT; if (e > 2.6) { g.fillStyle = `rgba(3,2,5,${clamp((e - 2.6)/0.8, 0, 1)})`; g.fillRect(0, 0, W, H); } }
+}
+
+/* up on deck: a cutscene. They step out into the sunset; the stranger steps out of the casino and takes her */
+const DECK = [   // [start, end, who, line]
+  [2.9, 5.1, 'HER', 'Look at that sky.'], [5.3, 7.3, 'JON', 'Worth every mile.'],
+  [9.8, 12.3, '???', 'I’m afraid she can’t be with you.'], [13.0, 15.2, 'HER', 'Jon—!'],
+];
+function deckStart(L){
+  const base = W*(L.portrait ? 0.62 : 0.58);
+  $('actBtn').hidden = true;
+  const j0 = (W*0.1 - base)/L.jh;
+  S.sc = Object.assign(scBase(), { kind:'deck', ph:'deck', base, jon: j0, her: j0 + 0.42, herDir:1, fig:null, desat:0.45, fadeT:-1 });
+}
+function deckStep(L, dt){
   const sc = S.sc; sc.T += dt; const T = sc.T, door = (W*0.8 - sc.base)/L.jh;
   sc.moving = false;
-  if (sc.ph === 'iwalk') {
-    const v = sc.dlg ? 0 : walkInput();
-    if (v) { sc.jon = clamp(sc.jon + v*1.25*dt, (L.jh*0.3 - sc.base)/L.jh, 9); sc.jdir = v; sc.moving = true; sc.wph += dt*1.5; }
-    if (sc.jon >= SC_REACH) { sc.jon = SC_REACH; sc.jdir = 1; sc.ph = 'italk'; sc.herDir = -1;
-      say(LINES.intro, () => { sc.ph = 'ifig'; sc.figT = sc.T; sc.fig = door; }, i => { if (i === 5) sc.metT = sc.T; }); }
-  } else if (sc.ph === 'ifig') {   // someone steps out of the casino
-    if (T - sc.figT > 0.9) { sc.herDir = 1; sc.fph += dt*1.1; sc.moving = true;
-      if (walkTo(sc, 'fig', 0.5, 0.75, dt)) { sc.moving = false; sc.ph = 'iwords'; say(LINES.taken, () => { sc.ph = 'itake'; sc.takeT = sc.T; }); } }
-  } else if (sc.ph === 'itake') {  // and takes her, and Jon runs after them
-    const e = T - sc.takeT;
-    if (e > 0.45) { sc.fig += dt*1.5; sc.her = sc.fig - 0.55; sc.fph += dt*1.4; sc.herDir = -1; }
-    if (e > 0.7) { sc.jon += dt*1.05; sc.jdir = 1; sc.moving = true; sc.wph += dt*2.2; }
-    if (e > 3.0 && sc.fadeT < 0) sc.fadeT = T;
-    if (sc.fadeT >= 0 && T - sc.fadeT > 0.8) startSong();
-  }
-  const want = sc.metT >= 0 && sc.figT < 0 ? 0 : sc.fig !== null ? 0.7 : 0.45;   // colour blooms while they make plans
+  if (T < 2.8 && sc.jon < SC_REACH) { sc.jon = Math.min(SC_REACH, sc.jon + 1.6*dt); sc.her = sc.jon + 0.42; sc.moving = true; sc.wph += dt*1.5; }
+  if (T > 3.0 && T < 7.6) { sc.herDir = -1; if (sc.metT < 0 && T > 5.4) sc.metT = T; }
+  if (T > 7.6 && sc.fig === null) { sc.fig = door; sc.figT = T; sc.herDir = 1; }
+  if (sc.fig !== null && T > 8.5 && T < 13) { sc.fph += dt*1.1; walkTo(sc, 'fig', 0.5, 0.75, dt); }
+  if (T > 12.8) { sc.fig += dt*1.5; sc.her = sc.fig - 0.55; sc.fph += dt*1.4; sc.herDir = -1; }
+  if (T > 13.1) { sc.jon += dt*1.05; sc.jdir = 1; sc.moving = true; sc.wph += dt*2.2; }
+  if (T > 15.4 && sc.fadeT < 0) sc.fadeT = T;
+  if (sc.fadeT >= 0 && T - sc.fadeT > 0.9 && $('howPop').hidden && !sc.howShown) { sc.howShown = true; $('howPop').hidden = false; $('goBtn').focus(); }
+  const want = sc.metT >= 0 && sc.figT < 0 ? 0.05 : sc.fig !== null ? 0.7 : 0.45;
   sc.desat += (want - sc.desat)*Math.min(1, dt*2);
 }
-function introFrame(L, now){
-  const sc = S.sc, dt = clamp(now - (S.lastNow || now), 0, 0.1); S.lastNow = now;
-  if (!S.paused) introStep(L, dt);
-  if (mode !== 'intro' || !S.sc) return;
-  const jh = L.jh, T = sc.T, base = sc.base;
+function deckFrame(L, now){
+  const sc = S.sc, jh = L.jh, T = sc.T, base = sc.base;
   drawWorld(L, scrollTime(-99), 0, now, 0.35);
   casinoDoor(L, W*0.8);
   grade(sc.desat);
-  const herX = base + sc.her*jh, jonX = base + sc.jon*jh;
-  const taking = sc.ph === 'itake' && T - sc.takeT > 0.45;
-  drawHer(herX, L.groundY - jh*0.05, jh*0.95, sc.herDir, now, sc.ph === 'italk' || taking);
+  const herX = base + sc.her*jh, jonX = base + sc.jon*jh, taking = T > 12.8;
+  drawHer(herX, L.groundY - jh*0.05, jh*0.95, sc.herDir, now, taking);
   if (sc.fig !== null) {
-    const fx = base + sc.fig*jh, grip = sc.ph === 'itake' && !taking ? ease((T - sc.takeT)/0.4) : 0;
-    const f = drawFigure(fx, L.groundY, jh*1.02, taking ? 1 : -1, { walk: sc.moving && sc.ph === 'ifig' || taking, ph: sc.fph, now, offer: grip, drag: taking, alpha: clamp((T - sc.figT)/0.9, 0, 1) });
+    const fx = base + sc.fig*jh, grip = T > 12.3 && !taking ? ease((T - 12.3)/0.4) : 0;
+    const f = drawFigure(fx, L.groundY, jh*1.02, taking ? 1 : -1, { walk: (T > 8.5 && Math.abs(sc.fig - 0.5) > 0.01) || taking, ph: sc.fph, now, offer: grip, drag: taking, alpha: clamp((T - sc.figT)/0.9, 0, 1) });
     if (taking) { g.save(); g.strokeStyle = '#120d16'; g.lineCap = 'round'; g.lineWidth = Math.max(2, jh*0.03); g.beginPath(); g.moveTo(f.fx, f.fy); g.lineTo(herX + jh*0.09, L.groundY - jh*0.5); g.stroke(); g.restore(); }
   }
-  drawJon(jonX, L.groundY, jh, { running: sc.moving, amp: sc.ph === 'itake' ? 0.8 : 0.45, phase: sc.wph % 1, idle: now*0.8, jumpK: -1, kick: false, stumble: 0, reach: 0, dir: sc.jdir,
-    shades: true, glow: 0, holdHand: false, lookUp: sc.ph === 'italk', smile: sc.ph === 'italk' });
+  drawJon(jonX, L.groundY, jh, { running: sc.moving, amp: T > 13 ? 0.8 : 0.45, phase: sc.wph % 1, idle: now*0.8, jumpK: -1, kick: false, stumble: 0, reach: 0, dir: sc.jdir,
+    shades: true, glow: 0, holdHand: false, lookUp: T > 3 && T < 7.6, smile: T > 3 && T < 7.6 });
   sceneOver(L, now, jonX, herX);
-  filmPost(1);
-  letterbox(L);
-  sceneUI(L, now);
-  if (sc.fadeT >= 0) { g.fillStyle = `rgba(3,2,5,${clamp((T - sc.fadeT)/0.7, 0, 1)})`; g.fillRect(0, 0, W, H); }
+  filmPost(1); letterbox(L);
+  DECK.forEach(([a, b, who, line]) => { if (T < a || T > b) return; const k = (T - a)/(b - a);
+    dlgBox(L, who, line, Math.floor(clamp((T - a)*40, 0, line.length)), clamp(Math.min(k*10, (1 - k)*10), 0, 1), false); });
+  if (sc.fadeT >= 0) { g.fillStyle = `rgba(3,2,5,${clamp((T - sc.fadeT)/0.8, 0, 1)})`; g.fillRect(0, 0, W, H); }
+  if (T < 0.8) { g.fillStyle = `rgba(3,2,5,${1 - T/0.8})`; g.fillRect(0, 0, W, H); }   // in from the cabin's fade
 }
-function finishPrologue(){   // into the record: no score card, the story just goes on
+function introFrame(L, now){
+  const sc = S.sc, dt = clamp(now - (S.lastNow || now), 0, 0.1); S.lastNow = now;
+  if (!S.paused) { if (sc.kind === 'cabin') cabinStep(L, dt); else deckStep(L, dt); }
+  if (mode !== 'intro' || !S.sc) return;
+  if (S.sc.kind === 'cabin') cabinFrame(L, now); else deckFrame(L, now);
+}
+// the score never stops the story; it earns a rating and maybe a new high score for this difficulty
+function rateRun(){
+  const n = S.notes.length, c = S.counts, acc = (c.perfect + c.great*.75 + c.ok*.45)/n;
+  const stars = acc >= .95 ? 5 : acc >= .85 ? 4 : acc >= .7 ? 3 : acc >= .5 ? 2 : 1;
+  const lines = ['', 'Straight to video.', 'A cult favourite.', 'A crowd pleaser.', 'An instant classic.', 'A masterpiece. Not a dry eye in the house.'];
+  const bk = DIFFS[DIFF].best; let best = 0; try { best = +localStorage.getItem(bk) || 0; if (S.score > best) localStorage.setItem(bk, S.score); } catch(e){}
+  return { stars, line: lines[stars], score: S.score, record: S.score > best && S.score > 0 };
+}
+function finishPrologue(){   // into the record
   PROG.prologue = true; saveProg();
   stopSources(); S.running = false; HOLD.kl = HOLD.kr = false; HOLD.ptr.clear();
   enterMap(true);
@@ -1936,6 +2116,17 @@ function sceneOver(L, now, jonX, herX){
   if (sc.pullT >= 0) { const e = T - sc.pullT;
     if (e > 2.9) { g.fillStyle = `rgba(255,244,226,${clamp(1 - Math.abs(e - 3.25)/0.35, 0, 1)})`; g.fillRect(0, 0, W, H); }
     if (e > 3.35) { g.fillStyle = `rgba(3,2,5,${clamp((e - 3.35)/0.8, 0, 1)})`; g.fillRect(0, 0, W, H); } }
+  if (sc.ph === 'rating' && sc.rate) {   // end title: the reviews, over black
+    const r = sc.rate, e = T - sc.rateT, a = clamp(e/0.6, 0, 1), cy = L.top + L.fh*0.5;
+    g.save(); g.globalAlpha = a; g.textAlign = 'center';
+    g.fillStyle = PAL.gold; g.font = `700 10px ${FONT.type}`; g.fillText(`THE REVIEWS ARE IN  ·  ${DIFFS[DIFF].name.toUpperCase()}`, W/2, cy - L.jh*0.62);
+    for (let i = 0; i < 5; i++) star(W/2 + (i - 2)*Math.min(44, W*0.1), cy - L.jh*0.34, Math.min(17, W*0.04), 0, i < r.stars ? '#ffe29a' : 'rgba(243,230,200,.16)', i < r.stars ? PAL.gold2 : null);
+    g.fillStyle = PAL.cream; g.font = `italic 500 ${clamp(W*0.05, 18, 28)}px ${FONT.serif}`; g.fillText(r.line, W/2, cy - L.jh*0.02);
+    g.fillStyle = PAL.gold; g.font = `400 ${clamp(W*0.07, 26, 44)}px ${FONT.deco}`; g.fillText(r.score.toLocaleString(), W/2, cy + L.jh*0.32);
+    if (r.record) { g.fillStyle = '#f0a3a0'; g.font = `700 11px ${FONT.type}`; g.fillText('NEW HIGH SCORE', W/2, cy + L.jh*0.46); }
+    if (e > 1.2) { g.globalAlpha = a*(.55 + .45*Math.sin(now*4)); g.fillStyle = PAL.cream; g.font = `700 10px ${FONT.type}`; g.fillText(TOUCH ? 'TAP TO GO ON  ▸' : 'PRESS SPACE TO GO ON  ▸', W/2, cy + L.jh*0.7); }
+    g.restore();
+  }
 }
 const T_ok = sc => sc.T - sc.albumT > 0.6;
 function wrapText(txt, maxW){ const out = []; let cur = ''; txt.split(' ').forEach(w => { const t = cur ? cur + ' ' + w : w; if (cur && g.measureText(t).width > maxW) { out.push(cur); cur = w; } else cur = t; }); if (cur) out.push(cur); return out; }
@@ -1962,10 +2153,9 @@ function sceneUI(L, now){
     dlgBox(L, who, line, shown, d.t0 < 0 ? 1 : clamp((sc.T - d.t0 + (d.i ? 1 : 0))*6, 0, 1), true, now);
   }
   const shout = (t0, a, b) => { const e = sc.T - t0; if (t0 >= 0 && e > a && e < b) dlgBox(L, 'HER', 'Jon—!', 5, clamp(Math.min((e - a)*8, (b - e)*8), 0, 1), false); };
-  shout(sc.pullT, 0.5, 2.6); if (sc.kind === 'intro' && sc.ph === 'itake') shout(sc.takeT, 0.5, 2.8);
+  if (sc.kind === 'bow') shout(sc.pullT, 0.5, 2.6);
   let p = '';
   if (!d && sc.ph === 'walk') p = TOUCH ? 'HOLD THE RIGHT SIDE TO GO GET HER  ▶' : 'HOLD  →  TO GO GET HER';
-  if (!d && sc.ph === 'iwalk') p = TOUCH ? 'HOLD THE RIGHT SIDE TO WALK OVER TO HER  ▶' : 'HOLD  →  TO WALK OVER TO HER';
   if (!d && sc.ph === 'album' && T_ok(sc)) p = TOUCH ? 'HOLD THE RIGHT SIDE TO SLIDE THE RECORD OUT  ▶' : 'HOLD  →  TO SLIDE THE RECORD OUT';
   if (p) {
     const cy = L.bot + L.barH/2;
@@ -1976,8 +2166,10 @@ function sceneUI(L, now){
 const progX = L => { const x0 = 16 + 92, x1 = W - 16 - 24; return [x0, x1]; };
 function hud(L, t){
   const pad = 16, cyTop = SAFE.t + L.barH/2;
-  g.textAlign = 'left'; g.font = `700 10px ${FONT.type}`; g.fillStyle = PAL.cream;
-  g.fillText(`${S.combo} COMBO  ·  ${DIFFS[DIFF].name.toUpperCase()}`, pad, cyTop + 4);
+  const sz = Math.min(24, L.barH*0.48);
+  g.textAlign = 'left'; g.fillStyle = PAL.gold; g.font = `400 ${sz}px ${FONT.deco}`; g.fillText(S.score.toLocaleString(), pad, cyTop + sz*0.35);
+  const sw = g.measureText(S.score.toLocaleString()).width;
+  g.font = `700 10px ${FONT.type}`; g.fillStyle = PAL.cream; g.fillText(`${S.combo} COMBO  ·  ${DIFFS[DIFF].name.toUpperCase()}`, pad + sw + 10, cyTop + 4);
   const a = ACTS[actAt(t)];
   if (a.name) { g.textAlign = 'right'; g.fillStyle = PAL.gold; g.font = `400 ${Math.min(14, L.barH*0.32)}px ${FONT.deco}`; g.fillText(`${a.tag.toUpperCase()} · ${a.name.toUpperCase()}`, W - pad, cyTop + 5); }
   g.fillStyle = 'rgba(230,184,92,.9)'; g.fillRect(0, L.top - 2, W*clamp(t/LAST_NOTE, 0, 1), 2);

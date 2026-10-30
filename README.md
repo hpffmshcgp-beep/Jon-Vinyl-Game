@@ -2,9 +2,10 @@
 
 A fan-made, old-Hollywood rhythm picture set to Jon Vinyl's music. Unofficial — music by Jon Vinyl.
 
-**The story.** *Prologue — Star-Crossed:* on an ocean liner at sunset Jon walks over to the girl he's falling for and
-they make plans for when the ship docks — until a faceless stranger steps out of the casino and takes her. Jon chases them
-across the ship on the beat (no score to beat: the story always goes on) and gets her back at the bow. The stranger plays
+**The story.** *Prologue — Star-Crossed:* Jon and the girl he loves have finally got away together on an ocean liner.
+You start in their cabin — walk around, talk to her, make plans — then head up on deck for some air, where a faceless
+stranger steps out of the casino and takes her. Jon chases them
+across the ship on the beat (your score earns a rating and a high score, but the story always goes on) and gets her back at the bow. The stranger plays
 the gracious loser and hands over a gift: the album *Lost in You*. Jon slides the record out, it starts to spin, and it
 pulls him in. *The record:* a 3D map of the vinyl, one ring of grooves per song, only the next ring revealed.
 

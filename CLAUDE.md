@@ -12,13 +12,20 @@ Read README.md for layout, build and test commands. This file holds the decision
 ## Story and look
 - Old-Hollywood romance on an ocean liner ("DiCaprio and Winslet on Titanic, classic"). Sepia verses, colour choruses,
   film grain, letterbox. Acts: I The Bluff (poker chips), II Act Like It, III Old Soul, IV No Fool, Finale Star-Crossed.
-- **The prologue only sets up the story: no score, no pass/fail, no results card — whatever you hit, you move on.**
-  The HUD shows combo, difficulty, the act, and a chase line (time, not points) toward a heart.
-- **Opening** (playable, before the music, sea + band ambience, Skip button): Jon walks over to her at the rail (hold
-  right); they already know and like each other and make plans for when the ship docks (his record store, dinner, "the
-  long way home" — no "date" said outright); a heart, colour blooms. Then **the stranger** (faceless: long coat, fedora,
-  face a void; speaker "???", purple box) steps out of the casino door: "I'm afraid she can't be with you," and drags her
-  away; "Jon—!"; Jon runs after them; fade → the song starts (title cards over Jon alone, "She's somewhere on this ship.").
+- **The prologue sets up the story; the score never blocks it.** Score, combo, high score (per difficulty) and a 5-star
+  rating are kept; after the pull an end title shows the reviews (stars, line, score, "NEW HIGH SCORE"), tap to go on.
+  No pass/fail, no results panel, **nothing is skippable**.
+- **Opening, part 1 — their cabin (playable)**: wood-panelled stateroom, brass portholes onto the sunset, bed, framed photo
+  of them, turntable on a side table, two stacked suitcases + hatbox, the door. Walk left/right; an action button
+  (E / Space / Enter / ↑ on keyboard, an on-screen button on phones) talks or looks. Talking to her: they finally got away
+  together — "No one knows we're on this ship", "Every time we got close, something pulled us apart" (the unknown force),
+  plans for when they dock (his record store, dinner, "the long way home"), then "Let's go up on deck… fresh air". Before
+  that the door says "Not without her."; after it the door is the only goal (it glows): open it and they walk out.
+- **Opening, part 2 — the deck (cutscene, auto)**: they step out to the rail at sunset ("Look at that sky." / "Worth every
+  mile."), then **the stranger** (faceless: long coat, fedora, face a void; speaker "???", purple box) steps out of the
+  casino door: "I'm afraid she can't be with you," and drags her away ("Jon—!"); Jon runs after them; fade.
+- **How-to pop-up** (the three bubbles: Catch left / Kick right / Find her) → "Start the chase" → the song starts
+  (title cards over Jon alone, "She's somewhere on this ship."). The lobby panel now just picks difficulty and timing.
 - **The chase** (Star-Crossed): glimpses (`GLIMPSE`) show him dragging her by the wrist while she pulls back toward Jon
   (Bowser/Peach). At the end he holds her at the bow.
 - **The bow**: hold right to walk up; she breaks free and runs to Jon; reunion lines call back the plans; the stranger

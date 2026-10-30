@@ -8,7 +8,7 @@ const C = require('./config');
     await p.waitForFunction(() => !document.getElementById('startBtn').disabled, null, { timeout: 30000 });
     await p.evaluate(() => goTitle()); await p.click('#nextBtn'); await p.click('#d'+LV); await p.waitForTimeout(300);
     await p.screenshot({ path: C.OUT + `lv-${LV}-${n}-how.png` });
-    await p.click('#startBtn'); await p.waitForFunction(() => mode === 'intro', null, { timeout: 20000 }); await p.click('#skipBtn'); await p.waitForFunction(() => mode === 'play', null, { timeout: 20000 });
+    await p.click('#startBtn'); await p.waitForFunction(() => mode === 'intro', null, { timeout: 20000 }); await p.evaluate(() => startSong());   // test shortcut past the opening await p.waitForFunction(() => mode === 'play', null, { timeout: 20000 });
     const info = await p.evaluate(() => [DIFF, PAR, S.notes.length]);
     await p.evaluate(() => { setInterval(() => { const t = songTime(); for (const n of S.notes) if (!n.judged && Math.abs(n.t - t) < 0.012) press(n.lane === 2 ? 0 : n.lane, performance.now()); }, 2); });
     await p.evaluate(() => { S.startAt -= (54 - songTime()); }); await p.waitForTimeout(3500);
