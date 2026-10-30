@@ -23,10 +23,12 @@ src = src.replace('/*@include map.js*/', open(os.path.join(ROOT, 'game', 'map.js
 chart = json.load(open(os.path.join(SONG, 'chart.json')))
 album = json.load(open(os.path.join(ALBUM_DIR, 'album.json')))
 cover = 'data:image/jpeg;base64,' + base64.b64encode(open(os.path.join(ALBUM_DIR, 'cover.jpg'), 'rb').read()).decode()
+label = 'data:image/jpeg;base64,' + base64.b64encode(open(os.path.join(ALBUM_DIR, 'label.jpg'), 'rb').read()).decode()   # the real record label
 body = (src.replace('__CHART__', json.dumps(chart, separators=(',', ':')))
            .replace('__ALBUM__', json.dumps(album, separators=(',', ':')))
-           .replace('__COVER__', cover))
-for k in ['__CHART__', '__ALBUM__', '__COVER__', '@include']: assert k not in body, k
+           .replace('__COVER__', cover)
+           .replace('__LABEL__', label))
+for k in ['__CHART__', '__ALBUM__', '__COVER__', '__LABEL__', '@include']: assert k not in body, k
 
 def page(b, head_extra=''):
     k = b.index('</style>') + len('</style>')

@@ -25,14 +25,7 @@ const C = require('./config');
     await hold(true); await p.waitForTimeout(500); await shot('walking'); await p.waitForFunction(() => S.sc.ph === 'talk', null, { timeout: 8000 }); await hold(false);
     await shot('talk1', 1200);
     for (let i = 0; i < 8 && await p.evaluate(() => S.sc.ph === 'talk'); i++) { await tap(); await p.waitForTimeout(250); if (i === 2) await shot('talk2'); }
-    await shot('enter', 900); await p.waitForFunction(() => S.sc.ph === 'face', null, { timeout: 8000 });
-    await shot('face', 1500);
-    for (let i = 0; i < 10 && await p.evaluate(() => S.sc.ph === 'face'); i++) { await tap(); await p.waitForTimeout(250); }
-    await shot('push0', 600);
-    for (let i = 0; i < 5; i++) { await tap(); await p.waitForTimeout(90); } await shot('push1');
-    for (let i = 0; i < 12 && await p.evaluate(() => S.sc.spin < 0); i++) { await tap(); await p.waitForTimeout(90); }
-    await shot('spin', 350); await p.waitForFunction(() => S.sc.ph === 'walk2', null, { timeout: 8000 }); await shot('walk2', 300);
-    await hold(true); await p.waitForFunction(() => S.sc.ph === 'end', null, { timeout: 8000 }); await hold(false); await shot('end', 1300);
+    await p.waitForFunction(() => S.sc.ph === 'end', null, { timeout: 8000 }); await shot('end', 1300);
     for (let i = 0; i < 6 && await p.evaluate(() => S.sc.ph === 'end'); i++) { await tap(); await p.waitForTimeout(250); }
     // the stranger walks in and hands over the album
     await shot('stranger', 900); await p.waitForFunction(() => S.sc.ph === 'gift', null, { timeout: 10000 });

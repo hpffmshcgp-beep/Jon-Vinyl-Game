@@ -4,7 +4,7 @@ A fan-made, old-Hollywood rhythm picture set to Jon Vinyl's music. Unofficial �
 
 **The story.** *Prologue — Star-Crossed:* Jon meets her on an ocean liner, a crowd sweeps her away, and a faceless stranger
 in the casino doorway tells him she can't be with him. Jon chases her across the ship on the beat and wins her back at the
-bow (getting past Sterling on the way). Then the stranger returns with a gift: the album *Lost in You*. Jon slides the
+bow. Then the stranger returns with a gift: the album *Lost in You*. Jon slides the
 record out, it starts to spin, and it pulls him in. *The record:* a 3D map of the vinyl, one ring of grooves per song,
 only the next ring revealed. Three stars on every song brings him back to life; the Outro is the escape.
 
@@ -14,14 +14,14 @@ only the next ring revealed. Three stars on every song brings him back to life; 
 - **Phone:** tap the **left** side for stars (snare and hi-hats), the **right** side for the kick drum.
 - **Computer:** left hand **A S D F / ←**, right hand **J K L ; / →**.
 - Five levels, like Beat Saber: Easy, Normal, Hard, Expert, Expert+.
-- Hit enough of the song on time to reach her at the bow. Then: walk to her, talk, and get past Sterling.
+- Hit enough of the song on time to reach her at the bow. Then walk to her, talk, and see what the stranger brings.
 
 ## Project layout
 | Path | What it is |
 |---|---|
 | `game/src.html` | The whole game: code, drawing, audio, story. `__CHART__`, `__ALBUM__`, `__COVER__` are filled in at build time. |
 | `game/map.js` | The 3D record map (Three.js), pulled into the page by the build. |
-| `album/lost-in-you/` | `album.json` (track list, filled in as songs arrive) and `cover.jpg`. |
+| `album/lost-in-you/` | `album.json` (tracklist and song lengths), `cover.jpg`, and `label.jpg` (the real record label). |
 | `vendor/three.module.min.js` | Three.js 0.169.0 (MIT), shipped next to the page and embedded in the single-file build. |
 | `songs/star-crossed/chart.json` | Tempo, story timings and the five difficulty charts. |
 | `songs/star-crossed/songplay.mp3`, `below.mp3` | The song, and the muffled band heard on the title screen. |

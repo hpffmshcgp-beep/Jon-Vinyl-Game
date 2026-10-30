@@ -4,8 +4,8 @@
    Jon is the same painted figure as in the film, drawn onto a billboard every frame (paper-cut-out style). */
 const MAP = { ready: false, building: null };
 const REC = { R: 10, rOut: 9.55, rIn: 3.75, label: 3.3, top: 0.15 };
-const bandW = () => (REC.rOut - REC.rIn) / ALBUM.tracks.length;
-const bandMid = i => REC.rOut - (i + 0.5)*bandW();
+const edgeR = i => REC.rOut - albumEdges()[i]*(REC.rOut - REC.rIn);          // radius where track i begins (i = N: the run-out)
+const bandMid = i => (edgeR(Math.min(i, ALBUM.tracks.length - 1)) + edgeR(Math.min(i + 1, ALBUM.tracks.length)))/2;
 const nodeAng = i => 0.55 - i*0.82;                               // each stop sits a little further round the spiral
 const spiralAt = (i, k) => { const r = bandMid(i) + (bandMid(i + 1) - bandMid(i))*k, a = nodeAng(i) + (nodeAng(i + 1) - nodeAng(i))*k; return [r*Math.cos(a), r*Math.sin(a)]; };
 let THREE_MOD = null;
@@ -47,12 +47,13 @@ async function buildMap(){
 
   // ---- the record ----
   const N = ALBUM.tracks.length, W2 = 2048, px = r => r/REC.R*(W2/2);
+  const gaps = []; for (let i = 1; i < N; i++) gaps.push(edgeR(i));            // the smooth bands between songs
   const grooves = (x, w, h, bump) => {
     x.fillStyle = bump ? '#000' : '#0a0a0c'; x.fillRect(0, 0, w, h);
     const cx = w/2, cy = h/2;
     for (let rr = px(REC.rIn - 0.25); rr < px(REC.rOut + 0.18); rr += 1.6) {            // fine spiral grooves
-      const r = rr/(W2/2)*REC.R, bi = Math.floor((REC.rOut - r)/bandW());
-      const gap = bi >= 0 && bi < N && Math.abs(((REC.rOut - r)/bandW()) - Math.round((REC.rOut - r)/bandW())) < 0.07 && r < REC.rOut - 0.05 && r > REC.rIn + 0.05;
+      const r = rr/(W2/2)*REC.R;
+      const gap = gaps.some(g0 => Math.abs(r - g0) < 0.05);
       if (gap) continue;                                                                     // the smooth gap between two songs
       const v = 0.5 + 0.5*Math.sin(rr*2.1) + (Math.random() - 0.5)*0.25;
       x.strokeStyle = bump ? `rgba(255,255,255,${0.35 + v*0.4})` : `rgba(60,58,66,${0.25 + v*0.35})`;
@@ -77,15 +78,11 @@ async function buildMap(){
   sheen.rotation.x = -Math.PI/2; sheen.position.y = REC.top + 0.012; scene.add(sheen);
 
   // ---- the label: the album cover ----
-  const cover = await new Promise(res => { const im = new Image(); im.onload = () => res(im); im.onerror = () => res(null); im.src = COVER_SRC; });
-  const labelTex = canvasTex(T, 1024, 1024, (x, w, h) => {
-    x.save(); x.beginPath(); x.arc(w/2, h/2, w/2, 0, 7); x.clip();
-    if (cover) { const s = w*1.18; x.drawImage(cover, (w - s)/2, (h - s)/2 + w*0.04, s, s); } else { x.fillStyle = '#d9934d'; x.fillRect(0, 0, w, h); }
-    x.restore();
-    x.strokeStyle = 'rgba(40,22,10,.55)'; x.lineWidth = 6; x.beginPath(); x.arc(w/2, h/2, w/2 - 6, 0, 7); x.stroke();
-    x.fillStyle = 'rgba(40,22,10,.75)'; x.font = '600 38px Georgia, serif'; x.textAlign = 'center';
-    const txt = 'JON VINYL  ·  LOST IN YOU  ·  2021  ·  SIDE A  ·  ', r = w/2 - 40;
-    for (let i = 0; i < txt.length; i++) { const a = -Math.PI/2 + i/txt.length*Math.PI*2; x.save(); x.translate(w/2 + Math.cos(a)*r, h/2 + Math.sin(a)*r); x.rotate(a + Math.PI/2); x.fillText(txt[i], 0, 0); x.restore(); }
+  const labelImg = await new Promise(res => { const im = new Image(); im.onload = () => res(im); im.onerror = () => res(null); im.src = LABEL_SRC; });
+  const labelTex = canvasTex(T, 1024, 1024, (x, w, h) => {       // the real label from the pressing, edge to edge
+    x.fillStyle = '#e8a64e'; x.fillRect(0, 0, w, h);
+    if (labelImg) x.drawImage(labelImg, 0, 0, w, h);
+    const sh = x.createRadialGradient(w/2, h/2, w*0.4, w/2, h/2, w/2); sh.addColorStop(0, 'rgba(0,0,0,0)'); sh.addColorStop(1, 'rgba(60,30,0,.18)'); x.fillStyle = sh; x.fillRect(0, 0, w, h);
   });
   const label = new T.Mesh(new T.CircleGeometry(REC.label, 96), new T.MeshStandardMaterial({ map: labelTex, roughness: 0.75 }));
   label.rotation.x = -Math.PI/2; label.position.y = REC.top + 0.004; label.receiveShadow = true; scene.add(label);
@@ -95,7 +92,7 @@ async function buildMap(){
   // ---- songs not yet reached: their bands sit under a veil of shadow ----
   const veils = [];
   for (let i = 0; i < N; i++) {
-    const v = new T.Mesh(new T.RingGeometry(REC.rOut - (i + 1)*bandW() + 0.01, REC.rOut - i*bandW() - 0.01, 160), new T.MeshBasicMaterial({ color: '#0c0710', transparent: true, opacity: 0.9, depthWrite: false }));
+    const v = new T.Mesh(new T.RingGeometry(edgeR(i + 1) + 0.01, edgeR(i) - 0.01, 160), new T.MeshBasicMaterial({ color: '#0c0710', transparent: true, opacity: 0.9, depthWrite: false }));
     v.rotation.x = -Math.PI/2; v.position.y = REC.top + 0.02 + i*0.0004; scene.add(v); veils.push(v);
   }
 
@@ -144,9 +141,9 @@ async function buildMap(){
   const dustGeo = new T.BufferGeometry(); dustGeo.setAttribute('position', new T.BufferAttribute(dp, 3));
   const dust = new T.Points(dustGeo, new T.PointsMaterial({ map: dotTex, size: 0.12, transparent: true, depthWrite: false, blending: T.AdditiveBlending, opacity: 0.55, color: '#ffcf96' })); scene.add(dust);
   const heartTex = canvasTex(T, 256, 256, (x) => { const real = g; g = x; heart(128, 150, 190, PAL.wine, PAL.gold); g = real; });
-  const goal = new T.Sprite(new T.SpriteMaterial({ map: heartTex, transparent: true, depthWrite: false, opacity: 0.0 })); goal.position.set(0, 2.4, 0); goal.scale.set(1.3, 1.3, 1); scene.add(goal);
+  const goal = new T.Sprite(new T.SpriteMaterial({ map: heartTex, transparent: true, depthWrite: false, opacity: 0.0 })); goal.position.set(0, 3.6, 0); goal.scale.set(1.0, 1.0, 1);   // high enough to leave the label readable scene.add(goal);
 
-  Object.assign(MAP, { T, R, scene, cam, disc, sheen, veils, path, pathPts, stops, arm, beam, needleTo, jon, jc, jTex, blob, dust, goal, glow, ready: true,
+  Object.assign(MAP, { T, R, scene, cam, disc, label, sheen, veils, path, pathPts, stops, arm, beam, needleTo, jon, jc, jTex, blob, dust, goal, glow, ready: true,
     camPos: new T.Vector3(0, 32, 0.1), camLook: new T.Vector3(0, 0, 0), at: 0, walk: null, fall: 0, armA: needleTo(REC.rOut - 0.3) });
   addEventListener('resize', () => { if (!MAP.ready) return; MAP.R.setSize(innerWidth, innerHeight, false); MAP.cam.aspect = innerWidth/innerHeight; MAP.cam.updateProjectionMatrix(); });
 }
@@ -174,7 +171,7 @@ function refreshMap(instant){
   MAP.stops.forEach((s, i) => { s.grp.visible = i <= at; const st = PROG.stars[ALBUM.tracks[i].n] || 0; if (s.stars !== st) { s.stars = st; s.tag.material.map = tagFor(i); s.tag.material.needsUpdate = true; } });
   const vis = MAP.pathPts.filter(p => p.i < at).length; MAP.path.geometry.setDrawRange(0, vis);
   if (instant) MAP.at = at;
-  MAP.armTarget = MAP.needleTo(REC.rOut - at*bandW() - 0.3);
+  MAP.armTarget = MAP.needleTo(edgeR(at) - 0.3);
   showStop(at);
 }
 function mapFrame(now){
@@ -213,11 +210,14 @@ function mapFrame(now){
   cam.aspect = (innerWidth + 2*ox)/(innerHeight + 2*oy); cam.updateProjectionMatrix();
   // the sheen follows the camera, veils lift as songs are beaten, the arm swings in, dust drifts
   MAP.sheen.rotation.z = Math.atan2(cam.position.z, cam.position.x) + Math.PI/2;
+  // the label turns to read upright toward the camera (the grooves look the same all the way round, so the record seems to turn)
+  let want2 = Math.PI/2 - Math.atan2(cam.position.z, cam.position.x), d2 = want2 - MAP.label.rotation.z; d2 = Math.atan2(Math.sin(d2), Math.cos(d2));
+  MAP.label.rotation.z += d2*Math.min(1, dt*2.5);
   MAP.veils.forEach(v => { const tg = v.userData.target ?? 0.9; v.material.opacity += (tg - v.material.opacity)*Math.min(1, dt*1.5); v.visible = v.material.opacity > 0.01; });
   MAP.armA += ((MAP.armTarget ?? MAP.armA) - MAP.armA)*Math.min(1, dt*1.2); MAP.arm.rotation.y = MAP.armA; MAP.beam.rotation.z = -0.025 + Math.sin(now*0.8)*0.006;
   MAP.stops.forEach((st, i) => { st.ring.scale.setScalar(1 + 0.08*Math.sin(now*3 + i)); st.ring.material.opacity = i === MAP.at && !MAP.walk ? 0.85 : 0.35; st.tag.position.y = 2.3 + Math.sin(now*2 + i)*0.05; });
   const p = MAP.dust.geometry.attributes.position; for (let i = 0; i < p.count; i++) { let y = p.getY(i) + dt*0.18; if (y > 9) y = 0; p.setY(i, y); } p.needsUpdate = true;
-  MAP.goal.material.opacity = 0.55 + 0.25*Math.sin(now*2); MAP.goal.position.y = 2.4 + Math.sin(now*1.3)*0.15; MAP.glow.intensity = 12 + 3*Math.sin(now*2);
+  MAP.goal.material.opacity = 0.55 + 0.25*Math.sin(now*2); MAP.goal.position.y = 3.6 + Math.sin(now*1.3)*0.15; MAP.glow.intensity = 12 + 3*Math.sin(now*2);
   MAP.R.render(MAP.scene, cam);
 }
 async function enterMap(first){

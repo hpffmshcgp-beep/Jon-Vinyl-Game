@@ -268,11 +268,15 @@ const CHART = __CHART__;
 const ALBUM = __ALBUM__;                     // Lost in You: 7 songs and the Outro (album/lost-in-you/album.json)
 const COVER_SRC = '__COVER__';
 const COVER_IMG = new Image(); COVER_IMG.src = COVER_SRC;
+const LABEL_SRC = '__LABEL__';                 // the record's real label: orange, signature, tracklist
+const LABEL_IMG = new Image(); LABEL_IMG.src = LABEL_SRC;
 // progress through the record: the prologue, and the stars on each album song (any difficulty)
 const PROG_KEY = 'jv-progress';
 let PROG = { prologue: false, stars: {}, best: {} };
 try { const p = JSON.parse(localStorage.getItem(PROG_KEY) || 'null'); if (p) PROG = Object.assign(PROG, p); } catch(e){}
 function saveProg(){ try { localStorage.setItem(PROG_KEY, JSON.stringify(PROG)); } catch(e){} }
+// where each song starts and ends across the grooves (0 = outer edge, 1 = run-out), by length, like a real record
+function albumEdges(){ const sec = ALBUM.tracks.map(t => t.seconds || 120), tot = sec.reduce((a, b) => a + b, 0); let c = 0; return [0, ...sec.map(x => (c += x)/tot)]; }
 const starsFor = (acc, cleared) => !cleared ? 0 : acc >= .95 ? 3 : acc >= .85 ? 2 : 1;
 const BEAT = 60 / CHART.bpm, PH = CHART.phase, BAR = BEAT * 4;
 const PAL = { cream:'#f3e6c8', gold:'#e6b85c', gold2:'#b98a3a', rose:'#e8746a', wine:'#8e2335', powder:'#a8c6df', mohair:'#f1e7c6', coral:'#ee5a5f', denim:'#9fb4bd', denimDk:'#7d93a0', skin:'#4b2b1d', skinHi:'#62392a', hair:'#140c08', ink:'#0a0b1c', out:'#1a0e12' };
@@ -571,7 +575,7 @@ addEventListener('keydown', e => {
     if (L0) HOLD.kl = true; if (R0) HOLD.kr = true;
     const tapKey = L0 || R0 || e.code === 'Space' || e.code === 'Enter';
     if (tapKey) e.preventDefault();
-    if (!e.repeat && tapKey && (S.sc.dlg || S.sc.ph === 'push')) sceneTap();
+    if (!e.repeat && tapKey && (S.sc.dlg || S.sc.ph === 'album')) sceneTap();
     return;
   }
   if (e.repeat) return;
@@ -1060,96 +1064,6 @@ function drawHer(x, gy, h, dir, now, holdHand){
   handP(front); g.fillStyle = skin[1]; g.fill();
   g.restore();
 }
-/* ---------- Sterling, the rival: slicked-back hair, pencil moustache, black tailcoat ---------- */
-function drawRival(x, gy, h, dir, st){
-  const s = h/100, TAU = Math.PI*2, OUT = PAL.out;
-  const walk = st.walk ? 1 : 0, ph = st.ph || 0, sit = st.sit || 0, spin = st.spin || 0;
-  g.save(); g.translate(x, gy); g.scale(s*dir, s);
-  const shg = g.createRadialGradient(0, 0, 0, 0, 0, 24); shg.addColorStop(0, 'rgba(0,0,0,.45)'); shg.addColorStop(1, 'rgba(0,0,0,0)');
-  g.save(); g.scale(1 + sit*0.8, .16); g.fillStyle = shg; g.beginPath(); g.arc(sit*14, 0, 24, 0, 7); g.fill(); g.restore();
-  const hip = [0, -50 + sit*37];
-  const leg = off => {
-    const q = (ph + off)*TAU;
-    let th = Math.sin(q)*0.42*walk + (walk ? 0 : off ? -0.06 : 0.08), kn = walk ? Math.max(0, Math.sin(q + 1.3))*0.75 + 0.05 : 0.05;
-    if (spin) { th = Math.sin(st.t*22 + off*3)*0.5; kn = 0.5; }
-    if (sit) { th = th*(1 - sit) + (1.38 + off*0.3)*sit; kn = kn*(1 - sit) + (0.2 + off*0.5)*sit; }
-    const k = [hip[0] + Math.sin(th)*24, hip[1] + Math.cos(th)*24], a = [k[0] + Math.sin(th - kn)*23.5, k[1] + Math.cos(th - kn)*23.5];
-    return { k, a, shin: th - kn };
-  };
-  const LF = leg(0.5), LN = leg(0);
-  const bob = -3.4 - Math.max(LF.a[1], LN.a[1]) + (spin ? -Math.abs(Math.sin(st.t*11))*4 : 0);
-  g.translate(0, bob);
-  const lean = (st.lean || 0) - sit*0.32 + (walk ? 0.06 : 0);
-  const arm = (far) => {
-    const q = (ph + (far ? 0.5 : 0))*TAU;
-    let ua = walk ? -Math.sin(q)*0.5 : far ? 0.05 : -0.05, fa = ua + (walk ? 0.4 : 0.15);
-    if (st.point && !far) { ua = 1.25; fa = 1.5; }
-    if (st.point && far) { ua = -0.55; fa = 0.95; }                     // hand on the hip
-    if (st.brace) { ua = far ? 0.7 : 0.85; fa = ua + 0.9; }            // bracing against the shove
-    if (spin) { ua = 2.4 + Math.sin(st.t*18 + (far ? 2 : 0))*0.7; fa = ua + 0.4; }
-    if (sit) { ua = ua*(1 - sit) - 0.75*sit; fa = fa*(1 - sit) - 0.2*sit; }   // propped on his hands
-    const sx = far ? -0.8 : 1.2, sy = -81.5, ex = sx + Math.sin(ua)*15.5, ey = sy + Math.cos(ua)*15.5;
-    return { sx, sy, ex, ey, hx: ex + Math.sin(fa)*13.5, hy: ey + Math.cos(fa)*13.5, fa };
-  };
-  const AF = arm(true), AN = arm(false);
-  const torso = fn => () => { g.save(); g.translate(hip[0], hip[1]); g.rotate(lean); g.translate(0, 50); fn(); g.restore(); };   // body drawn around a hip at y = -50
-  const shoe = P => () => { g.save(); g.translate(P.a[0], P.a[1]); g.rotate(walk && !sit ? -P.shin*0.5 : -P.shin*0.95); g.beginPath();
-    g.moveTo(-4.2, -2.6); g.lineTo(3, -3); g.quadraticCurveTo(9.8, -2.4, 10.2, 1.4); g.lineTo(10.2, 3.4); g.lineTo(-4.8, 3.4); g.quadraticCurveTo(-5.6, 0, -4.2, -2.6); g.closePath(); g.restore(); };
-  const legP = (P, far) => () => { const d = [P.a[0] - P.k[0], P.a[1] - P.k[1]], l = Math.hypot(d[0], d[1]) || 1;
-    limbPath([hip[0] + (far ? -1.4 : 1.2), hip[1] + 1], P.k, [P.a[0] - d[0]/l*2.5, P.a[1] - d[1]/l*2.5], 12, 9.8, 9, 1.8); };
-  const seat = torso(() => { g.beginPath(); g.moveTo(-7, -55); g.lineTo(8, -55); g.quadraticCurveTo(9, -50, 8, -45); g.lineTo(-5.6, -44.4); g.quadraticCurveTo(-7.6, -46, -7.4, -50); g.closePath(); });
-  const tails = torso(() => { const k = 1 - sit*0.75; g.beginPath(); g.moveTo(-8.6, -56); g.quadraticCurveTo(-10.4, -42*k - 56*(1-k), -9.6, -56 + 28*k); g.lineTo(-4.8, -56 + 25*k); g.quadraticCurveTo(-3.8, -50, -2.6, -55); g.closePath(); });
-  const jacket = torso(() => { g.beginPath(); g.moveTo(-8.2, -51.5); g.lineTo(8.6, -51.5);
-    g.bezierCurveTo(9.8, -59, 10.4, -70, 9.4, -78.5); g.quadraticCurveTo(8.2, -85.4, 4.6, -87.6);
-    g.quadraticCurveTo(-1, -89.8, -6.8, -86.6); g.quadraticCurveTo(-10.2, -80, -9.6, -68); g.bezierCurveTo(-9.2, -60, -8.8, -55, -8.2, -51.5); g.closePath(); });
-  const shirt = torso(() => { g.beginPath(); g.moveTo(4.6, -87.2); g.quadraticCurveTo(8.8, -85.6, 9.3, -78.4); g.bezierCurveTo(10.1, -70, 9.7, -60, 8.7, -52.5);
-    g.lineTo(6.6, -52.5); g.bezierCurveTo(7.4, -62, 7.6, -72, 6.6, -80); g.quadraticCurveTo(6, -84.6, 4.6, -87.2); g.closePath(); });
-  const lapel = torso(() => { g.beginPath(); g.moveTo(4.4, -86.8); g.quadraticCurveTo(6, -82, 6.6, -75); g.lineTo(6.8, -61); g.lineTo(4.2, -67); g.quadraticCurveTo(3.4, -78, 2.6, -85.4); g.closePath(); });
-  const neck = torso(() => capsule(2, -84.6, 3.2, -90.8, 6.4, 5.8));
-  const head = torso(() => { g.save(); g.translate(4.2, -96); g.beginPath(); g.moveTo(-3, 6.6); g.bezierCurveTo(-7, 4.6, -7.6, -4, -3.9, -7.2);
-    g.bezierCurveTo(0, -9.8, 5, -8.8, 6.3, -4.8); g.quadraticCurveTo(6.9, -2.8, 6.6, -1.3); g.quadraticCurveTo(7.4, 0.2, 9.1, 2.7);
-    g.quadraticCurveTo(8.6, 3.5, 7.1, 3.4); g.lineTo(7.1, 4.7); g.quadraticCurveTo(7.6, 5.5, 7.2, 6.3); g.quadraticCurveTo(7.6, 8.4, 5.1, 8.8);
-    g.quadraticCurveTo(1.6, 8.9, -0.6, 7.2); g.closePath(); g.restore(); });
-  const hair = torso(() => { g.save(); g.translate(4.2, -96); g.beginPath(); g.moveTo(6.4, -4.6); g.quadraticCurveTo(7.2, -8.8, 2.6, -10.6);
-    g.bezierCurveTo(-2.2, -11.8, -7.2, -9.2, -7.6, -4); g.quadraticCurveTo(-7.8, 0, -6.2, 3.1); g.lineTo(-4.2, 2.6);
-    g.bezierCurveTo(-4.8, -1, -3.2, -3.8, 0.4, -4.6); g.quadraticCurveTo(3.6, -5, 6.4, -4.6); g.closePath(); g.restore(); });
-  const armP = A => () => limbPath([A.sx, A.sy], [A.ex, A.ey], [A.hx, A.hy], 7.6, 6.2, 5.4, 'round');
-  const handP = A => () => { g.save(); g.translate(A.hx, A.hy); g.rotate(-A.fa); g.beginPath(); g.ellipse(0, 3.2, 2.5, 3.4, 0, 0, 7); g.restore(); };
-  const armT = A => torso(armP(A)), handT = A => torso(handP(A));
-  const ink = () => { g.lineJoin = 'round'; g.lineCap = 'round'; g.lineWidth = 2.3; g.strokeStyle = OUT; g.stroke(); g.fillStyle = OUT; g.fill(); };
-  const order = [[armT(AF), 'arm'], [handT(AF), 'hand'], [tails, 'tails'], [shoe(LF), 'shoe'], [legP(LF, true), 'legF'], [shoe(LN), 'shoe'], [legP(LN, false), 'leg'],
-    [seat, 'leg'], [jacket, 'jacket'], [shirt, 'shirt'], [lapel, 'lapel'], [neck, 'skin'], [head, 'head'], [hair, 'hair'], [armT(AN), 'arm'], [handT(AN), 'hand']];
-  order.forEach(([p]) => { p(); ink(); });
-  const SK = ['#ecc8a6', '#d3a37f', '#a97856'];
-  const jg = g.createLinearGradient(-10, 0, 10, 0); jg.addColorStop(0, '#0d0b12'); jg.addColorStop(.6, '#1d1926'); jg.addColorStop(1, '#2d2738');
-  const FILL = { arm: jg, legF: '#121019', leg: '#18151f', tails: '#0d0b12', jacket: jg, shirt: '#f2ead8', lapel: '#302a3c', skin: SK[1], hair: '#2a1b12', shoe: '#08070b' };
-  order.forEach(([p, kind]) => {
-    p();
-    if (kind === 'hand') { g.fillStyle = SK[1]; g.fill(); return; }
-    if (kind === 'head') { const hg = g.createRadialGradient(9 + 4.2, -97, .5, 6, -96, 10); hg.addColorStop(0, SK[0]); hg.addColorStop(.6, SK[1]); hg.addColorStop(1, SK[2]); g.fillStyle = hg; g.fill(); return; }
-    g.fillStyle = FILL[kind]; g.fill();
-    if (kind === 'jacket') { p(); rimStroke(-11, -3, 1.3, .55); }
-    if (kind === 'shoe') { g.strokeStyle = 'rgba(255,255,255,.28)'; g.lineWidth = .8; g.stroke(); }
-    if (kind === 'leg') { p(); g.strokeStyle = 'rgba(0,0,0,.4)'; g.lineWidth = .7; g.stroke(); }
-  });
-  torso(() => {
-    // satin stripe, bow tie, red carnation, white cuffs
-    g.fillStyle = '#c2283a'; g.beginPath(); g.arc(5.4, -79.5, 1.5, 0, 7); g.fill();
-    g.fillStyle = '#0a0910'; g.beginPath(); g.moveTo(8.2, -85); g.lineTo(6, -86.9); g.lineTo(6, -83.1); g.closePath(); g.moveTo(8.2, -85); g.lineTo(10.2, -86.9); g.lineTo(10.2, -83.1); g.closePath(); g.fill();
-    g.fillStyle = 'rgba(242,234,216,.9)'; [7.8, 7.9].forEach((cx, i) => { g.beginPath(); g.arc(cx + 0.3*i, -73 + i*7, .45, 0, 7); g.fill(); });
-    [AF, AN].forEach(A => { const dx = A.hx - A.ex, dy = A.hy - A.ey, l = Math.hypot(dx, dy) || 1; capsule(A.hx - dx/l*3.4, A.hy - dy/l*3.4, A.hx - dx/l*1.2, A.hy - dy/l*1.2, 5.2, 5); g.fillStyle = '#f2ead8'; g.fill(); });
-    g.save(); g.translate(4.2, -96);
-    g.fillStyle = SK[2]; g.beginPath(); g.ellipse(-1.6, -0.2, 1.3, 2, 0.1, 0, 7); g.fill();                                        // ear
-    g.fillStyle = '#1a0d0a'; g.beginPath(); g.ellipse(4, -1.4, .7, .45, 0, 0, 7); g.fill();                                     // eye
-    g.strokeStyle = '#1e130c'; g.lineCap = 'round'; g.lineWidth = .95; g.beginPath(); g.moveTo(2.8, -3.6); g.lineTo(5.9, -2.3); g.stroke(); // a scowl
-    g.lineWidth = .9; g.beginPath(); g.moveTo(5.5, 4); g.quadraticCurveTo(6.8, 3.7, 7.7, 3.9); g.quadraticCurveTo(8.2, 3.7, 8.3, 3.3); g.stroke(); // pencil moustache
-    g.lineWidth = .55; g.strokeStyle = '#7a3a30'; g.beginPath(); g.moveTo(5.9, 5.5); g.quadraticCurveTo(6.5, 5.6, 7.1, 5.1); g.stroke();   // smirk
-    g.strokeStyle = 'rgba(230,200,160,.38)'; g.lineWidth = .5; for (let i = 0; i < 4; i++) { g.beginPath(); g.moveTo(5.6 - i*0.4, -5.2 - i*1.2); g.quadraticCurveTo(0, -8.6 - i*0.6, -6 + i*0.5, -4.4 - i*1.1); g.stroke(); } // comb lines
-    if (st.dizzy) for (let i = 0; i < 3; i++) { const a = st.t*4 + i*TAU/3; star(Math.cos(a)*9, -15 + Math.sin(a)*2.6, 2.4, a, '#ffe29a', PAL.gold2); }
-    g.restore();
-  })();
-  g.restore();
-}
 /* ---------- the stranger: long coat, fedora, and no face at all ---------- */
 function drawFigure(x, gy, h, dir, st){
   const s = h/100, TAU = Math.PI*2, OUT = '#050407', walk = st.walk ? 1 : 0, ph = st.ph || 0, now = st.now || 0;
@@ -1211,14 +1125,16 @@ function vinyl2D(cx, cy, r, rot, glow){
   g.save(); g.translate(cx, cy);
   if (glow) { const gg = g.createRadialGradient(0, 0, r*0.7, 0, 0, r*1.6); gg.addColorStop(0, `rgba(255,190,120,${0.55*glow})`); gg.addColorStop(1, 'rgba(255,190,120,0)'); g.fillStyle = gg; g.beginPath(); g.arc(0, 0, r*1.6, 0, 7); g.fill(); }
   g.fillStyle = '#0b0a0d'; g.beginPath(); g.arc(0, 0, r, 0, 7); g.fill();
-  for (let i = 0; i < 30; i++) { const rr = r*(0.38 + 0.6*i/30); g.strokeStyle = `rgba(90,86,100,${0.16 + (i % 4 === 0 ? 0.12 : 0)})`; g.lineWidth = Math.max(0.5, r*0.005); g.beginPath(); g.arc(0, 0, rr, 0, 7); g.stroke(); }
+  for (let i = 0; i < 64; i++) { const rr = r*(0.40 + 0.555*i/64); g.strokeStyle = `rgba(90,86,100,${0.12 + (i % 3 === 0 ? 0.1 : 0)})`; g.lineWidth = Math.max(0.5, r*0.004); g.beginPath(); g.arc(0, 0, rr, 0, 7); g.stroke(); }
+  albumEdges().slice(1, -1).forEach(f => { const rr = r*(0.955 - f*0.555);   // the smooth gaps between songs, like the real pressing
+    g.strokeStyle = '#050407'; g.lineWidth = Math.max(1, r*0.012); g.beginPath(); g.arc(0, 0, rr, 0, 7); g.stroke();
+    g.strokeStyle = 'rgba(200,190,210,.16)'; g.lineWidth = Math.max(0.5, r*0.003); g.beginPath(); g.arc(0, 0, rr - r*0.005, 0, 7); g.stroke(); });
   for (const a0 of [-0.7, -0.7 + Math.PI]) { const sg = g.createRadialGradient(0, 0, r*0.36, 0, 0, r); sg.addColorStop(0, 'rgba(255,235,210,0)'); sg.addColorStop(.6, 'rgba(255,235,210,.24)'); sg.addColorStop(1, 'rgba(255,235,210,.05)');
     g.fillStyle = sg; g.beginPath(); g.moveTo(0, 0); g.arc(0, 0, r, a0 - 0.22, a0 + 0.22); g.closePath(); g.fill(); }        // the light stays put while the record turns
   g.rotate(rot);
-  g.save(); g.beginPath(); g.arc(0, 0, r*0.34, 0, 7); g.clip();
-  if (COVER_IMG.naturalWidth) { const sz = r*0.34*2*1.18; g.drawImage(COVER_IMG, -sz/2, -sz/2 + r*0.02, sz, sz); } else { g.fillStyle = '#d9934d'; g.fill(); }
+  g.save(); g.beginPath(); g.arc(0, 0, r*0.33, 0, 7); g.clip();
+  if (LABEL_IMG.naturalWidth) { const sz = r*0.33*2; g.drawImage(LABEL_IMG, -sz/2, -sz/2, sz, sz); } else { g.fillStyle = '#e8a64e'; g.fill(); }
   g.restore();
-  g.fillStyle = '#0b0a0d'; g.beginPath(); g.arc(0, 0, Math.max(1.5, r*0.025), 0, 7); g.fill();
   g.restore();
 }
 function sleeve2D(cx, cy, sz, rot = 0){
@@ -1900,10 +1816,9 @@ function ending(L, t, now, jonX, herX, won){
   }
 }
 /* ---------- the bow: a short scene you play when you catch her ----------
-   walk up to her (hold right) → talk (tap) → Sterling cuts in → push through him (tap fast) → walk to her → The End */
+   walk up to her (hold right) → talk and make up (tap) → the stranger brings a gift → slide the record out → pulled in */
 const LINES = {
   meet:  [['JON', 'You dropped this.'], ['HER', 'The queen of hearts. You crossed the whole ship just to give it back?'], ['JON', 'That, and I wanted to see you again.']],
-  rival: [['STERLING', 'Mind if I cut in?'], ['STERLING', 'She came aboard with me. You can’t have her, kid.'], ['JON', 'Watch me.']],
   end:   [['HER', 'Took you long enough.'], ['JON', 'Had to find the beat first.']],
   gift:  [['???', 'Touching. Truly.'], ['???', 'I did tell you. She can’t be with you.'], ['???', 'But no hard feelings. A gift, for the happy couple.'],
           ['JON', '“Lost in You”…?'], ['???', 'Go on. Give it a spin.']],
@@ -1913,8 +1828,8 @@ const HOLD = { kl:false, kr:false, ptr: new Map() };
 const holdSide = side => (side ? HOLD.kr : HOLD.kl) || [...HOLD.ptr.values()].includes(side);
 const walkInput = () => (holdSide(true) ? 1 : 0) - (holdSide(false) ? 1 : 0);
 function sceneStart(L, base){
-  S.sc = { ph:'walk', T:0, jon:(L.jx - base)/L.jh, jdir:1, wph:0, moving:false, her:0, herDir:1, riv:null, rph:0, rdir:1,
-           spin:-1, spinFrom:0, sit:0, meter:0, bumpT:-9, dlg:null, cardT:-1, metT:-1, endT:-1, stumbleT:-1, amb:false,
+  S.sc = { ph:'walk', T:0, jon:(L.jx - base)/L.jh, jdir:1, wph:0, moving:false, her:0, herDir:1,
+           dlg:null, cardT:-1, metT:-1, endT:-1, amb:false,
            fig:null, fph:0, figT:-1, offerT:-1, gotT:-1, slide:0, albumT:-1, spinT2:-1, pullT:-1 };
 }
 function say(lines, then, on){ S.sc.dlg = { lines, i:0, t0:S.sc.T, then, on }; if (on) on(0); }
@@ -1928,48 +1843,21 @@ function sceneTap(){
     else { d.i++; d.t0 = sc.T; if (d.i >= d.lines.length) { sc.dlg = null; if (d.then) d.then(); } else if (d.on) d.on(d.i); }
     if (ac) uiClick(); return true;
   }
-  if (sc.ph === 'push' && sc.spin < 0) { sc.meter = Math.min(1, sc.meter + 0.12); sc.bumpT = sc.T; return true; }
   if (sc.ph === 'album') { sc.slide = Math.min(1, sc.slide + 0.2); return true; }
   return false;
 }
 function sceneStep(L, dt, base){
   const sc = S.sc; sc.T += dt; const T = sc.T;
   const leftU = (L.jh*0.3 - base)/L.jh;
-  const bowU = ((L.hitX + (BOW_T - scrollTime(CUT.stop + CUT.stopDur + 1))*L.speed) - base)/L.jh;
-  const herBack = clamp(bowU - 0.16, 0.05, 0.32);
   const walkTo = (key, target, speed) => { const d = target - sc[key]; sc[key] += Math.sign(d)*Math.min(Math.abs(d), speed*dt); return Math.abs(target - sc[key]) < 1e-3; };
   sc.moving = false;
-  if (sc.ph === 'walk' || sc.ph === 'walk2') {
+  if (sc.ph === 'walk') {
     const v = sc.dlg ? 0 : walkInput();
     if (v) { sc.jon = clamp(sc.jon + v*1.25*dt, leftU, 9); sc.jdir = v; sc.moving = true; sc.wph += dt*1.5; }
     const goal = sc.her + SC_REACH;
-    if (sc.jon >= goal) {
-      sc.jon = goal; sc.jdir = 1; sc.moving = false;
-      if (sc.ph === 'walk') { sc.ph = 'talk'; sc.herDir = -1; sc.cardT = T; say(LINES.meet, () => { sc.ph = 'enter'; sc.riv = leftU - 0.9; }); }
-      else { sc.ph = 'end'; sc.herDir = 1; sc.metT = T; say(LINES.end, () => { sc.ph = 'stranger'; sc.fig = leftU - 0.7; sc.figT = sc.T; }); }
-    }
-  } else if (sc.ph === 'enter') {
-    // he strides in from the casino and cuts in between them; Jon is bumped back, she steps away to the rail
-    const target = SC_REACH - 0.06;
-    sc.rph += dt*1.7; const there = walkTo('riv', target, 1.5);
-    if (sc.stumbleT < 0 && sc.riv > sc.jon - 0.3) sc.stumbleT = T;
-    if (sc.stumbleT >= 0) { walkTo('jon', SC_REACH - 0.98, 2.4); walkTo('her', herBack, 0.7); }
-    if (there && T - sc.stumbleT > 0.7) { sc.rdir = -1; sc.ph = 'face'; say(LINES.rival, () => { sc.ph = 'push'; }); }
-  } else if (sc.ph === 'push') {
-    const home = SC_REACH - 0.06;
-    if (sc.spin < 0) {
-      // Jon squares up; every tap shoves him back toward the rail, and he leans back into it
-      if (sc.meter >= 1) { sc.spin = T; sc.spinFrom = sc.riv; scratch(); }
-      sc.meter = Math.max(0, sc.meter - dt*0.14);
-      sc.riv = home + sc.meter*0.24;
-      const contact = sc.riv - 0.46; sc.moving = Math.abs(sc.jon - contact) > 0.02; walkTo('jon', contact, 1.6); if (sc.moving) sc.wph += dt*1.5;
-    } else {
-      // he goes through: Sterling gets spun right off his feet, past Jon, and lands on the deck seeing stars
-      const k = clamp((T - sc.spin)/0.9, 0, 1);
-      sc.riv = sc.spinFrom + (leftU + 0.4 - sc.spinFrom)*ease(k);
-      sc.rdir = k < 1 ? (Math.floor((T - sc.spin)*12) % 2 ? 1 : -1) : 1;
-      sc.sit = clamp((T - sc.spin - 0.85)/0.25, 0, 1);
-      if (T - sc.spin > 1.5) { sc.ph = 'walk2'; sc.meter = 0; }
+    if (sc.jon >= goal) {   // he reaches her: the card, a few words, and they're together again
+      sc.jon = goal; sc.jdir = 1; sc.moving = false; sc.ph = 'talk'; sc.herDir = -1; sc.cardT = T;
+      say(LINES.meet, () => { sc.ph = 'end'; sc.herDir = 1; sc.metT = sc.T; say(LINES.end, () => { sc.ph = 'stranger'; sc.fig = leftU - 0.7; sc.figT = sc.T; }); });
     }
   } else if (sc.ph === 'stranger') {
     // a figure in a long coat walks out of the dark; they turn to face him
@@ -1989,7 +1877,7 @@ function sceneStep(L, dt, base){
 }
 function drawScene(L, now, base){
   const sc = S.sc, jh = L.jh, T = sc.T;
-  const herX = base + sc.her*jh, jonX = base + sc.jon*jh, rivX = sc.riv === null ? null : base + sc.riv*jh;
+  const herX = base + sc.her*jh, jonX = base + sc.jon*jh;
   const together = sc.ph === 'end' || sc.ph === 'stranger' || sc.ph === 'iris';
   const pullE = sc.pullT >= 0 ? T - sc.pullT : -1;
   if (pullE >= 0) {   // the record rises behind him, spinning faster and faster
@@ -2006,19 +1894,11 @@ function drawScene(L, now, base){
     const offer = sc.offerT < 0 ? 0 : sc.gotT < 0 ? ease((T - sc.offerT)/0.6) : 1 - ease((T - sc.gotT - 0.4)/0.6);
     figHand = drawFigure(base + sc.fig*jh, L.groundY, jh*1.02, 1, { walk: sc.ph === 'stranger', ph: sc.fph, now, offer, alpha: clamp((T - sc.figT)/0.8, 0, 1) });
   }
-  const rivalSt = { walk: sc.ph === 'enter' && sc.riv < SC_REACH - 0.07, ph: sc.rph, t: now, point: sc.ph === 'face', brace: sc.ph === 'push' && sc.spin < 0,
-    lean: sc.ph === 'push' && sc.spin < 0 ? -0.14 - sc.meter*0.16 - Math.max(0, 0.1 - (T - sc.bumpT))*1.2 : 0,
-    spin: sc.spin >= 0 && sc.sit === 0, sit: sc.sit, dizzy: sc.sit >= 1 };
-  const rivalFront = sc.ph === 'enter' || (sc.spin >= 0 && sc.sit < 1);
-  if (rivX !== null && !rivalFront) drawRival(rivX, L.groundY, jh*1.05, sc.rdir, rivalSt);
-  const pushing = sc.ph === 'push' && sc.spin < 0 && !sc.moving;
-  const stumble = sc.stumbleT >= 0 ? clamp(1 - (T - sc.stumbleT)/0.7, 0, 1) : 0;
   const pullK = pullE >= 1.0 ? ease((pullE - 1.0)/1.8) : 0;   // and pulls him in
   if (pullK > 0) { const cy = L.groundY - jh*0.62; g.save(); g.translate(jonX, cy); g.rotate(pullK*9); g.scale(Math.max(0.001, 1 - pullK), Math.max(0.001, 1 - pullK)); g.translate(-jonX, -(L.groundY - jh*0.5)); }
   const lens = pullK >= 1 ? { lensX: jonX, lensY: L.groundY - jh } : drawJon(jonX, L.groundY, jh, {
-    running: sc.moving, amp: 0.45, phase: sc.wph % 1, idle: now*0.8, jumpK: -1, kick: false, stumble, reach: 0, dir: sc.jdir,
-    push: pushing ? 1 + Math.max(0, 0.12 - (T - sc.bumpT))*2 : sc.spin >= 0 && T - sc.spin < 0.4 ? 1 : 0,
-    shades: true, glow: 0, holdHand: together, lookUp: together, smile: together || sc.ph === 'talk' || sc.ph === 'walk2' });
+    running: sc.moving, amp: 0.45, phase: sc.wph % 1, idle: now*0.8, jumpK: -1, kick: false, stumble: 0, reach: 0, dir: sc.jdir,
+    shades: true, glow: 0, holdHand: together, lookUp: together, smile: together || sc.ph === 'talk' });
   if (pullK > 0) g.restore();
   // the album: in the stranger's hand, then in Jon's
   if (figHand && sc.offerT >= 0 && sc.ph !== 'album' && sc.ph !== 'spinup' && pullE < 0) {
@@ -2026,7 +1906,6 @@ function drawScene(L, now, base){
     const ax = figHand.hx + (jh2[0] - figHand.hx)*k, ay = figHand.hy + jh*0.02 + (jh2[1] - figHand.hy)*k - Math.sin(k*Math.PI)*jh*0.1;
     g.globalAlpha = sc.gotT < 0 ? clamp((T - sc.offerT)/0.4, 0, 1) : 1; sleeve2D(ax, ay, jh*0.2, -0.12 + k*0.1); g.globalAlpha = 1;
   }
-  if (rivX !== null && rivalFront) drawRival(rivX, L.groundY, jh*1.05, sc.rdir, rivalSt);
   // he hands back the queen of hearts
   if (sc.cardT >= 0) { const ck = clamp((T - sc.cardT - 0.3)/0.8, 0, 1);
     if (ck < 1) queenCard(jonX + jh*0.2 + (herX - jonX - jh*0.35)*ease(ck), L.groundY - jh*0.52 - Math.sin(ck*Math.PI)*jh*0.12, jh*0.12, -0.2, 1); }
@@ -2070,7 +1949,7 @@ function dlgBox(L, who, line, shown, alpha, tapHint, now = 0){
   g.globalAlpha = alpha;
   g.fillStyle = 'rgba(8,6,14,.9)'; rrect(bx, by, bw, bh, 10); g.fill();
   g.strokeStyle = who === '???' ? '#7d5a9a' : PAL.gold; g.lineWidth = 1; rrect(bx + .5, by + .5, bw - 1, bh - 1, 10); g.stroke();
-  g.textAlign = 'left'; g.font = `400 13px ${FONT.deco}`; g.fillStyle = who === 'STERLING' ? '#e8665e' : who === 'HER' ? '#f0a3a0' : who === '???' ? '#b49ad0' : PAL.gold;
+  g.textAlign = 'left'; g.font = `400 13px ${FONT.deco}`; g.fillStyle = who === 'HER' ? '#f0a3a0' : who === '???' ? '#b49ad0' : PAL.gold;
   g.fillText(who, bx + pad, by + pad + 9);
   g.font = `italic 500 ${fs}px ${FONT.serif}`; g.fillStyle = PAL.cream;
   let left = shown; rows.forEach((row, i) => { if (left > 0) g.fillText(row.slice(0, left), bx + pad, by + pad + 16 + (i + 0.78)*lh); left -= row.length + 1; });
@@ -2088,14 +1967,11 @@ function sceneUI(L, now){
   if (sc.pullT >= 0) { const e = sc.T - sc.pullT; if (e > 0.5 && e < 2.6) dlgBox(L, 'HER', 'Jon—!', 5, clamp(Math.min((e - 0.5)*8, (2.6 - e)*8), 0, 1), false); }
   let p = '';
   if (!d && sc.ph === 'walk') p = TOUCH ? 'HOLD THE RIGHT SIDE TO WALK TO HER  ▶' : 'HOLD  →  TO WALK TO HER';
-  if (!d && sc.ph === 'walk2') p = TOUCH ? 'HOLD THE RIGHT SIDE · GO GET HER  ▶' : 'HOLD  →  · GO GET HER';
-  if (!d && sc.ph === 'push' && sc.spin < 0) p = TOUCH ? 'TAP FAST TO PUSH THROUGH HIM!' : 'MASH SPACE TO PUSH THROUGH HIM!';
   if (!d && sc.ph === 'album' && T_ok(sc)) p = TOUCH ? 'HOLD THE RIGHT SIDE TO SLIDE THE RECORD OUT  ▶' : 'HOLD  →  TO SLIDE THE RECORD OUT';
   if (p) {
-    const cy = L.bot + L.barH/2, push = sc.ph === 'push';
-    g.globalAlpha = .7 + .3*Math.sin(now*5); g.textAlign = 'center'; g.font = `700 ${clamp(W*0.03, 10, 13)}px ${FONT.type}`; g.fillStyle = push ? PAL.gold : PAL.cream;
-    g.fillText(p, W/2, cy + (push ? -3 : 4)); g.globalAlpha = 1;
-    if (push) { const mw = Math.min(W*0.5, 260); g.fillStyle = 'rgba(243,230,200,.15)'; g.fillRect(W/2 - mw/2, cy + 7, mw, 4); g.fillStyle = PAL.gold; g.fillRect(W/2 - mw/2, cy + 7, mw*sc.meter, 4); }
+    const cy = L.bot + L.barH/2;
+    g.globalAlpha = .7 + .3*Math.sin(now*5); g.textAlign = 'center'; g.font = `700 ${clamp(W*0.03, 10, 13)}px ${FONT.type}`; g.fillStyle = PAL.cream;
+    g.fillText(p, W/2, cy + 4); g.globalAlpha = 1;
   }
 }
 const chaseX = (L, v) => { const x0 = 16 + 92, x1 = W - 16 - 12; return x0 + (x1 - x0)*clamp(v / PAR, 0, 1.08)/1.08; };

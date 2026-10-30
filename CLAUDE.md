@@ -14,19 +14,22 @@ Read README.md for layout, build and test commands. This file holds the decision
   film grain, letterbox. Cold open: they meet, a crowd sweeps her into the casino salon, she drops a queen of hearts.
 - Acts: I The Bluff (poker chips), II Act Like It, III Old Soul (phones/likes), IV No Fool (jokers), Finale Star-Crossed.
 - Cold open adds **the stranger**: a faceless figure (long coat, fedora, face a void; speaker label "???", purple box)
-  silhouetted in the lit casino doorway: "She can't be with you." / "Let her go, Jon." He is NOT Sterling.
-- Chase meter against a PAR. Win → the playable **bow scene**: walk to her (hold right), dialogue (tap), Sterling the
-  rival cuts in ("Mind if I cut in?"), tap fast to push through, he gets spun off his feet, walk to her, reunion.
+  silhouetted in the lit casino doorway: "She can't be with you." / "Let her go, Jon." He is the only villain.
+- Chase meter against a PAR. Win → the playable **bow scene**: walk to her (hold right), dialogue (tap: he hands back
+  the queen of hearts), reunion (they hold hands, a heart rises). **No Sterling — the owner removed him from the game.**
   Then the stranger walks in and hands over the album **Lost in You** (Jon Vinyl, 2021, the real cover in
   `album/lost-in-you/cover.jpg`); close-up, hold right to slide the record out, it spins up, a vortex pulls Jon in
   (her: "Jon—!"), whiteout → results ("Prologue", button "Into the record") → the map. Lose → "To Be Continued…".
-- **The record map** (`game/map.js`, Three.js): Jon is the painted 2D figure on a billboard; one band of grooves per
-  track (8 equal bands: 7 songs + Outro), locked bands under a dark veil, only the next band revealed; dotted spiral path,
+- **The record map** (`game/map.js`, Three.js): made to match the real pressing — black vinyl, the real orange label
+  (`album/lost-in-you/label.jpg`, cut from the owner's photo: "Jon Vinyl" signature, LOST IN YOU, VINYL RECORDINGS, INC.,
+  33⅓ RPM, the tracklist, the legal text round the rim) turned to read upright toward the camera, and visible smooth gaps
+  between songs. Ring widths follow each song's length (`seconds` in album.json; estimates until measured). Jon is the
+  painted 2D figure on a billboard; one band per track (7 songs + Outro), locked bands under a dark veil, only the next band revealed; dotted spiral path,
   a stop per track with its stars, tonearm swinging over your band, heart over the label (home), amber void like the cover.
 - **Stars**: any difficulty; 1★ clear, 2★ ≥ 85 % accuracy, 3★ ≥ 95 % (`starsFor`). Beating a song (1★) reveals the next
   band; the **Outro** is an escape cutscene, unlocked by 3★ on all 7 songs. Progress in localStorage `jv-progress`.
-- Track titles/order are not known yet: album.json has `title: null` until each song is added. Apple Music lists
-  Lost in You as 8 tracks (~16 min), track 8 = "Outro" (54 s); "Void", "Deflect", "Told You" are on it.
+- Tracklist (from the label): 1 Chrome Hearts, 2 Stacy, 3 Deflect, 4 Void, 5 Always, 6 Told You, 7 All Bad, 8 Outro (54 s).
+  Album ~16 min (Apple Music). Measure each song's length when it arrives and set `seconds`, `measured: true`.
 - Jon: one cohesive two-pass painted figure (ink silhouette, then fills). Photo-like ribbed V-neck sweater vest (coral
   blobs, pale blue patches), coil-textured hair, shades, jeans, chunky retro sand high-top sneakers. No watch.
 

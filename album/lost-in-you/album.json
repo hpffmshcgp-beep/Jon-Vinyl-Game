@@ -2,15 +2,65 @@
   "title": "Lost in You",
   "artist": "Jon Vinyl",
   "year": 2021,
-  "note": "Track order and titles get filled in as each song is added. Track 8 is the 54-second Outro: the escape cutscene, unlocked by 3 stars on every song.",
+  "note": "Track order and titles are from the record's label. 'seconds' sets how wide each song's ring of grooves is, like a real pressing: the Outro is 54 s (Apple Music); the others are an even share of ~16 minutes until each song arrives and is measured. Track 8, the Outro, is the escape cutscene, unlocked by 3 stars on every song.",
   "tracks": [
-    { "n": 1, "title": null, "song": null },
-    { "n": 2, "title": null, "song": null },
-    { "n": 3, "title": null, "song": null },
-    { "n": 4, "title": null, "song": null },
-    { "n": 5, "title": null, "song": null },
-    { "n": 6, "title": null, "song": null },
-    { "n": 7, "title": null, "song": null },
-    { "n": 8, "title": "Outro", "song": null, "outro": true }
-  ]
+    {
+      "n": 1,
+      "title": "Chrome Hearts",
+      "song": null,
+      "seconds": 129,
+      "measured": false
+    },
+    {
+      "n": 2,
+      "title": "Stacy",
+      "song": null,
+      "seconds": 129,
+      "measured": false
+    },
+    {
+      "n": 3,
+      "title": "Deflect",
+      "song": null,
+      "seconds": 129,
+      "measured": false
+    },
+    {
+      "n": 4,
+      "title": "Void",
+      "song": null,
+      "seconds": 129,
+      "measured": false
+    },
+    {
+      "n": 5,
+      "title": "Always",
+      "song": null,
+      "seconds": 129,
+      "measured": false
+    },
+    {
+      "n": 6,
+      "title": "Told You",
+      "song": null,
+      "seconds": 129,
+      "measured": false
+    },
+    {
+      "n": 7,
+      "title": "All Bad",
+      "song": null,
+      "seconds": 129,
+      "measured": false
+    },
+    {
+      "n": 8,
+      "title": "Outro",
+      "song": null,
+      "outro": true,
+      "seconds": 54,
+      "measured": true
+    }
+  ],
+  "label": "label.jpg"
 }
