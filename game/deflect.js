@@ -192,6 +192,7 @@ function levelEnd(wiped){   // wiped: Void's last board went (no stars, nothing 
   $('resCombo').textContent = LV.maxCombo; $('resPerf').textContent = c.perfect + '/' + n;
   $('resTiming').textContent = ''; $('fixBtn').hidden = true;
   coach(acc, wiped, tn);
+  $('resWay').hidden = false; wayHome($('resWay'), !wiped && st >= 1 && !prevStars ? tn : 0);   // how far round the record you are
   $('intoBtn').hidden = false; $('intoBtn').className = wiped ? 'ghost' : 'btn'; $('intoBtn').textContent = 'Back to the record'; $('intoBtn').onclick = () => { $('results').hidden = true; enterMap(false); };
   $('againBtn').className = wiped ? 'btn' : 'ghost'; $('againBtn').textContent = wiped ? 'Try again' : 'Play again'; $('againBtn').onclick = () => { $('results').hidden = true; startLevel(tn); };
   $('menuBtn').hidden = true;

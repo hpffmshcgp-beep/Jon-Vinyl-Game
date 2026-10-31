@@ -42,6 +42,13 @@ const C = require('./config');
     c = await card(); await p.waitForTimeout(900); await p.screenshot({ path: C.OUT + `coach-${n}-void.png` });
     console.log(n, 'void', JSON.stringify(c));
     check(c.tips.some(t => /take-offs|ride a little high/.test(t)) && c.btn === 'Try Normal?', 'void tip and step down');
+    // the way home: Void just beaten pops in on the results, then the record shows 2 of 7
+    const way = await p.evaluate(() => [document.querySelector('#resWay span').textContent, document.querySelectorAll('#resWay .seg.on').length, document.querySelectorAll('#resWay .seg.new').length]);
+    console.log(n, 'way home', JSON.stringify(way));
+    check(way[0] === 'Void beaten · 5 more to get home' && way[1] === 2 && way[2] === 1, 'way home on results');
+    await p.click('#intoBtn'); await p.waitForFunction(() => mode === 'map' && !document.getElementById('mapUI').hidden, null, { timeout: 30000 }); await p.waitForTimeout(1500);
+    const mw = await p.evaluate(() => document.querySelector('#mapWay span').textContent); check(mw === 'The way home · 2 of 7 songs', 'map way home ' + mw);
+    await p.screenshot({ path: C.OUT + `coach-${n}-map.png` });
     console.log(n, 'ok', errs); await ctx.close();
   }
   await b.close();

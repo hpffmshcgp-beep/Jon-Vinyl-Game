@@ -87,6 +87,20 @@ body:not(.touch) #actBtn { font-size: 15px; padding: 8px 20px; }
 #mapUI > * { pointer-events: auto; }
 .mapTop { display: flex; justify-content: space-between; align-items: center; gap: 10px; }
 .mapTop .eyebrow { text-shadow: 0 1px 6px rgba(0,0,0,.7); }
+.mapHead { display: grid; gap: 10px; }
+/* the way home: a record for each song, joined up to the heart; filled as each song is beaten */
+.way { display: grid; justify-items: center; gap: 6px; }
+.way .wayRow { display: flex; flex-wrap: nowrap; align-items: center; padding: 6px 10px; border-radius: 999px; background: rgba(10,8,18,.62); }
+.way .seg { width: 15px; height: 15px; border-radius: 50%; border: 1.5px solid rgba(230,184,92,.55); background: rgba(10,8,18,.7); flex: none; }
+.way .seg.on { border-color: #e6b85c; background: radial-gradient(circle, #f0c56a 0 26%, #1a1018 30% 62%, #2a1c24 66% 100%); box-shadow: 0 0 9px rgba(230,184,92,.55); }
+.way .seg.soon { border-style: dashed; opacity: .45; }
+.way .seg.new { animation: wayPop .7s cubic-bezier(.3,1.8,.5,1) .45s both; }
+.way .link { width: clamp(8px, 2.6vw, 16px); height: 2px; background: rgba(230,184,92,.28); flex: none; }
+.way .link.on { background: #e6b85c; }
+.way .home { font-size: 17px; line-height: 1; color: rgba(232,116,106,.4); margin-left: 3px; }
+.way .home.on { color: #e8746a; text-shadow: 0 0 10px rgba(232,116,106,.8); }
+.way span { font-family: var(--type); font-size: 10px; letter-spacing: .16em; text-transform: uppercase; color: #e9dcc0; text-shadow: 0 1px 6px rgba(0,0,0,.8); }
+@keyframes wayPop { from { transform: scale(0); box-shadow: 0 0 0 rgba(230,184,92,0); } 55% { transform: scale(1.5); box-shadow: 0 0 22px rgba(255,226,154,.95); } }
 #mapStars { font-family: var(--type); font-weight: 700; font-size: 13px; letter-spacing: .12em; color: #ffe29a; background: rgba(10,8,18,.7); border: 1px solid rgba(230,184,92,.6); border-radius: 999px; padding: 6px 12px; }
 .stopCard { align-self: center; width: min(440px, 100%); display: grid; gap: 7px; justify-items: center; text-align: center; padding: 14px 14px 10px;
   background: linear-gradient(180deg, rgba(14,10,24,.86), rgba(8,6,14,.93)); border: 1px solid rgba(230,184,92,.75); border-radius: 18px; box-shadow: 0 10px 40px rgba(0,0,0,.45); }
@@ -178,7 +192,10 @@ kbd { font-family: var(--type); font-size: 10px; border: 1px solid rgba(243,230,
 <button class="btn" id="actBtn" hidden>Talk</button>
 <div id="mapLoading" hidden>Dropping the needle&hellip;</div>
 <div id="mapUI" hidden>
-  <div class="mapTop"><div class="eyebrow">Jon Vinyl &middot; Lost in You</div><div id="mapStars">&starf; 0 / 21</div></div>
+  <div class="mapHead">
+    <div class="mapTop"><div class="eyebrow">Jon Vinyl &middot; Lost in You</div><div id="mapStars">&starf; 0 / 21</div></div>
+    <div class="way" id="mapWay"></div>
+  </div>
   <div class="stopCard">
     <div class="eyebrow" id="stopNum">Track 1 of 8</div>
     <h2 id="stopTitle">Track 1</h2>
@@ -287,6 +304,7 @@ kbd { font-family: var(--type); font-size: 10px; border: 1px solid rgba(243,230,
       <div><span>Max combo</span><b id="resCombo">0</b></div>
       <div><span>Perfects</span><b id="resPerf">0</b></div>
     </div>
+    <div class="way" id="resWay" hidden></div>
     <div class="tips" id="resTips" hidden></div>
     <div class="fine" id="resTiming"></div>
     <button class="ghost" id="fixBtn" hidden>Fix my timing</button>
@@ -327,17 +345,18 @@ const BEAT = 60 / CHART.bpm, PH = CHART.phase, BAR = BEAT * 4;
 const PAL = { cream:'#f3e6c8', gold:'#e6b85c', gold2:'#b98a3a', rose:'#e8746a', wine:'#8e2335', powder:'#a8c6df', mohair:'#f1e7c6', coral:'#ee5a5f', denim:'#9fb4bd', denimDk:'#7d93a0', skin:'#4b2b1d', skinHi:'#62392a', hair:'#140c08', ink:'#0a0b1c', out:'#1a0e12' };
 const FONT = { deco:'"Limelight", Didot, Georgia, serif', serif:'"Cormorant Garamond", Garamond, Georgia, serif', type:'"Courier Prime", "Courier New", monospace' };
 const BARS = n => PH + n*BAR;
+// the song as the game plays it (chart meta.cut): verse 1 (bars 4-12), pre-chorus (12-20), chorus (20-28, its last two
+// bars taken from the final chorus), outro (28-). One act per section, so each brings its own things to kick.
 const ACTS = [
   { t: -99,      tag:'Prologue', name:'',             note:'' },
   { t: BARS(4),  tag:'Act I',    name:'The Bluff',    note:'The odds are stacked. Kick them out of the way.' },
-  { t: BARS(20), tag:'Act II',   name:'Act Like It',  note:'If it’s a classic, play it like one.' },
-  { t: BARS(30), tag:'Act III',  name:'Old Soul',     note:'No likes. No follows. Just her.' },
-  { t: BARS(46), tag:'Act IV',   name:'No Fool',      note:'Heart on the table.' },
-  { t: BARS(50), tag:'Finale',   name:'Star-Crossed', note:'The bow is in sight.' },
+  { t: BARS(12), tag:'Act II',   name:'Act Like It',  note:'If it’s a classic, play it like one.' },
+  { t: BARS(20), tag:'Act III',  name:'Old Soul',     note:'No likes. No follows. Just her.' },
+  { t: BARS(28), tag:'Finale',   name:'Star-Crossed', note:'The bow is in sight.' },
 ];
 const actAt = t => { let i = 0; while (i < ACTS.length - 1 && t >= ACTS[i+1].t) i++; return i; };
-const CHORUS = [[20, 28], [38, 46], [50, 58], [60, 99]].map(([a, b]) => [BARS(a), BARS(b)]);
-const GLIMPSE = [BARS(20) + 0.6, BARS(38) + 0.6, BARS(48), BARS(60) + 0.5];
+const CHORUS = [[20, 99]].map(([a, b]) => [BARS(a), BARS(b)]);   // the chorus, then the outro, in colour
+const GLIMPSE = [BARS(12) + 0.6, BARS(20) + 0.6, BARS(28) + 0.5];
 // Five levels, like Beat Saber. par = share of the song's notes (weighted by timing) you need to reach her
 const DIFFS = {
   easy:       { name:'Easy',    par:.55, best:'sc-best-easy',   note:'Just the backbeat' },
@@ -498,7 +517,7 @@ function scratch(){
 let mode = 'boot', bootT0 = nowS(), leaderT0 = 0, titleT0 = 0, S = null;
 function newState(){
   return {
-    notes: CHART.levels[DIFF].filter(([t]) => t >= OPEN.start - 0.05).map(([t, lane], i) => { const a = actAt(t); return { t, lane, hit:false, miss:false, judged:false, kind: a <= 2 ? 0 : a === 3 ? 1 : a === 4 ? 2 : i % 3 }; }),
+    notes: CHART.levels[DIFF].filter(([t]) => t >= OPEN.start - 0.05).map(([t, lane], i) => { const a = actAt(t); return { t, lane, hit:false, miss:false, judged:false, kind: a <= 2 ? 0 : a === 3 ? 1 : 2 }; }),
     pi: 0, wsum: 0, won: true, offs: [], desat: 0.75, flashAt: -9, lastNow: 0,
     startAt: 0, running:false, ended:false, paused:false, lastT: -PREROLL, audioStage: 0,
     score:0, combo:0, maxCombo:0, counts:{ perfect:0, great:0, ok:0, miss:0 },
@@ -531,13 +550,23 @@ async function startGame(){
   $('startBtn').disabled = false; $('againBtn').disabled = false; $('startBtn').textContent = START_LABEL;
   try { navigator.wakeLock && navigator.wakeLock.request('screen').catch(()=>{}); } catch(e){}
 }
+// the prologue's song, shortened (chart meta.cut): the recording plays up to the cut, then carries on from its other
+// side, a 30 ms crossfade on the downbeat. Same file, no re-encode; the chart is already in this timeline (tools/build.py).
+function playSong(buf, dest, at){
+  const play = (from, when, dur, g) => { const s = ac.createBufferSource(); s.buffer = buf; s.connect(g || dest); s.start(when, from, dur); srcs.push(s); };
+  if (!CHART.meta.cut) return play(0, at);
+  const [c0, c1] = CHART.meta.cut, x = 0.03, gA = ac.createGain(), gB = ac.createGain(); gA.connect(dest); gB.connect(dest);
+  gA.gain.setValueAtTime(1, at + c0 - x); gA.gain.linearRampToValueAtTime(0, at + c0);
+  gB.gain.setValueAtTime(0, at + c0 - x); gB.gain.linearRampToValueAtTime(1, at + c0);
+  play(0, at, c0 + 0.01, gA); play(c1 - x, at + c0 - x, undefined, gB);
+}
 function startSong(){   // she's gone: the music starts and the chase begins
   if (mode !== 'intro') return;
   $('howPop').hidden = true; $('actBtn').hidden = true; stopAmbience();
   S.sc = null; HOLD.kl = HOLD.kr = false; HOLD.ptr.clear();
   S.startAt = ac.currentTime + PREROLL;
   setLayer(nodes.songplay, 'open');
-  const src = ac.createBufferSource(); src.buffer = buffers.songplay; src.connect(nodes.songplay.lp); src.start(S.startAt); srcs.push(src);
+  playSong(buffers.songplay, nodes.songplay.lp, S.startAt);
   mode = 'play'; grabKeys();
 }
 // keep keyboard focus on the game, even when it is shown inside a frame or preview window
@@ -556,7 +585,7 @@ function toTitle(){
   ['pause','results','calib'].forEach(id => $(id).hidden = true); showPanel('how'); $('title').hidden = false; titleButtons();
   showBest();
 }
-function endGame(){ $('resTips').hidden = true; $('tryBtn').hidden = true;
+function endGame(){ $('resTips').hidden = true; $('tryBtn').hidden = true; $('resWay').hidden = true;
   S.running = false; S.ended = true; mode = 'results';
   const n = S.notes.length, c = S.counts;
   const acc = (c.perfect + c.great*.75 + c.ok*.45) / n;
@@ -1666,7 +1695,7 @@ function frame(){
     S.lastFwBar = barIdx;
     for (let j = 0; j < 2; j++) S.fw.push({ t: t + j*0.25, x: W*(0.35 + Math.random()*0.6), y: L.top + L.fh*(0.1 + Math.random()*0.25), c: Math.floor(Math.random()*4) + j });
   }
-  if (S.sc && !S.sc.amb && buffers.songplay && t > buffers.songplay.duration - 0.3) { S.sc.amb = true; startAmbience(true); }
+  if (S.sc && !S.sc.amb && buffers.songplay && t > buffers.songplay.duration - (CHART.meta.cutLen || 0) - 0.3) { S.sc.amb = true; startAmbience(true); }
   const sT = scrollTime(t), pulse = Math.max(0, 1 - ((((t - PH) / BEAT) % 1) + 1) % 1 * 2.2);
   drawWorld(L, sT, Math.max(0, t), now, pulse);
   const opening = t < OPEN.start;

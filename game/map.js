@@ -240,7 +240,16 @@ async function enterMap(first){
   startAmbience();
 }
 function leaveMap(){ $('map').hidden = true; $('mapUI').hidden = true; cv.hidden = false; }
-function updateMapStars(){ const n = songTracks().reduce((a, t) => a + (PROG.stars[t.n] || 0), 0); $('mapStars').textContent = `★ ${n} / ${songTracks().length*3}`; }
+function updateMapStars(){ const n = songTracks().reduce((a, t) => a + (PROG.stars[t.n] || 0), 0); $('mapStars').textContent = `★ ${n} / ${songTracks().length*3}`; wayHome($('mapWay')); }
+// the way home: a record for each song, joined up to the heart; `fresh` (a track number) pops in as just beaten
+function wayHome(el, fresh){
+  const tr = songTracks(), on = t => (PROG.stars[t.n] || 0) >= 1, done = tr.filter(on).length, all = done === tr.length;
+  const row = tr.map((t, i) => (i ? `<i class="link${on(t) ? ' on' : ''}"></i>` : '') +
+    `<b class="seg${on(t) ? ' on' : t.song ? '' : ' soon'}${t.n === fresh ? ' new' : ''}" title="${t.n} · ${t.title}${on(t) ? ' · beaten' : t.song ? '' : ' · coming soon'}"></b>`).join('');
+  const left = tr.length - done, label = all ? 'Every song beaten · the way home is open'
+    : fresh ? `${tr.find(t => t.n === fresh).title} beaten · ${left} more to get home` : `The way home · ${done} of ${tr.length} songs`;
+  el.innerHTML = `<div class="wayRow" role="img" aria-label="${done} of ${tr.length} songs beaten">${row}<i class="link${all ? ' on' : ''}"></i><b class="home${all ? ' on' : ''}">♥</b></div><span>${label}</span>`;
+}
 function showStop(i){
   const t = ALBUM.tracks[i], st = PROG.stars[t.n] || 0;
   lockXplus(t.n);

@@ -32,6 +32,13 @@ decisions and the person's preferences.
   and says the level and timing are in Settings.
 - **The chase** (Star-Crossed): glimpses (`GLIMPSE`) show him dragging her by the wrist while she pulls back toward Jon
   (Bowser/Peach). At the end he holds her at the bow.
+- **The prologue song is shortened** (owner: "skip from the chorus to the outro"): chart `meta.cut` = bar 26 → bar 64 of
+  the recording (chorus 1 and the final chorus match there, 0.93–0.98, so the last two chorus bars and the move into the
+  outro are the record's own). `playSong` plays songplay.mp3 as two segments with a 30 ms crossfade (no re-encode);
+  chart.json stays in the recording's time and `tools/build.py` (`cut_chart`) remaps it. The game's song is 1:42; in
+  game time the bars keep their numbers up to the outro at bar 28. One act per section: I The Bluff (verse, chips),
+  II Act Like It (pre-chorus), III Old Soul (chorus, phones), Finale (outro); "No Fool" was dropped with the cut.
+  `tests/chase-cut.test.js`.
 - **The bow**: hold right to walk up; she breaks free and runs to Jon; reunion lines call back the plans; the stranger
   strolls over all smiles ("Alright, you win. Fair and square." / "No hard feelings?") and gives the album **Lost in
   You** (real cover, `album/lost-in-you/cover.jpg`); close-up, hold right to slide the record out, it spins up, a vortex
@@ -105,6 +112,8 @@ decisions and the person's preferences.
   opens from the title, the lobby and the level chip on the record's stop card; it holds the five levels (Expert+ lock),
   timing ± and the sound check (which comes back to Settings). The lobby says "Playing on Normal. Change the level or
   the timing any time in Settings." `WANT` is the saved pick, `DIFF` what's played (Expert where Expert+ isn't open yet).
+- **The way home** (`wayHome` in map.js): a record per song joined up to a heart, filled as songs are beaten, under the
+  record's top bar and on each album song's results card (the song just beaten pops in: "Void beaten · 5 more to get home").
 - The repo is the owner's portfolio piece for job applications: keep README.md polished (docs/media from
   `tools/capture_media.js` + test screenshots), `npm test` = `tests/run-all.js`. Audio stays in the repo (owner's call).
 - No intermission, no 3-2-1 film leader. No "the house wins" ending text. No sunglasses power-up (he still wears shades).
@@ -118,7 +127,8 @@ decisions and the person's preferences.
 - Tempo 94.5 BPM, phase 0.077 s. The groove is **swung with triplet kicks**: never snap notes to a 16th grid.
   Notes sit on the measured attack of each hit in the drumsep stems (`tools/find_hits.py`), 20 % of the rise on a 2 ms
   envelope; kick needs a ≥14 dB rise (808 body retriggers reach ~11 dB).
-- Five levels from `tools/make_charts.py`: easy 123, normal 215, hard 295, expert 403, expertplus 507 notes.
+- Five levels from `tools/make_charts.py`: easy 123, normal 215, hard 295, expert 403, expertplus 507 notes over the
+  full recording; after the cut the game has 55, 101, 137, 177, 211.
 - Audio clock: `heardCtx()` uses `getOutputTimestamp()` with latency fallback; per-player calibration (`sc-delay`),
   results screen offers "Fix my timing".
 - The game plays the original song file (`songplay.mp3`); `below.mp3` is the band stem used muffled on the title screen.

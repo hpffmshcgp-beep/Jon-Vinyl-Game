@@ -26,6 +26,18 @@ ALBUM_SONGS = [t['song'] for t in _TRACKS]
 ALBUM_FILES = [(t['song'], f) for t in _TRACKS for f in (t.get('layers') or [t['song']])]
 songs = {n: json.load(open(os.path.join(ROOT, 'songs', n, 'chart.json'))) for n in ALBUM_SONGS}   # each album song's chart
 chart = json.load(open(os.path.join(SONG, 'chart.json')))
+def cut_chart(c):   # the prologue skips part of the recording (meta.cut, in the recording's time): remap every time to the game's
+    c0, c1 = c['meta']['cut']; d = c1 - c0
+    m = lambda t: t if t < c0 else t - d if t >= c1 else c0
+    keep = lambda ns: [[round(m(t), 4), l] for t, l in ns if not c0 <= t < c1]
+    c['levels'] = {k: keep(v) for k, v in c['levels'].items()}; c['notes'] = keep(c['notes'])
+    for k in ['finale', 'end']: c[k] = round(m(c[k]), 4)
+    c['stages'] = [round(m(t), 4) for t in c['stages']]
+    c['meta']['heart'] = round(m(c['meta']['heart']), 4)
+    c['meta']['sections'] = [[round(m(a), 3), round(m(b), 3), n] for a, b, n in c['meta']['sections'] if m(b) - m(a) > 0.5]
+    c['meta']['cutLen'] = round(d, 4)
+    return c
+if chart['meta'].get('cut'): chart = cut_chart(chart)
 album = json.load(open(os.path.join(ALBUM_DIR, 'album.json')))
 cover = 'data:image/jpeg;base64,' + base64.b64encode(open(os.path.join(ALBUM_DIR, 'cover.jpg'), 'rb').read()).decode()
 label = 'data:image/jpeg;base64,' + base64.b64encode(open(os.path.join(ALBUM_DIR, 'label.jpg'), 'rb').read()).decode()   # the real record label
