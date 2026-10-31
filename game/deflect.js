@@ -180,11 +180,12 @@ function levelEnd(wiped){   // wiped: Void's last board went (no stars, nothing 
   const n = wiped ? LV.notes.filter(x => x.judged).length : LV.notes.length, c = LV.counts, acc = n ? (c.perfect + c.good*0.7)/n : 0, st = wiped ? 0 : starsFor(acc, true), tn = LV.track.n;
   const prevStars = PROG.stars[tn] || 0, key = `${tn}-${DIFF}`, prevBest = PROG.best[key] || 0;
   if (!wiped) { PROG.stars[tn] = Math.max(prevStars, st); PROG.best[key] = Math.max(prevBest, LV.score); saveProg(); }
+  const xplus = !wiped && DIFF === 'expert' && st === 3 && unlockXplus(tn);   // three stars on Expert opens Expert+ for this song
   const lines = ['', 'Got through it.', 'Hardly a scratch.', 'Nothing gets past you.'];
   $('resEyebrow').textContent = `Track ${tn} · ${DIFFS[DIFF].name.toLowerCase()}` + (wiped ? ' · wiped out' : LV.score > prevBest ? ' · new high score' : '');
   $('resTitle').textContent = LV.track.title;
   $('resStars').innerHTML = [0, 1, 2].map(i => i < st ? `<b class="pop" style="animation-delay:${0.35 + i*0.22}s">★</b>` : '<i>★</i>').join(''); $('resStars').setAttribute('aria-label', st + ' out of 3 stars');
-  $('resLine').textContent = wiped ? 'Three wipeouts. Paddle back out?' : st < 3 ? `${lines[st]} ${st === 1 ? '85%' : '95%'} accuracy for the next star.` : lines[3];
+  $('resLine').textContent = wiped ? 'Three wipeouts. Paddle back out?' : st < 3 ? `${lines[st]} ${st === 1 ? '85%' : '95%'} accuracy for the next star.` : lines[3] + (xplus ? ' Expert+ unlocked.' : '');
   $('resScore').textContent = LV.score.toLocaleString(); $('resAcc').textContent = (acc*100).toFixed(1) + '%';
   $('resCombo').textContent = LV.maxCombo; $('resPerf').textContent = c.perfect + '/' + n;
   $('resTiming').textContent = ''; $('fixBtn').hidden = true;

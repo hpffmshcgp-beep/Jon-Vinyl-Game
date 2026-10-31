@@ -242,6 +242,7 @@ function leaveMap(){ $('map').hidden = true; $('mapUI').hidden = true; cv.hidden
 function updateMapStars(){ const n = songTracks().reduce((a, t) => a + (PROG.stars[t.n] || 0), 0); $('mapStars').textContent = `★ ${n} / ${songTracks().length*3}`; }
 function showStop(i){
   const t = ALBUM.tracks[i], st = PROG.stars[t.n] || 0;
+  lockXplus(t.n);
   $('stopNum').textContent = t.outro ? 'The Outro' : `Track ${t.n} of ${ALBUM.tracks.length}`;
   $('stopTitle').textContent = t.title || `Track ${t.n}`;
   $('stopStars').innerHTML = t.outro ? '' : '★'.repeat(st) + '<i>' + '★'.repeat(3 - st) + '</i>';

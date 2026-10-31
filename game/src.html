@@ -71,6 +71,12 @@ h2 { font-family: var(--deco); font-weight: 400; margin: 0; font-size: clamp(28p
 .diffBtn[aria-checked="true"] { background: var(--c); color: #160d0b; }
 .diffBtn[aria-checked="true"]::after { background: rgba(22,13,11,.35); }
 .diffBtn:focus-visible { outline: 2px solid var(--powder); outline-offset: 2px; }
+.diffBtn.locked { color: rgba(243,230,200,.4); cursor: not-allowed; }
+.diffBtn.locked::after { background: rgba(197,138,230,.3); }
+.diffBtn .lock { display: none; width: .78em; height: .9em; margin-left: .3em; vertical-align: -.05em; }
+.diffBtn.locked .lock { display: inline-block; }
+.diffBtn.nudge { animation: nudge .38s ease; }
+@keyframes nudge { 20%, 60% { transform: translateX(-3px); } 40%, 80% { transform: translateX(3px); } }
 .diffBtn[data-d=easy] { --c: #8fcf8a; } .diffBtn[data-d=normal] { --c: #8ab8e6; } .diffBtn[data-d=hard] { --c: #f0a24e; } .diffBtn[data-d=expert] { --c: #e8665e; } .diffBtn[data-d=expertplus] { --c: #c58ae6; }
 #map { position: fixed; inset: 0; width: 100%; height: 100%; display: block; }
 #actBtn { position: fixed; z-index: 6; left: 50%; transform: translateX(-50%); bottom: max(18px, calc(env(safe-area-inset-bottom, 0px) + 10px)); padding: 10px 26px; font-size: 18px; }
@@ -174,7 +180,7 @@ kbd { font-family: var(--type); font-size: 10px; border: 1px solid rgba(243,230,
       <button class="diffBtn" data-d="normal" role="radio" aria-checked="true">Normal</button>
       <button class="diffBtn" data-d="hard" role="radio" aria-checked="false">Hard</button>
       <button class="diffBtn" data-d="expert" role="radio" aria-checked="false">Expert</button>
-      <button class="diffBtn" data-d="expertplus" role="radio" aria-checked="false">Expert+</button>
+      <button class="diffBtn" data-d="expertplus" role="radio" aria-checked="false">Expert+<svg class="lock" viewBox="0 0 10 12" aria-hidden="true"><path d="M2.5 5V3.6a2.5 2.5 0 0 1 5 0V5" fill="none" stroke="currentColor" stroke-width="1.4"/><rect x="1" y="5" width="8" height="6.4" rx="1.2" fill="currentColor"/></svg></button>
     </div>
     <div class="stopRow"><button class="chip" id="stopPrev" aria-label="Previous song">&#9664;</button><button class="btn" id="stopPlay" disabled>Coming soon</button><button class="chip" id="stopNext" aria-label="Next song">&#9654;</button></div>
     <div class="fine" id="stopNote"></div>
@@ -215,7 +221,7 @@ kbd { font-family: var(--type); font-size: 10px; border: 1px solid rgba(243,230,
         <button class="diffBtn" id="dNormal" data-d="normal" role="radio" aria-checked="true">Normal</button>
         <button class="diffBtn" id="dHard" data-d="hard" role="radio" aria-checked="false">Hard</button>
         <button class="diffBtn" id="dExpert" data-d="expert" role="radio" aria-checked="false">Expert</button>
-        <button class="diffBtn" id="dExpertplus" data-d="expertplus" role="radio" aria-checked="false">Expert+</button>
+        <button class="diffBtn" id="dExpertplus" data-d="expertplus" role="radio" aria-checked="false">Expert+<svg class="lock" viewBox="0 0 10 12" aria-hidden="true"><path d="M2.5 5V3.6a2.5 2.5 0 0 1 5 0V5" fill="none" stroke="currentColor" stroke-width="1.4"/><rect x="1" y="5" width="8" height="6.4" rx="1.2" fill="currentColor"/></svg></button>
       </div>
       <div id="diffNote"></div>
     </div>
@@ -287,9 +293,18 @@ const LABEL_SRC = '__LABEL__';                 // the record's real label: orang
 const LABEL_IMG = new Image(); LABEL_IMG.src = LABEL_SRC;
 // progress through the record: the prologue, and the stars on each album song (any difficulty)
 const PROG_KEY = 'jv-progress';
-let PROG = { prologue: false, stars: {}, best: {} };
+let PROG = { prologue: false, stars: {}, best: {}, xplus: {} };   // xplus: songs (track n, or 'prologue') with Expert+ unlocked
 try { const p = JSON.parse(localStorage.getItem(PROG_KEY) || 'null'); if (p) PROG = Object.assign(PROG, p); } catch(e){}
 function saveProg(){ try { localStorage.setItem(PROG_KEY, JSON.stringify(PROG)); } catch(e){} }
+// Expert+ is locked on each song until it's beaten with three stars on Expert (the prologue: a three-star review or better)
+let XKEY = 'prologue';
+function lockXplus(key){
+  XKEY = key; const open = !!(PROG.xplus && PROG.xplus[key]);
+  document.querySelectorAll('.diffBtn[data-d=expertplus]').forEach(b => { b.classList.toggle('locked', !open); b.setAttribute('aria-disabled', !open);
+    b.title = open ? '' : 'Three stars on Expert unlocks Expert+'; b.setAttribute('aria-label', open ? 'Expert+' : 'Expert+, locked: three stars on Expert unlocks it'); });
+  if (!open && DIFF === 'expertplus') setDiff('expert');
+}
+function unlockXplus(key){ if (PROG.xplus[key]) return false; PROG.xplus[key] = true; saveProg(); return true; }
 // where each song starts and ends across the grooves (0 = outer edge, 1 = run-out), by length, like a real record
 function albumEdges(){ const sec = ALBUM.tracks.map(t => t.seconds || 120), tot = sec.reduce((a, b) => a + b, 0); let c = 0; return [0, ...sec.map(x => (c += x)/tot)]; }
 const starsFor = (acc, cleared) => !cleared ? 0 : acc >= .95 ? 3 : acc >= .85 ? 2 : 1;
@@ -1281,7 +1296,7 @@ function drawBoot(){
     if (k >= 1) goTitle();
   }
 }
-function showPanel(which){ $('posterPanel').hidden = which !== 'poster'; $('howPanel').hidden = which !== 'how'; fitTitle(); }
+function showPanel(which){ $('posterPanel').hidden = which !== 'poster'; $('howPanel').hidden = which !== 'how'; if (which === 'how') lockXplus('prologue'); fitTitle(); }
 // shrink the poster title until it sits inside its frame, whatever the font and screen width
 function fitTitle(){
   const h1 = document.querySelector('#posterPanel h1'); if (!h1 || $('posterPanel').hidden) return;
@@ -2161,7 +2176,8 @@ function rateRun(){
   const stars = acc >= .95 ? 5 : acc >= .85 ? 4 : acc >= .7 ? 3 : acc >= .5 ? 2 : 1;
   const lines = ['', 'Straight to video.', 'A cult favourite.', 'A crowd pleaser.', 'An instant classic.', 'A masterpiece. Not a dry eye in the house.'];
   const bk = DIFFS[DIFF].best; let best = 0; try { best = +localStorage.getItem(bk) || 0; if (S.score > best) localStorage.setItem(bk, S.score); } catch(e){}
-  return { stars, line: lines[stars], score: S.score, record: S.score > best && S.score > 0 };
+  const xplus = DIFF === 'expert' && stars >= 3 && unlockXplus('prologue');
+  return { stars, line: lines[stars], score: S.score, record: S.score > best && S.score > 0, xplus };
 }
 function finishPrologue(){   // into the record
   PROG.prologue = true; saveProg();
@@ -2211,6 +2227,7 @@ function sceneOver(L, now, jonX, herX){
     g.fillStyle = PAL.cream; g.font = `italic 500 ${clamp(W*0.05, 18, 28)}px ${FONT.serif}`; g.fillText(r.line, W/2, cy - L.jh*0.02);
     g.fillStyle = PAL.gold; g.font = `400 ${clamp(W*0.07, 26, 44)}px ${FONT.deco}`; g.fillText(r.score.toLocaleString(), W/2, cy + L.jh*0.32);
     if (r.record) { g.fillStyle = '#f0a3a0'; g.font = `700 11px ${FONT.type}`; g.fillText('NEW HIGH SCORE', W/2, cy + L.jh*0.46); }
+    if (r.xplus) { g.fillStyle = '#d7a8f0'; g.font = `700 11px ${FONT.type}`; g.fillText('EXPERT+ UNLOCKED', W/2, cy + L.jh*(r.record ? 0.56 : 0.46)); }
     if (e > 1.2) { g.globalAlpha = a*(.55 + .45*Math.sin(now*4)); g.fillStyle = PAL.cream; g.font = `700 10px ${FONT.type}`; g.fillText(TOUCH ? 'TAP TO GO ON  ▸' : 'PRESS SPACE TO GO ON  ▸', W/2, cy + L.jh*0.7); }
     g.restore();
   }
@@ -2373,8 +2390,13 @@ $('nextBtn').onclick = () => showPanel('how');
 function setDiff(d){ DIFF = d; PAR = parFor(); try { localStorage.setItem('sc-diff', d); } catch(e){}
   document.querySelectorAll('.diffBtn').forEach(b => b.setAttribute('aria-checked', b.dataset.d === d));
   $('diffNote').textContent = `${DIFFS[d].note} · ${CHART.levels[d].length} notes`; showBest(); }
-document.querySelectorAll('.diffBtn').forEach(b => b.onclick = () => setDiff(b.dataset.d));
-setDiff(DIFF);
+document.querySelectorAll('.diffBtn').forEach(b => b.onclick = () => {
+  if (!b.classList.contains('locked')) return setDiff(b.dataset.d);
+  b.classList.remove('nudge'); void b.offsetWidth; b.classList.add('nudge');
+  const msg = XKEY === 'prologue' ? 'Get a three-star review on Expert to unlock Expert+.' : 'Three stars on Expert unlocks Expert+.';
+  const el = $('mapUI').hidden ? $('diffNote') : $('stopNote'); el.textContent = msg;
+});
+setDiff(DIFF); lockXplus('prologue');
 $('backBtn').onclick = () => showPanel('poster');
 if (TOUCH) { $('silentNote').hidden = false; document.body.classList.add('touch'); }
 $('calib').addEventListener('pointerdown', e => { if (e.target.id !== 'calDone') calTap(e); });

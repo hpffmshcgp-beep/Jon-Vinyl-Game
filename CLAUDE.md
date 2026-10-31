@@ -45,6 +45,10 @@ Read README.md for layout, build and test commands. This file holds the decision
   on floats over his head.
 - **Stars**: any difficulty; 1★ clear, 2★ ≥ 85 % accuracy, 3★ ≥ 95 % (`starsFor`). Beating a song (1★) reveals the next
   band; the **Outro** is an escape cutscene, unlocked by 3★ on all 7 songs. Progress in localStorage `jv-progress`.
+- **Expert+ is locked per song** (owner): it opens when that song gets 3★ on Expert (the prologue: a 3-star-or-better
+  review on Expert), saved in `PROG.xplus` (track n or 'prologue'). `lockXplus(key)` greys the button with a lock (still
+  clickable: it nudges and says how to open it) and drops a locked Expert+ choice back to Expert; results say
+  "Expert+ unlocked." (the prologue's reviews show "EXPERT+ UNLOCKED"). `tests/xplus.test.js`.
 - Tracklist (from the label): 1 Chrome Hearts, 2 Stacy, 3 Deflect, 4 Void, 5 Always, 6 Told You, 7 All Bad, 8 Outro (54 s).
   Album ~16 min (Apple Music). Measure each song's length when it arrives and set `seconds`, `measured: true`.
 - Jon: one cohesive two-pass painted figure (ink silhouette, then fills). Photo-like ribbed V-neck sweater vest (coral
