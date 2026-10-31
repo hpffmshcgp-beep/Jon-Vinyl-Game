@@ -615,13 +615,17 @@ function tapFx(side){ TAPFX[side] = nowS(); }
 cv.addEventListener('pointerdown', e => {
   grabKeys(); if (e.pointerType === 'touch') { e.preventDefault(); if (!TOUCH) { TOUCH = true; document.body.classList.add('touch'); } }
   if (skipIntro()) return;
-  if (mode === 'level') { AIM.mouse = true; levelAimFromPoint(e.clientX, e.clientY); return; }
+  if (mode === 'level') { if (e.pointerType === 'touch') levelTouch(e, 'down'); else { AIM.mouse = true; levelAimFromPoint(e.clientX, e.clientY); } return; }
   const right = e.clientX >= innerWidth/2;
-  if (inScene()) { HOLD.ptr.set(e.pointerId, right); sceneTap(); return; }
+  if (inScene()) {
+    if (mode === 'intro' && cabinTap(e.clientX, e.clientY)) return;   // the cabin: tap what you want to go to
+    if (S.sc.kind === 'bow' && S.sc.ph === 'walk' && !S.sc.dlg && e.pointerType === 'touch') S.sc.autoWalk = true;   // the bow: a tap sends him to her
+    HOLD.ptr.set(e.pointerId, right); sceneTap(); return;
+  }
   press(right ? 1 : 0, evTime(e)); tapFx(right ? 1 : 0);
 });
-['pointerup', 'pointercancel', 'pointerleave'].forEach(n => cv.addEventListener(n, e => HOLD.ptr.delete(e.pointerId)));
-cv.addEventListener('pointermove', e => { if (mode !== 'level') return; if (e.pointerType === 'touch') e.preventDefault(); AIM.mouse = true; levelAimFromPoint(e.clientX, e.clientY); });
+['pointerup', 'pointercancel', 'pointerleave'].forEach(n => cv.addEventListener(n, e => { HOLD.ptr.delete(e.pointerId); levelTouch(e, 'up'); }));
+cv.addEventListener('pointermove', e => { if (mode !== 'level') return; if (e.pointerType === 'touch') { e.preventDefault(); levelTouch(e, 'move'); return; } AIM.mouse = true; levelAimFromPoint(e.clientX, e.clientY); });
 $('startBtn').onclick = startGame; $('againBtn').onclick = startGame; $('menuBtn').onclick = toTitle;
 $('intoBtn').onclick = () => enterMap(true); $('goBtn').onclick = () => startSong(); $('actBtn').onclick = () => cabinAct(); $('recordBtn').onclick = () => enterMap(false);
 $('stopPrologue').onclick = () => { leaveMap(); toTitle(); };
@@ -1815,7 +1819,7 @@ function sceneStep(L, dt, base){
   const leftU = (L.jh*0.3 - base)/L.jh;
   sc.moving = false;
   if (sc.ph === 'walk') {
-    const v = sc.dlg ? 0 : walkInput();
+    const v = sc.dlg ? 0 : (walkInput() || (sc.autoWalk ? 1 : 0));
     if (v) { sc.jon = clamp(sc.jon + v*1.25*dt, leftU, 9); sc.jdir = v; sc.moving = true; sc.wph += dt*1.5; }
     if (sc.jon >= sc.her - 1.25) { sc.jon = sc.her - 1.25; sc.jdir = 1; sc.moving = false; sc.ph = 'free'; sc.freeT = T; }
   } else if (sc.ph === 'free') {   // she pulls her hand out of his grip and runs to Jon
@@ -1829,7 +1833,7 @@ function sceneStep(L, dt, base){
       say(LINES.gift, () => { sc.ph = 'album'; sc.slide = 0; sc.albumT = sc.T; }, i => { if (i === 2) sc.offerT = sc.T; if (i === 3) sc.gotT = sc.T; });
     }
   } else if (sc.ph === 'album') {
-    if (walkInput() > 0) sc.slide = Math.min(1, sc.slide + dt*0.8);   // slide the record out of its sleeve
+    if (walkInput() > 0 || (TOUCH && HOLD.ptr.size)) sc.slide = Math.min(1, sc.slide + dt*0.8);   // slide the record out of its sleeve
     if (sc.slide >= 1) { sc.ph = 'spinup'; sc.spinT2 = T; }
   } else if (sc.ph === 'spinup') {
     if (T - sc.spinT2 > 1.9) { sc.ph = 'pull'; sc.pullT = T; sc.herDir = -1; }
@@ -1921,19 +1925,53 @@ function cabinSpots(sc){
 }
 function cabinAct(){   // the action button: talk, look, or open the door
   const sc = S.sc; if (!sc || sc.kind !== 'cabin' || sc.dlg || sc.ph !== 'free' || !sc.spot) return false;
-  const id = sc.spot.id;
+  cabinDo(sc.spot.id); return true;
+}
+// tap (or click) on her, the door or anything in the room: Jon walks over and talks or looks. Tap the floor to walk there.
+function cabinHit(L, x, y){
+  const gy = L.groundY, jh = L.jh, top = L.top, wh = gy - top, p = jh*(TOUCH ? 0.14 : 0.05);
+  const box = (x0, x1, y0, y1) => x >= x0 - p && x <= x1 + p && y >= y0 - p && y <= y1 + p;
+  const hx = W*(S.sc.herX ?? ROOM.her);
+  if (box(hx - jh*0.32, hx + jh*0.32, gy - jh*1.05, gy + jh*0.1)) return 'her';
+  const dx = W*ROOM.door, dw = jh*0.5, dh = jh*1.22;
+  if (box(dx - dw/2, dx + dw/2, gy - dh, gy)) return 'door';
+  const sx = W*ROOM.bags, s1 = jh*0.62;
+  if (box(sx - s1/2, sx + s1*0.42 + jh*0.26, gy - jh*0.5, gy)) return 'bags';
+  const tx = W*ROOM.tt, tw = jh*0.42;
+  if (box(tx - tw/2, tx + tw/2, gy - jh*0.55, gy)) return 'tt';
+  const r = Math.min(jh*0.2, W*0.06)*1.3, py = top + wh*0.36;
+  for (const [id, f] of [['port', ROOM.port], ['port2', ROOM.port2]]) if (Math.hypot(x - W*f, y - py) < r + p) return id;
+  return null;
+}
+function cabinTap(x, y){
+  const sc = S && S.sc; if (!sc || sc.kind !== 'cabin' || sc.ph !== 'free' || sc.dlg) return false;
+  const L = layout(); if (y < L.top || y > L.bot) return false;
+  const id = cabinHit(L, x, y), jw = L.jh/W;
+  let gx = x/W, face = 0;
+  if (id === 'her') { const side = sc.jx < ROOM.her ? -1 : 1; gx = ROOM.her + side*0.42*jw; face = -side; }
+  else if (id) gx = { tt: ROOM.tt, port: ROOM.port, port2: ROOM.port2, bags: ROOM.bags, door: ROOM.door - 0.05 }[id];
+  sc.goto = { x: clamp(gx, 0.05, ROOM.door - 0.04), id, face };
+  sc.tapAt = { x, y, t: sc.T, hit: !!id };
+  return true;
+}
+function cabinDo(id){
+  const sc = S.sc;
   if (id === 'her') { if (sc.talked) say(CABIN_LINES.again); else { sc.herDir = -1; say(CABIN_LINES.her, () => { sc.talked = true; }, i => { if (i === 3) sc.metT = sc.T; }); } }
   else if (id === 'door') { if (!sc.talked) say(CABIN_LINES.deck); else { sc.ph = 'exit'; sc.doorT = sc.T; sc.figT = sc.T; } }
-  else say(CABIN_LINES[id]);
+  else say(CABIN_LINES[id === 'port2' ? 'port' : id]);
   if (ac) uiClick();
-  return true;
 }
 function cabinStep(L, dt){
   const sc = S.sc; sc.T += dt; const T = sc.T, sp = 1.25*L.jh/W;
   sc.moving = false;
   if (sc.ph === 'free') {
     const v = sc.dlg ? 0 : walkInput();
-    if (v) { sc.jx = clamp(sc.jx + v*sp*dt, 0.05, ROOM.door - 0.04); sc.jdir = v; sc.moving = true; sc.wph += dt*1.5; }
+    if (v) { sc.goto = null; sc.jx = clamp(sc.jx + v*sp*dt, 0.05, ROOM.door - 0.04); sc.jdir = v; sc.moving = true; sc.wph += dt*1.5; }
+    else if (sc.goto && !sc.dlg) {   // walking over to what you tapped, then talking or looking
+      const d = sc.goto.x - sc.jx, st = Math.min(Math.abs(d), sp*dt);
+      if (st > 1e-4) { sc.jx += Math.sign(d)*st; sc.jdir = Math.sign(d); sc.moving = true; sc.wph += dt*1.5; }
+      if (Math.abs(sc.goto.x - sc.jx) < 1e-3) { const o = sc.goto; sc.goto = null; sc.moving = false; if (o.face) sc.jdir = o.face; if (o.id) cabinDo(o.id); }
+    }
     const near = cabinSpots(sc).map(s => ({ s, d: Math.abs(s.x - sc.jx)*W/L.jh })).filter(o => o.d < 0.55).sort((a, b) => a.d - b.d)[0];
     sc.spot = sc.dlg ? null : near ? near.s : null;
     if (Math.abs(sc.jx - ROOM.her)*W/L.jh < 1.2 && !sc.dlg) sc.herDir = sc.jx < ROOM.her ? -1 : 1;   // she turns to look at him
@@ -2039,6 +2077,8 @@ function cabinFrame(L, now){
     shades: true, glow: 0, holdHand: false, lookUp: false, smile: sc.talked || (sc.dlg && sc.dlg.lines === CABIN_LINES.her) });
   g.restore();
   sceneOver(L, now, jonX, herX);
+  if (sc.tapAt && sc.T - sc.tapAt.t < 0.45) { const k = (sc.T - sc.tapAt.t)/0.45;   // where you tapped
+    g.strokeStyle = `rgba(255,214,150,${(1 - k)*0.8})`; g.lineWidth = 2; g.beginPath(); g.arc(sc.tapAt.x, sc.tapAt.y, 8 + k*(sc.tapAt.hit ? 26 : 16), 0, 7); g.stroke(); }
   if (sc.spot && sc.ph === 'free') {   // what you can do here
     const x = W*sc.spot.x + (sc.spot.id === 'her' ? 0 : 0), y = L.groundY - jh*(sc.spot.id === 'her' ? 1.2 : sc.spot.id === 'door' ? 1.38 : sc.spot.id === 'port' ? 1.15 : 0.95) + Math.sin(now*4)*3;
     const txt = (TOUCH ? '' : 'E · ') + sc.spot.label.toUpperCase();
@@ -2195,8 +2235,9 @@ function sceneUI(L, now){
   if (sc.kind === 'bow') { shout(sc.pullT, PULL.slip - 0.3, PULL.slip + 1.3);
     const e = sc.T - sc.pullT; if (sc.pullT >= 0 && e > 3.4 && e < 4.9) dlgBox(L, '???', 'Enjoy the album.', Math.floor((e - 3.4)*40), clamp(Math.min((e - 3.4)*8, (4.9 - e)*8), 0, 1), false); }
   let p = '';
-  if (!d && sc.ph === 'walk') p = TOUCH ? 'HOLD THE RIGHT SIDE TO GO GET HER  ▶' : 'HOLD  →  TO GO GET HER';
-  if (!d && sc.ph === 'album' && T_ok(sc)) p = TOUCH ? 'HOLD THE RIGHT SIDE TO SLIDE THE RECORD OUT  ▶' : 'HOLD  →  TO SLIDE THE RECORD OUT';
+  if (!d && sc.ph === 'walk' && !sc.autoWalk) p = TOUCH ? 'TAP TO GO GET HER  ▶' : 'HOLD  →  TO GO GET HER';
+  if (!d && sc.ph === 'album' && T_ok(sc)) p = TOUCH ? 'HOLD TO SLIDE THE RECORD OUT  ▶' : 'HOLD  →  TO SLIDE THE RECORD OUT';
+  if (!d && sc.kind === 'cabin' && sc.ph === 'free' && !sc.tapAt && !sc.talked && sc.T > 1.5) p = TOUCH ? 'TAP HER, OR ANYTHING IN THE ROOM' : '←  →  WALK   ·   E  TALK   ·   OR CLICK';
   if (p) {
     const cy = L.bot + L.barH/2;
     g.globalAlpha = .7 + .3*Math.sin(now*5); g.textAlign = 'center'; g.font = `700 ${clamp(W*0.03, 10, 13)}px ${FONT.type}`; g.fillStyle = PAL.cream;

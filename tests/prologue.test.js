@@ -22,12 +22,25 @@ const C = require('./config');
     // 1. the cabin: walk to the door first (not without her), then to her, talk, then out the door
     await p.click('#startBtn'); await p.waitForFunction(() => mode === 'intro' && S.sc.kind === 'cabin', null, { timeout: 20000 });
     await shot('01-cabin', 800);
-    await holdUntil(() => S.sc.spot && S.sc.spot.id === 'tt'); await shot('02-turntable'); await act(); await shot('03-look', 900); await tapWhile('free', 0); await tap(); await p.waitForTimeout(300);
-    await holdUntil(() => S.sc.spot && S.sc.spot.id === 'her'); await shot('04-near-her'); await act();
+    // on a phone you tap the things themselves: Jon walks over and talks or looks
+    const tapObj = async id => { const [x, y] = await p.evaluate(id => { const L = layout(), f = { her: S.sc.herX ?? ROOM.her, tt: ROOM.tt, door: ROOM.door, port2: ROOM.port2 }[id];
+      const y = id === 'port2' ? L.top + (L.groundY - L.top)*0.36 : L.groundY - L.jh*(id === 'tt' ? 0.3 : 0.6); return [W*f, y]; }, id); await p.touchscreen.tap(x, y); };
+    const waitDlg = () => p.waitForFunction(() => !!S.sc.dlg, null, { timeout: 15000 });
+    const closeDlg = async () => { for (let i = 0; i < 30 && await p.evaluate(() => !!S.sc.dlg); i++) { await tap(); await p.waitForTimeout(240); } };
+    if (n === 'desk') {
+      await holdUntil(() => S.sc.spot && S.sc.spot.id === 'tt'); await shot('02-turntable'); await act(); await shot('03-look', 900); await tapWhile('free', 0); await tap(); await p.waitForTimeout(300);
+      await holdUntil(() => S.sc.spot && S.sc.spot.id === 'her'); await shot('04-near-her'); await act();
+    } else {
+      await tapObj('tt'); await shot('02-walk-to-turntable', 300); await waitDlg(); await shot('03-look', 900); await closeDlg();
+      await tapObj('door'); await waitDlg(); await shot('03b-not-without-her', 900); await closeDlg();
+      await tapObj('port2'); await waitDlg(); await closeDlg();
+      await tapObj('her'); await waitDlg(); await shot('04-near-her');
+    }
     await shot('05-talk', 1300);
     await (async () => { for (let i = 0; i < 30 && await p.evaluate(() => !!S.sc.dlg); i++) { await tap(); await p.waitForTimeout(240); if (i === 8) await shot('06-just-us'); } })();
     await shot('07-after-talk', 500);
-    await holdUntil(() => S.sc.spot && S.sc.spot.id === 'door'); await shot('08-door'); await act();
+    if (n === 'desk') { await holdUntil(() => S.sc.spot && S.sc.spot.id === 'door'); await shot('08-door'); await act(); }
+    else { await tapObj('door'); await shot('08-door', 600); }
     await shot('09-door-open', 1200); await p.waitForFunction(() => S.sc.kind === 'deck', null, { timeout: 10000 });
     // 2. the deck: a cutscene, then the how-to pop-up
     await shot('10-deck', 3200); await shot('11-sky', 2400); await shot('12-stranger', 4300); await shot('13-taken', 2600);

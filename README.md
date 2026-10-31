@@ -15,7 +15,9 @@ pulls him in. *The record:* a 3D map of the vinyl, one ring of grooves per song,
 - **Phone:** tap the **left** side for stars (snare and hi-hats), the **right** side for the kick drum.
 - **Computer:** left hand **A S D F / ←**, right hand **J K L ; / →**.
 - Five levels, like Beat Saber: Easy, Normal, Hard, Expert, Expert+.
+- In the cabin, tap (or click) her, the door or anything in the room and Jon walks over.
 - Play the chase on the beat; whatever you score, you reach the bow. Then walk to her and see what the stranger brings.
+- Deflect: on a phone, slide left or right anywhere to turn the shield around Jon.
 
 ## Project layout
 | Path | What it is |

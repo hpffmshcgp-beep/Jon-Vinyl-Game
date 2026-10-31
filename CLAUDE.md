@@ -17,7 +17,9 @@ Read README.md for layout, build and test commands. This file holds the decision
   No pass/fail, no results panel, **nothing is skippable**.
 - **Opening, part 1 — their cabin (playable)**: wood-panelled stateroom, brass portholes onto the sunset, bed, framed photo
   of them, turntable on a side table, two stacked suitcases + hatbox, the door. Walk left/right; an action button
-  (E / Space / Enter / ↑ on keyboard, an on-screen button on phones) talks or looks. Talking to her: they finally got away
+  (E / Space / Enter / ↑ on keyboard, an on-screen button on phones) talks or looks. **Tap or click the thing itself**
+  (her, the door, turntable, suitcases, either porthole) and Jon walks over and talks/looks (`cabinTap`/`cabinHit`);
+  tapping the floor walks there. At the bow a tap sends him to her; holding anywhere slides the record out (phones). Talking to her: they finally got away
   together — "No one knows we're on this ship", "Every time we got close, something pulled us apart" (the unknown force),
   plans for when they dock (his record store, dinner, "the long way home"), then "Let's go up on deck… fresh air". Before
   that the door says "Not without her."; after it the door is the only goal (it glows): open it and they walk out.
@@ -38,6 +40,9 @@ Read README.md for layout, build and test commands. This file holds the decision
   between songs. Ring widths follow each song's length (`seconds` in album.json; estimates until measured). Jon is the
   painted 2D figure on a billboard; one band per track (7 songs + Outro), locked bands under a dark veil, only the next band revealed; dotted spiral path,
   a stop per track with its stars, tonearm swinging over your band, heart over the label (home), amber void like the cover.
+  Camera: high and pulled back so the **whole record is in view** with Jon on the near side (owner: not zoomed in); the
+  tonearm's stand follows the camera round to the back right so it never blocks the view; the tag of the stop Jon is
+  on floats over his head.
 - **Stars**: any difficulty; 1★ clear, 2★ ≥ 85 % accuracy, 3★ ≥ 95 % (`starsFor`). Beating a song (1★) reveals the next
   band; the **Outro** is an escape cutscene, unlocked by 3★ on all 7 songs. Progress in localStorage `jv-progress`.
 - Tracklist (from the label): 1 Chrome Hearts, 2 Stacy, 3 Deflect, 4 Void, 5 Always, 6 Told You, 7 All Bad, 8 Outro (54 s).
@@ -48,11 +53,12 @@ Read README.md for layout, build and test commands. This file holds the decision
 ## Album levels
 - **Track 3 · Deflect** (`songs/deflect`, `game/deflect.js`): Beatblock-style. Jon stands on the record's label; a golden
   shield circles him; **hearts = rhythm guitar strums, heartbreaks = lead guitar notes**, both deflected; they fly in from
-  8 directions and land on the measured attack. Aim: mouse, drag a finger anywhere (phones), or arrows/WASD (8 dirs).
+  8 directions and land on the measured attack. Aim: mouse (points), arrows/WASD (8 dirs), or on phones **slide left/right
+  anywhere like a dial** (relative; right = clockwise; one sweep of 0.8 × screen width = a full turn, `levelTouch`).
   Centre of the shield (±14°) = PERFECT, edge (±34°) = GOOD, 70 ms grace. Directions follow the lead melody (up the neck →
   clockwise) and strum runs spin around; each level caps turn size/speed (`tools/make_deflect_chart.py`).
-  Charts: easy 92, normal 135, hard 207, expert 278, expertplus 388; fly-in 2.3/2.0/1.75/1.5/1.3 s. Small centre
-  (shield radius ~15 % of the screen) so notes travel a long way. The level ends 2.4 s after the last note (guitars stop
+  Charts: easy 92, normal 135, hard 207, expert 278, expertplus 388; fly-in 1.9/1.6/1.4/1.2/1.05 s (owner: not slower —
+  the small centre alone gives them more screen time). Small centre (shield radius ~15 % of the screen). The level ends 2.4 s after the last note (guitars stop
   ~105 s; the rest is vocals) with a music fade, then results. The song is played live (no strict grid).
   Owner's files: full song + lead and rhythm guitar stems (mvsep); background vocals are only in the full song.
 - Results (album songs): 3 stars from accuracy (perfect 1, good 0.7), score, high score per track+difficulty; "Back to

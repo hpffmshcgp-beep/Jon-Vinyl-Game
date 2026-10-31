@@ -18,6 +18,12 @@ const C = require('./config');
     await p.waitForTimeout(1500); await p.screenshot({ path: C.OUT + `deflect-${n}-map.png` });
     await p.click('#stopPlay'); await p.waitForFunction(() => mode === 'level', null, { timeout: 30000 });
     await p.waitForTimeout(1200); await p.screenshot({ path: C.OUT + `deflect-${n}-title.png` });
+    if (n === 'phone') {   // slide a finger a fifth of the way across: about a quarter turn, clockwise
+      const turned = await p.evaluate(async () => { const a0 = LV.aim, ev = (t, x) => cv.dispatchEvent(new PointerEvent(t, { pointerId: 3, pointerType: 'touch', clientX: x, clientY: innerHeight*0.7, bubbles: true }));
+        ev('pointerdown', 100); for (let i = 1; i <= 10; i++) { ev('pointermove', 100 + i*0.02*W); await new Promise(r => setTimeout(r, 16)); } await new Promise(r => setTimeout(r, 200)); ev('pointerup', 100 + 0.2*W); return (LV.aim - a0)*180/Math.PI; });
+      await p.screenshot({ path: C.OUT + `deflect-${n}-slide.png` });
+      console.log(n, 'slide across 20% of the screen turns the shield', turned.toFixed(0), 'deg');
+    }
     // the bot: point the shield at the next note just before it lands
     await p.evaluate(() => setInterval(() => { if (!LV || !LV.running) return; const t = levelTime(); const nx = LV.notes.find(x => !x.judged && x.t - t < 0.12); if (nx) { AIM.mouse = true; AIM.target = nx.ang; } }, 4));
     await p.waitForFunction(() => levelTime() > 12, null, { timeout: 40000 });

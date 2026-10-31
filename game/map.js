@@ -107,13 +107,14 @@ async function buildMap(){
     pad.position.y = 0.04; pad.castShadow = true; pad.receiveShadow = true; grp.add(pad);
     const ring = new T.Mesh(new T.RingGeometry(0.58, 0.66, 48), new T.MeshBasicMaterial({ color: '#ffd59a', transparent: true, opacity: 0.6, side: T.DoubleSide, depthWrite: false }));
     ring.rotation.x = -Math.PI/2; ring.position.y = 0.09; grp.add(ring);
-    const tag = new T.Sprite(new T.SpriteMaterial({ transparent: true, depthWrite: false })); tag.center.set(0.5, 0); tag.position.y = 2.3; tag.scale.set(1.3, 0.65, 1); grp.add(tag);
+    const tag = new T.Sprite(new T.SpriteMaterial({ transparent: true, depthWrite: false })); tag.center.set(0.5, -0.9); tag.position.y = 0.1; tag.scale.set(1.6, 0.8, 1); grp.add(tag);
     scene.add(grp); stops.push({ grp, pad, ring, tag, stars: -1 });
   }
 
   // ---- the tonearm, hovering over the band you are on ----
   const metal = new T.MeshStandardMaterial({ color: '#b9b4ad', metalness: 0.95, roughness: 0.22 });
-  const arm = new T.Group(); const pivot = new T.Vector3(REC.R + 2.4, 0, -REC.R*0.62); arm.position.copy(pivot); scene.add(arm);
+  const armRig = new T.Group(); scene.add(armRig);   // the arm's stand keeps to the back right of the record as the camera goes round, so it never blocks the view
+  const arm = new T.Group(); const pivot = new T.Vector3(REC.R + 2.4, 0, -REC.R*0.62); arm.position.copy(pivot); armRig.add(arm);
   const base = new T.Mesh(new T.CylinderGeometry(1.0, 1.15, 0.7, 48), new T.MeshStandardMaterial({ color: '#1a1820', metalness: 0.6, roughness: 0.4 })); base.position.y = 0.35; base.castShadow = true; arm.add(base);
   const post = new T.Mesh(new T.CylinderGeometry(0.22, 0.22, 2.8, 24), metal); post.position.y = 1.9; arm.add(post);
   const ARM_L = 11.4, beam = new T.Group(); beam.position.y = 3.2; arm.add(beam);   // high enough to pass over Jon's head
@@ -129,7 +130,7 @@ async function buildMap(){
   // ---- Jon, painted fresh onto a billboard every frame ----
   const jc = document.createElement('canvas'); jc.width = 256; jc.height = 320;
   const jTex = new T.CanvasTexture(jc); jTex.colorSpace = T.SRGBColorSpace;
-  const jon = new T.Sprite(new T.SpriteMaterial({ map: jTex, transparent: true })); jon.center.set(0.5, 0.06); jon.scale.set(1.6, 2.0, 1); scene.add(jon);
+  const jon = new T.Sprite(new T.SpriteMaterial({ map: jTex, transparent: true })); jon.center.set(0.5, 0.06); jon.scale.set(2.2, 2.75, 1); scene.add(jon);
   const blob = new T.Mesh(new T.CircleGeometry(0.42, 32), new T.MeshBasicMaterial({ map: canvasTex(T, 64, 64, (x, w) => { const gr = x.createRadialGradient(w/2, w/2, 0, w/2, w/2, w/2); gr.addColorStop(0, 'rgba(0,0,0,.6)'); gr.addColorStop(1, 'rgba(0,0,0,0)'); x.fillStyle = gr; x.fillRect(0, 0, w, w); }), transparent: true, depthWrite: false }));
   blob.rotation.x = -Math.PI/2; scene.add(blob);
 
@@ -138,9 +139,10 @@ async function buildMap(){
   const dustGeo = new T.BufferGeometry(); dustGeo.setAttribute('position', new T.BufferAttribute(dp, 3));
   const dust = new T.Points(dustGeo, new T.PointsMaterial({ map: dotTex, size: 0.12, transparent: true, depthWrite: false, blending: T.AdditiveBlending, opacity: 0.55, color: '#ffcf96' })); scene.add(dust);
   const heartTex = canvasTex(T, 256, 256, (x) => { const real = g; g = x; heart(128, 150, 190, PAL.wine, PAL.gold); g = real; });
-  const goal = new T.Sprite(new T.SpriteMaterial({ map: heartTex, transparent: true, depthWrite: false, opacity: 0.0 })); goal.position.set(0, 3.6, 0); goal.scale.set(1.0, 1.0, 1);   // high enough to leave the label readable scene.add(goal);
+  const goal = new T.Sprite(new T.SpriteMaterial({ map: heartTex, transparent: true, depthWrite: false, opacity: 0.0 })); goal.position.set(0, 3.6, 0); goal.scale.set(1.0, 1.0, 1);   // high enough to leave the label readable
+  scene.add(goal);
 
-  Object.assign(MAP, { T, R, scene, cam, disc, label, sheen, veils, path, pathPts, stops, arm, beam, needleTo, jon, jc, jTex, blob, dust, goal, glow, ready: true,
+  Object.assign(MAP, { T, R, scene, cam, disc, label, sheen, veils, path, pathPts, stops, arm, armRig, pivotAng: Math.atan2(pivot.z, pivot.x), beam, needleTo, jon, jc, jTex, blob, dust, goal, glow, ready: true,
     camPos: new T.Vector3(0, 32, 0.1), camLook: new T.Vector3(0, 0, 0), at: 0, walk: null, fall: 0, armA: needleTo(REC.rOut - 0.3) });
   addEventListener('resize', () => { if (!MAP.ready) return; MAP.R.setSize(innerWidth, innerHeight, false); MAP.cam.aspect = innerWidth/innerHeight; MAP.cam.updateProjectionMatrix(); });
 }
@@ -198,8 +200,9 @@ function mapFrame(now){
   if (MAP.fall > 0) MAP.wasFalling = true;
   // camera: outside Jon, looking in across the record toward the label
   const r = Math.hypot(jx, jz) || 1, ux = jx/r, uz = jz/r;
-  const asp = innerWidth/innerHeight, far = asp < 1 ? 1.15 : 1;   // a tall phone screen: wider lens, camera a little further back
-  const want = new T.Vector3(jx + ux*7.5*far, 6.2*far, jz + uz*7.5*far), look = new T.Vector3(jx*0.88, 0.6, jz*0.88);   // Jon in the middle, the label (home) up ahead
+  // high and well back, so most of the record is in view and you can see where Jon is on it (he stands on the near side)
+  const asp = innerWidth/innerHeight, el = (asp < 1 ? 60 : 52)*Math.PI/180, D = asp < 1 ? 40 : 26.5;
+  const look = new T.Vector3(jx*0.32, 0, jz*0.32), want = new T.Vector3(look.x + ux*Math.cos(el)*D, Math.sin(el)*D, look.z + uz*Math.cos(el)*D);
   const intro = clamp((now - (MAP.enterT || 0))/2.6, 0, 1), k = MAP.first ? easeIO(intro) : 1;
   const from = new T.Vector3(0, 30, 0.1);
   const target = from.clone().lerp(want, k), lookT = new T.Vector3(0, 0, 0).lerp(look, k);
@@ -210,7 +213,7 @@ function mapFrame(now){
   const card = $('mapUI').querySelector('.stopCard').getBoundingClientRect(), side = card.left > innerWidth*0.45;
   const ox = side ? (innerWidth - card.left)*0.5 : 0, oy = side ? 0 : (innerHeight - card.top)*0.5;
   cam.setViewOffset(innerWidth + 2*ox, innerHeight + 2*oy, 2*ox, 2*oy, innerWidth, innerHeight);
-  cam.fov = asp < 1 ? 2*Math.atan(Math.tan(18*Math.PI/180)/asp)*180/Math.PI : 40;
+  cam.fov = asp < 1 ? 2*Math.atan(Math.tan(20*Math.PI/180)/asp)*180/Math.PI : 40;
   cam.aspect = (innerWidth + 2*ox)/(innerHeight + 2*oy); cam.updateProjectionMatrix();
   // the sheen follows the camera, veils lift as songs are beaten, the arm swings in, dust drifts
   MAP.sheen.rotation.z = Math.atan2(cam.position.z, cam.position.x) + Math.PI/2;
@@ -218,10 +221,11 @@ function mapFrame(now){
   let want2 = Math.PI/2 - Math.atan2(cam.position.z, cam.position.x), d2 = want2 - MAP.label.rotation.z; d2 = Math.atan2(Math.sin(d2), Math.cos(d2));
   MAP.label.rotation.z += d2*Math.min(1, dt*2.5);
   MAP.veils.forEach(v => { const tg = v.userData.target ?? 0.9; v.material.opacity += (tg - v.material.opacity)*Math.min(1, dt*1.5); v.visible = v.material.opacity > 0.01; });
+  { let d = (MAP.pivotAng - (Math.atan2(cam.position.z, cam.position.x) - 2.45)) - MAP.armRig.rotation.y; d = Math.atan2(Math.sin(d), Math.cos(d)); MAP.armRig.rotation.y += MAP.first && intro < 1 ? d : d*Math.min(1, dt*3); }
   MAP.armA += ((MAP.armTarget ?? MAP.armA) - MAP.armA)*Math.min(1, dt*1.2); MAP.arm.rotation.y = MAP.armA; MAP.beam.rotation.z = -0.025 + Math.sin(now*0.8)*0.006;
-  MAP.stops.forEach((st, i) => { st.ring.scale.setScalar(1 + 0.08*Math.sin(now*3 + i)); st.ring.material.opacity = i === MAP.at && !MAP.walk ? 0.85 : 0.35; st.tag.position.y = 2.3 + Math.sin(now*2 + i)*0.05; });
+  MAP.stops.forEach((st, i) => { st.ring.scale.setScalar(1 + 0.08*Math.sin(now*3 + i)); st.ring.material.opacity = i === MAP.at && !MAP.walk ? 0.85 : 0.35; st.tag.center.y += ((i === MAP.at && !MAP.walk ? -2.95 : -0.9) - st.tag.center.y)*Math.min(1, dt*6) + Math.sin(now*2 + i)*0.002; });   // offsets in screen space: over Jon's head where he stands
   const p = MAP.dust.geometry.attributes.position; for (let i = 0; i < p.count; i++) { let y = p.getY(i) + dt*0.18; if (y > 9) y = 0; p.setY(i, y); } p.needsUpdate = true;
-  MAP.goal.material.opacity = 0.55 + 0.25*Math.sin(now*2); MAP.goal.position.y = 3.6 + Math.sin(now*1.3)*0.15; MAP.glow.intensity = 12 + 3*Math.sin(now*2);
+  MAP.goal.material.opacity = 0.55 + 0.25*Math.sin(now*2); MAP.goal.position.y = 4.4 + Math.sin(now*1.3)*0.15; MAP.glow.intensity = 12 + 3*Math.sin(now*2);
   MAP.R.render(MAP.scene, cam);
 }
 async function enterMap(first){
