@@ -21,16 +21,17 @@ async function startLevel(track){
   try { if (!SONGBUF[t.song]) SONGBUF[t.song] = await new Promise((res, rej) => { fetchProg(t.song).then(ab => { const p = ac.decodeAudioData(ab, res, rej); if (p && p.then) p.then(res, rej); }, rej); }); }
   catch(e) { $('mapLoading').textContent = 'This browser could not play the song.'; return; }
   $('mapLoading').hidden = true; leaveMap(); stopAmbience(); stopSources();
-  const notes = chart.levels[DIFF].map(([tt, dir, kind]) => ({ t: tt, dir, kind, ang: dirAngle(dir), judged: false, hit: false, k: '', jt: 0, out: 0 }));
+  const notes = chart.mode === 'surf' ? [] : chart.levels[DIFF].map(([tt, dir, kind]) => ({ t: tt, dir, kind, ang: dirAngle(dir), judged: false, hit: false, k: '', jt: 0, out: 0 }));
   const endAt = notes.length ? notes[notes.length - 1].t + 2.4 : chart.duration;   // the song fades out a little after the last heart
   LV = S = { kind: 'level', track: t, chart, notes, endAt, approach: chart.approach[DIFF], startAt: ac.currentTime + DEF.preroll, running: true, paused: false,
     score: 0, combo: 0, maxCombo: 0, counts: { perfect: 0, good: 0, miss: 0 }, aim: -Math.PI/2, flash: -9, shake: -9, popups: [], parts: [], trail: [], comboT: -9, next: 0, lastNow: 0, ended: false };
+  if (chart.mode === 'surf') Object.assign(LV, surfInit(t, chart));   // track 4, Void: a different game on the same engine
   setLayer(nodes.songplay, 'open');
   const src = ac.createBufferSource(); src.buffer = SONGBUF[t.song]; src.connect(nodes.songplay.lp); src.start(LV.startAt); srcs.push(src);
   mode = 'level'; cv.hidden = false; grabKeys();
   ['title', 'results', 'pause'].forEach(id => $(id).hidden = true);
 }
-const levelTime = () => heardCtx(performance.now()) - LV.startAt - userDelay/1000;
+const levelTime = (p = performance.now()) => heardCtx(p) - LV.startAt - userDelay/1000;
 function levelAimFromPoint(x, y){ const G = levelGeo(); AIM.target = Math.atan2(y - G.cy, x - G.cx); }
 // phones: tap where it's coming from. The shield snaps to the nearest of the eight directions, so a tap anywhere in
 // roughly the right area aims it dead centre; keep a finger down and slide to follow. Taps right on Jon are ignored.
@@ -98,6 +99,7 @@ function heartbreak(x, y, s, rot, split = 0){   // a heart split by a jagged cra
 }
 const swingPop = k => k >= 1 ? 1 : 0.7 + 0.3*k + Math.sin(Math.min(1, k)*Math.PI)*0.35;   // grow past full size, then settle
 function levelFrame(now){
+  if (LV.mode === 'surf') return surfFrame(now);
   const G = levelGeo(), { L, cx, cy, R } = G, t = LV.running ? levelTime() : LV.lastT || 0; LV.lastT = t;
   const dt = clamp(now - (LV.lastNow || now), 0, 0.1); LV.lastNow = now;
   levelKeys();

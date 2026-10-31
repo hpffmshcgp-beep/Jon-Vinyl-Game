@@ -7,7 +7,7 @@ Read README.md for layout, build and test commands. This file holds the decision
   Jon and publish it on **itch.io** as a browser game. Their one priority: **quality**.
 - Plain HTML5 canvas + Web Audio in one file (`game/src.html`). No framework, no bundler. Built by `tools/build.py`.
 - A claude.ai artifact of the game exists: https://claude.ai/artifact/5uJ4etxKaX4oRgAR5KNujo — publish
-  `dist/artifact/index.html` with `songplay.mp3`, `below.mp3` and each album song's mp3 (e.g. `deflect.mp3`) as files (read it first from a new conversation).
+  `dist/artifact/index.html` with `songplay.mp3`, `below.mp3` and each album song's mp3 (`deflect.mp3`, `void.mp3`) as files (read it first from a new conversation).
 
 ## Story and look
 - Old-Hollywood romance on an ocean liner ("DiCaprio and Winslet on Titanic, classic"). Sepia verses, colour choruses,
@@ -62,6 +62,18 @@ Read README.md for layout, build and test commands. This file holds the decision
   the small centre alone gives them more screen time). Small centre (shield radius ~15 % of the screen). The level ends 2.4 s after the last note (guitars stop
   ~105 s; the rest is vocals) with a music fade, then results. The song is played live (no strict grid).
   Owner's files: full song + lead and rhythm guitar stems (mvsep); background vocals are only in the full song.
+- **Track 4 · Void** (`songs/void`, `game/surf.js`, `tools/make_surf_chart.py`): a surf level, the owner's pick of
+  three ideas ("hold to ride"). Owner: F minor, 130.4 BPM (half-time groove, relaxed); vibe = sunset surfing, *no lyric
+  text in the game*. Side view: Jon on a board riding a long wave that curls behind him; over the song the sun sets
+  ahead and the moon rises behind (stars come out), a liner sails the horizon. **Hold anywhere / any key to climb the
+  face, let go to carve down** (full climb `rise` 0.36 s, 50 ms ease). Gems on the measured drum attacks: kick = low
+  (teal), snare = high (gold), hi-hat = mid (rose, hard+ only); collected by being at its height as it reaches him
+  (±0.10 PERFECT, ±0.21 GOOD); only reachable gems are kept; a dotted racing line joins the next ones. At five big
+  moments (29.6 kick in, 80.8 crash, 103.5 kick back after the break, 132.8 and 140.2 crashes) the wave lifts him to the
+  lip and throws him into the air for 4 beats: **tap on each star cue to spin** (±50 ms PERFECT, ±110 GOOD). Gems:
+  easy 76, normal 107, hard 171, expert 182, expertplus 330; spins 5/8/9/14/17; scroll 2.6/2.3/2.0/1.8/1.6 s. Intro
+  0–14.5 s has no gems (title, practice). Ends ~2 s after the last note with a fade. Surf stance: `drawJon(..., {surf:true})`.
+  Owner's files: full song, drumsep stems (kick/snare/hh/crash/toms/ride/residual), Demucs bass/music/vocals.
 - Results (album songs): 3 stars from accuracy (perfect 1, good 0.7), score, high score per track+difficulty; "Back to
   the record" / "Play again". Songs not added yet don't block the way on the map; ◀ ▶ walk between reached stops.
 - Pipeline for a guitar song: `find_guitar_hits.py songs/<s> <stems…>` → `make_deflect_chart.py songs/<s>`; set

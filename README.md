@@ -18,6 +18,7 @@ pulls him in. *The record:* a 3D map of the vinyl, one ring of grooves per song,
 - In the cabin, tap (or click) her, the door or anything in the room and Jon walks over.
 - Play the chase on the beat; whatever you score, you reach the bow. Then walk to her and see what the stranger brings.
 - Deflect: on a phone, tap where a heart is coming from and the shield turns to meet it.
+- Void: hold to climb the wave, let go to carve down through the gems; in the air, tap on the stars to spin.
 
 ## Project layout
 | Path | What it is |
@@ -32,6 +33,8 @@ pulls him in. *The record:* a 3D map of the vinyl, one ring of grooves per song,
 | `songs/star-crossed/analysis/` | Every detected drum hit, used to make the charts. |
 | `tools/` | `find_hits.py` → `make_charts.py` → `build.py`. |
 | `songs/deflect/` | Track 3, Deflect: the song, guitar stems, guitar-hit analysis and its Beatblock-style chart. |
+| `game/surf.js` | The Void level: surfing at sunset, gems on the beat, spins in the air. |
+| `songs/void/` | Track 4, Void: the song, drum and Demucs stems, drum-hit analysis and its surf chart (`tools/make_surf_chart.py`). |
 | `game/deflect.js` | The Deflect level: turn the shield around Jon to knock away hearts and heartbreaks. |
 | `tests/` | Automated play-tests (Playwright). |
 
@@ -49,7 +52,7 @@ Needs Python 3 with `librosa`, `numpy`, `scipy`; `ffmpeg`.
 ## Testing
 ```bash
 python3 -m http.server 8765 &     # from the repo root
-cd tests && node left-right.test.js && node cold-open.test.js && node prologue.test.js && node map.test.js && node three-inline.test.js && node deflect.test.js && node levels.test.js
+cd tests && node left-right.test.js && node cold-open.test.js && node prologue.test.js && node map.test.js && node three-inline.test.js && node deflect.test.js && node void.test.js && node levels.test.js
 python3 ../tools/build.py && node standalone-file.test.js
 ```
 Screenshots land in `test-output/`.
