@@ -18,13 +18,20 @@ const C = require('./config');
     await p.waitForTimeout(1500); await p.screenshot({ path: C.OUT + `deflect-${n}-map.png` });
     await p.click('#stopPlay'); await p.waitForFunction(() => mode === 'level', null, { timeout: 30000 });
     await p.waitForTimeout(1200); await p.screenshot({ path: C.OUT + `deflect-${n}-title.png` });
-    if (n === 'phone') {   // slide a finger a fifth of the way across: about a quarter turn, clockwise
-      const turned = await p.evaluate(async () => { const a0 = LV.aim, ev = (t, x) => cv.dispatchEvent(new PointerEvent(t, { pointerId: 3, pointerType: 'touch', clientX: x, clientY: innerHeight*0.7, bubbles: true }));
-        ev('pointerdown', 100); for (let i = 1; i <= 10; i++) { ev('pointermove', 100 + i*0.02*W); await new Promise(r => setTimeout(r, 16)); } await new Promise(r => setTimeout(r, 200)); ev('pointerup', 100 + 0.2*W); return (LV.aim - a0)*180/Math.PI; });
-      await p.screenshot({ path: C.OUT + `deflect-${n}-slide.png` });
-      console.log(n, 'slide across 20% of the screen turns the shield', turned.toFixed(0), 'deg');
+    if (n === 'phone') {   // tap up-and-right of Jon, then far down-left: the shield snaps to those directions (1 and 5)
+      const r = await p.evaluate(async () => { const G = levelGeo(), ev = (t, x, y) => cv.dispatchEvent(new PointerEvent(t, { pointerId: 3, pointerType: 'touch', clientX: x, clientY: y, bubbles: true }));
+        const deg = () => Math.round(((LV.aim + Math.PI/2)*180/Math.PI % 360 + 360) % 360);
+        ev('pointerdown', G.cx + 90, G.cy - 70); await new Promise(r => setTimeout(r, 80)); const a1 = deg(); ev('pointerup', G.cx + 90, G.cy - 70);
+        ev('pointerdown', 20, H - 140); await new Promise(r => setTimeout(r, 80)); const a2 = deg(); ev('pointerup', 20, H - 140); return [a1, a2]; });
+      await p.screenshot({ path: C.OUT + `deflect-${n}-tap.png` });
+      console.log(n, 'tap up-right ->', r[0], 'deg, tap bottom-left ->', r[1], 'deg (want 45 and 225)');
     }
     // the bot: point the shield at the next note just before it lands
+    if (n === 'phone')   // on the phone the bot taps, like a thumb would: somewhere out along the direction it's coming from, a little off-line
+      await p.evaluate(() => setInterval(() => { if (!LV || !LV.running) return; const t = levelTime(), G = levelGeo(); const nx = LV.notes.find(x => !x.judged && x.t - t < 0.12);
+        if (nx && nx !== window.__last) { window.__last = nx; const a = nx.ang + (Math.random() - 0.5)*0.6, r = G.R*(1.6 + Math.random()*1.5), x = G.cx + Math.cos(a)*r, y = G.cy + Math.sin(a)*r;
+          cv.dispatchEvent(new PointerEvent('pointerdown', { pointerId: 9, pointerType: 'touch', clientX: x, clientY: y, bubbles: true })); cv.dispatchEvent(new PointerEvent('pointerup', { pointerId: 9, pointerType: 'touch', clientX: x, clientY: y, bubbles: true })); } }, 4));
+    else
     await p.evaluate(() => setInterval(() => { if (!LV || !LV.running) return; const t = levelTime(); const nx = LV.notes.find(x => !x.judged && x.t - t < 0.12); if (nx) { AIM.mouse = true; AIM.target = nx.ang; } }, 4));
     await p.waitForFunction(() => levelTime() > 12, null, { timeout: 40000 });
     await p.screenshot({ path: C.OUT + `deflect-${n}-play1.png` });

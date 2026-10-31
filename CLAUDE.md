@@ -53,8 +53,9 @@ Read README.md for layout, build and test commands. This file holds the decision
 ## Album levels
 - **Track 3 · Deflect** (`songs/deflect`, `game/deflect.js`): Beatblock-style. Jon stands on the record's label; a golden
   shield circles him; **hearts = rhythm guitar strums, heartbreaks = lead guitar notes**, both deflected; they fly in from
-  8 directions and land on the measured attack. Aim: mouse (points), arrows/WASD (8 dirs), or on phones **slide left/right
-  anywhere like a dial** (relative; right = clockwise; one sweep of 0.8 × screen width = a full turn, `levelTouch`).
+  8 directions and land on the measured attack. Aim: mouse (points), arrows/WASD (8 dirs), or on phones **tap where it's
+  coming from** — snaps to the nearest of the 8 directions; hold and slide to follow; taps on Jon ignored (`levelTouch`).
+  Owner tried and rejected: drag-around-Jon (unsnapped), slide-like-a-dial, and a wall-jumping redesign (reverted).
   Centre of the shield (±14°) = PERFECT, edge (±34°) = GOOD, 70 ms grace. Directions follow the lead melody (up the neck →
   clockwise) and strum runs spin around; each level caps turn size/speed (`tools/make_deflect_chart.py`).
   Charts: easy 92, normal 135, hard 207, expert 278, expertplus 388; fly-in 1.9/1.6/1.4/1.2/1.05 s (owner: not slower —

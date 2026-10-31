@@ -1,7 +1,7 @@
 /* ---------- album levels: Deflect (Beatblock-style) ----------
    Jon stands on the record's label. A golden shield circles him; hearts (the rhythm guitar) and heartbreaks (the lead
    guitar) fly in from eight directions and land on the beat. Point the shield at each one as it arrives:
-   mouse, or slide a finger left and right anywhere on a phone (one slide across turns it all the way round), or the arrow keys / WASD. Dead centre is PERFECT, the edge is GOOD. */
+   mouse, or on a phone tap where it's coming from (snaps to the 8 directions), or the arrow keys / WASD. Dead centre is PERFECT, the edge is GOOD. */
 const SONGS = __SONGS__;                       // charts for the album songs that have been added (tools/make_deflect_chart.py)
 const DEF = { half: 34*Math.PI/180, perfect: 14*Math.PI/180, grace: 0.07, preroll: 2.6 };
 const dirAngle = d => -Math.PI/2 + d*Math.PI/4;   // 0 = top, clockwise
@@ -32,15 +32,17 @@ async function startLevel(track){
 }
 const levelTime = () => heardCtx(performance.now()) - LV.startAt - userDelay/1000;
 function levelAimFromPoint(x, y){ const G = levelGeo(); AIM.target = Math.atan2(y - G.cy, x - G.cx); }
-// phones: slide left and right anywhere, like a dial. Right turns the shield clockwise; about one finger-sweep across
-// the screen is a full turn. Only the movement counts, so you can lift your finger and slide again from anywhere.
-const SLIDE = { id: null, x: 0 };
-const slideTurn = () => 2*Math.PI/(0.8*clamp(W, 300, 560));
+// phones: tap where it's coming from. The shield snaps to the nearest of the eight directions, so a tap anywhere in
+// roughly the right area aims it dead centre; keep a finger down and slide to follow. Taps right on Jon are ignored.
+const TOUCHES = new Set();
 function levelTouch(e, ph){
-  if (ph === 'down') { SLIDE.id = e.pointerId; SLIDE.x = e.clientX; AIM.mouse = true; AIM.target = LV ? LV.aim : AIM.target; return; }
-  if (ph === 'up') { if (e.pointerId === SLIDE.id) SLIDE.id = null; return; }
-  if (e.pointerId !== SLIDE.id) return;
-  AIM.target += (e.clientX - SLIDE.x)*slideTurn(); SLIDE.x = e.clientX; AIM.mouse = true;
+  if (ph === 'up') { TOUCHES.delete(e.pointerId); return; }
+  if (ph === 'down') TOUCHES.add(e.pointerId); else if (!TOUCHES.has(e.pointerId)) return;
+  const G = levelGeo(), dx = e.clientX - G.cx, dy = e.clientY - G.cy;
+  if (Math.hypot(dx, dy) < G.R*0.45) return;
+  const d = ((Math.round((Math.atan2(dy, dx) + Math.PI/2)/(Math.PI/4)) % 8) + 8) % 8;
+  AIM.target = dirAngle(d); AIM.mouse = true;
+  if (ph === 'down' && LV) LV.tapFx = { x: e.clientX, y: e.clientY, t: performance.now()/1000, d };
 }
 function levelKeys(){   // arrows / WASD give eight directions
   const k = AIM.keys, dx = (k.has('ArrowRight') || k.has('KeyD') ? 1 : 0) - (k.has('ArrowLeft') || k.has('KeyA') ? 1 : 0),
@@ -131,6 +133,9 @@ function levelFrame(now){
     if (n.kind) heartbreak(x, y, ns, rot, split); else { g.save(); g.translate(x, y); g.rotate(rot); heart(0, 0, ns*1.9, '#e8746a', PAL.gold); g.restore(); }
     g.globalAlpha = 1;
   }
+  if (LV.tapFx) { const e = now - LV.tapFx.t; if (e < 0.3) { const k = e/0.3, a = dirAngle(LV.tapFx.d);
+    g.strokeStyle = `rgba(255,214,150,${(1 - k)*0.7})`; g.lineWidth = 2; g.beginPath(); g.arc(LV.tapFx.x - sx, LV.tapFx.y - sy, 10 + k*22, 0, 7); g.stroke();
+    g.strokeStyle = `rgba(255,214,150,${(1 - k)*0.18})`; g.lineWidth = R*0.5; g.beginPath(); g.moveTo(cx + Math.cos(a)*R*1.3, cy + Math.sin(a)*R*1.3); g.lineTo(cx + Math.cos(a)*G.spawn*0.7, cy + Math.sin(a)*G.spawn*0.7); g.stroke(); } }
   drawParts(t, cx, cy, R);
   // the shield: a golden arc of record rim, leaving a short fading smear when it turns fast
   const fl = Math.max(0, 1 - (t - LV.flash)/0.18);
@@ -162,7 +167,7 @@ function levelFrame(now){
     g.fillStyle = PAL.cream; g.font = `italic 500 ${clamp(W*0.04, 15, 22)}px ${FONT.serif}`; g.fillText(`Track ${LV.track.n}`, W/2, L.top + L.fh*0.16);
     g.fillStyle = PAL.gold; g.font = `400 ${clamp(W*0.09, 34, 64)}px ${FONT.deco}`; g.fillText(LV.track.title, W/2, L.top + L.fh*0.16 + clamp(W*0.08, 34, 58));
     g.fillStyle = PAL.cream; g.font = `700 ${clamp(W*0.026, 10, 13)}px ${FONT.type}`;
-    g.fillText(TOUCH ? '◀  SLIDE LEFT OR RIGHT TO TURN THE SHIELD  ▶' : 'AIM THE SHIELD WITH THE MOUSE  ·  OR ARROWS / WASD', W/2, L.bot - L.fh*0.06);
+    g.fillText(TOUCH ? 'TAP WHERE IT’S COMING FROM' : 'AIM THE SHIELD WITH THE MOUSE  ·  OR ARROWS / WASD', W/2, L.bot - L.fh*0.06);
     g.globalAlpha = 1; }
   if (LV.running && !LV.fading && t > LV.endAt) { LV.fading = true; nodes.songplay.gn.gain.setTargetAtTime(0, ac.currentTime, 0.35); }
   if (LV.fading) { g.fillStyle = `rgba(3,2,5,${clamp((t - LV.endAt)/1.4, 0, 0.6)})`; g.fillRect(0, 0, W, H); }
@@ -184,5 +189,6 @@ function levelEnd(){
   $('intoBtn').hidden = false; $('intoBtn').textContent = 'Back to the record'; $('intoBtn').onclick = () => { $('results').hidden = true; enterMap(false); };
   $('againBtn').className = 'ghost'; $('againBtn').textContent = 'Play again'; $('againBtn').onclick = () => { $('results').hidden = true; startLevel(tn); };
   $('menuBtn').hidden = true;
+  $('resBilling').textContent = `Fan-made and unofficial · music “${LV.track.title}” by Jon Vinyl`;
   $('results').hidden = false; mode = 'results'; startAmbience();
 }
