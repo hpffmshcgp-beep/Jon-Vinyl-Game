@@ -96,7 +96,11 @@ body:not(.touch) #actBtn { font-size: 15px; padding: 8px 20px; }
 #stopStars { font-size: 26px; letter-spacing: .12em; color: #ffe29a; line-height: 1; min-height: 26px; }
 #stopStars i { font-style: normal; color: rgba(243,230,200,.18); }
 .stopRow { display: flex; gap: 10px; align-items: center; justify-content: center; flex-wrap: wrap; }
-.stopCard .diff { max-width: 400px; }
+.lvlChip, #howSettings, #titleSettings { display: inline-flex; align-items: center; gap: 8px; }
+.gear { width: 14px; height: 14px; flex: none; }
+.lvlNote b { color: var(--gold); font-weight: 400; }
+#settings { z-index: 40; background: rgba(5,4,10,.78); }
+#settings .panel { gap: 16px; }
 .btn:disabled { filter: grayscale(.6) brightness(.7); cursor: default; }
 #diffNote { font-family: var(--type); font-size: 10px; letter-spacing: .14em; text-transform: uppercase; color: #cdbb94; min-height: 1.2em; }
 body.touch .bubble .keys, body:not(.touch) .bubble .tap { display: none; }
@@ -175,13 +179,7 @@ kbd { font-family: var(--type); font-size: 10px; border: 1px solid rgba(243,230,
     <div class="eyebrow" id="stopNum">Track 1 of 8</div>
     <h2 id="stopTitle">Track 1</h2>
     <div id="stopStars"></div>
-    <div class="diff" role="radiogroup" aria-label="Difficulty">
-      <button class="diffBtn" data-d="easy" role="radio" aria-checked="false">Easy</button>
-      <button class="diffBtn" data-d="normal" role="radio" aria-checked="true">Normal</button>
-      <button class="diffBtn" data-d="hard" role="radio" aria-checked="false">Hard</button>
-      <button class="diffBtn" data-d="expert" role="radio" aria-checked="false">Expert</button>
-      <button class="diffBtn" data-d="expertplus" role="radio" aria-checked="false">Expert+<svg class="lock" viewBox="0 0 10 12" aria-hidden="true"><path d="M2.5 5V3.6a2.5 2.5 0 0 1 5 0V5" fill="none" stroke="currentColor" stroke-width="1.4"/><rect x="1" y="5" width="8" height="6.4" rx="1.2" fill="currentColor"/></svg></button>
-    </div>
+    <button class="ghost lvlChip" id="stopLvl" aria-label="Level and timing settings"><svg class="gear" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M10.3 2h3.4l.5 2.6a8 8 0 0 1 1.9 1.1l2.5-.9 1.7 2.9-2 1.7a8 8 0 0 1 0 2.2l2 1.7-1.7 2.9-2.5-.9a8 8 0 0 1-1.9 1.1l-.5 2.6h-3.4l-.5-2.6a8 8 0 0 1-1.9-1.1l-2.5.9-1.7-2.9 2-1.7a8 8 0 0 1 0-2.2l-2-1.7 1.7-2.9 2.5.9a8 8 0 0 1 1.9-1.1zM12 9a3 3 0 1 0 0 6 3 3 0 0 0 0-6z"/></svg><span class="lvlName">Normal</span></button>
     <div class="stopRow"><button class="chip" id="stopPrev" aria-label="Previous song">&#9664;</button><button class="btn" id="stopPlay" disabled>Coming soon</button><button class="chip" id="stopNext" aria-label="Next song">&#9654;</button></div>
     <div class="fine" id="stopNote"></div>
     <div class="stopRow"><button class="ghost" id="stopPrologue">Replay the prologue</button><button class="ghost" id="stopTitleBtn">Title</button></div>
@@ -208,13 +206,24 @@ kbd { font-family: var(--type); font-size: 10px; border: 1px solid rgba(243,230,
     </div>
     <button class="btn" id="recordBtn" hidden>Into the record</button>
     <button class="btn" id="nextBtn">Continue</button>
+    <button class="ghost" id="titleSettings"><svg class="gear" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M10.3 2h3.4l.5 2.6a8 8 0 0 1 1.9 1.1l2.5-.9 1.7 2.9-2 1.7a8 8 0 0 1 0 2.2l2 1.7-1.7 2.9-2.5-.9a8 8 0 0 1-1.9 1.1l-.5 2.6h-3.4l-.5-2.6a8 8 0 0 1-1.9-1.1l-2.5.9-1.7-2.9 2-1.7a8 8 0 0 1 0-2.2l-2-1.7 1.7-2.9 2.5.9a8 8 0 0 1 1.9-1.1zM12 9a3 3 0 1 0 0 6 3 3 0 0 0 0-6z"/></svg>Settings</button>
     <div class="fine" id="soundHint">Tap anywhere for sound</div>
     <div class="billing">A fan-made rhythm picture &middot; unofficial</div>
   </div>
   <div class="panel" id="howPanel" hidden>
     <div class="eyebrow">Before the picture</div>
-    <h2>Choose your level</h2>
+    <h2>Now showing</h2>
+    <p class="fine lvlNote">Playing on <b class="lvlName">Normal</b>. Change the level or the timing any time in Settings.</p>
+    <button class="btn" id="startBtn" disabled>Threading the reel&hellip;</button>
+    <div class="fine" id="bestLine"></div>
+    <div class="stopRow"><button class="ghost" id="howSettings"><svg class="gear" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M10.3 2h3.4l.5 2.6a8 8 0 0 1 1.9 1.1l2.5-.9 1.7 2.9-2 1.7a8 8 0 0 1 0 2.2l2 1.7-1.7 2.9-2.5-.9a8 8 0 0 1-1.9 1.1l-.5 2.6h-3.4l-.5-2.6a8 8 0 0 1-1.9-1.1l-2.5.9-1.7-2.9 2-1.7a8 8 0 0 1 0-2.2l-2-1.7 1.7-2.9 2.5.9a8 8 0 0 1 1.9-1.1zM12 9a3 3 0 1 0 0 6 3 3 0 0 0 0-6z"/></svg>Settings</button><button class="ghost" id="backBtn">Back</button></div>
+  </div>
+</div>
 
+<div class="overlay" id="settings" hidden>
+  <div class="panel" role="dialog" aria-labelledby="setTitle">
+    <div class="eyebrow">Settings</div>
+    <h2 id="setTitle">Level &amp; timing</h2>
     <div class="diffWrap">
       <div class="diff" role="radiogroup" aria-label="Difficulty">
         <button class="diffBtn" id="dEasy" data-d="easy" role="radio" aria-checked="false">Easy</button>
@@ -225,10 +234,9 @@ kbd { font-family: var(--type); font-size: 10px; border: 1px solid rgba(243,230,
       </div>
       <div id="diffNote"></div>
     </div>
-    <button class="btn" id="startBtn" disabled>Threading the reel&hellip;</button>
     <div class="row"><span>Timing</span><button class="chip" id="delayDown" aria-label="Earlier">&minus;</button><b id="delayVal">0 ms</b><button class="chip" id="delayUp" aria-label="Later">+</button><button class="ghost" id="calBtn">Sound check</button></div>
-    <div class="fine" id="bestLine">Bluetooth? Run a sound check.</div>
-    <button class="ghost" id="backBtn">Back</button>
+    <div class="fine">Bluetooth headphones? Run a sound check.</div>
+    <button class="btn" id="setDone">Done</button>
   </div>
 </div>
 
@@ -251,7 +259,7 @@ kbd { font-family: var(--type); font-size: 10px; border: 1px solid rgba(243,230,
     <h2>Tap on every click</h2>
     <p class="fine" id="calMsg">Tap anywhere or press any key right when you hear each click. 16 clicks.</p>
     <div id="calDot"></div>
-    <button class="btn" id="calDone" hidden>Back to the lobby</button>
+    <button class="btn" id="calDone" hidden>Back to settings</button>
   </div>
 </div>
 
@@ -302,7 +310,8 @@ function lockXplus(key){
   XKEY = key; const open = !!(PROG.xplus && PROG.xplus[key]);
   document.querySelectorAll('.diffBtn[data-d=expertplus]').forEach(b => { b.classList.toggle('locked', !open); b.setAttribute('aria-disabled', !open);
     b.title = open ? '' : 'Three stars on Expert unlocks Expert+'; b.setAttribute('aria-label', open ? 'Expert+' : 'Expert+, locked: three stars on Expert unlocks it'); });
-  if (!open && DIFF === 'expertplus') setDiff('expert');
+  if (!open && DIFF === 'expertplus') setDiff('expert', true);                     // not here yet: play Expert, keep the wish
+  else if (open && WANT === 'expertplus' && DIFF !== 'expertplus') setDiff('expertplus', true);
 }
 function unlockXplus(key){ if (PROG.xplus[key]) return false; PROG.xplus[key] = true; saveProg(); return true; }
 // where each song starts and ends across the grooves (0 = outer edge, 1 = run-out), by length, like a real record
@@ -572,7 +581,7 @@ function endGame(){
   $('results').hidden = false;
   startAmbience();
 }
-function showBest(){ let b = 0; try { b = +localStorage.getItem(DIFFS[DIFF].best) || 0; } catch(e){} $('bestLine').textContent = b ? `${DIFFS[DIFF].name} record: ${b.toLocaleString()}` : 'Bluetooth? Run a sound check.'; }
+function showBest(){ let b = 0; try { b = +localStorage.getItem(DIFFS[DIFF].best) || 0; } catch(e){} $('bestLine').textContent = b ? `${DIFFS[DIFF].name} record: ${b.toLocaleString()}` : ''; }
 
 /* ---------- input ---------- */
 function press(lane, p){
@@ -2384,17 +2393,33 @@ function calLoop(){
   }
   if (!CAL.done) requestAnimationFrame(calLoop);
 }
-$('calBtn').onclick = calibrate;
-$('calDone').onclick = () => { CAL = null; $('calib').hidden = true; mode = 'title'; showPanel('how'); $('title').hidden = false; startAmbience(); };
+$('calBtn').onclick = () => { $('settings').hidden = true; calibrate(); };
+$('calDone').onclick = () => { CAL = null; $('calib').hidden = true; mode = SET.mode; startAmbience(); $('settings').hidden = false; };
+// Settings: the level (Normal unless you change it) and the timing, from the title, the lobby or the record
+const SET = { from: 'title', mode: 'title' };
+function openSettings(from){
+  SET.from = from; SET.mode = mode;
+  lockXplus(from === 'map' ? ALBUM.tracks[MAP.at].n : 'prologue');
+  SET.title = !$('title').hidden; $('title').hidden = true;   // one panel at a time
+  $('settings').hidden = false; $('setDone').focus({ preventScroll: true });
+}
+function closeSettings(){ $('settings').hidden = true; if (SET.title) $('title').hidden = false; if (SET.from === 'map') showStop(MAP.at); }
+$('titleSettings').onclick = () => openSettings('title'); $('howSettings').onclick = () => openSettings('title');
+$('stopLvl').onclick = () => openSettings('map'); $('setDone').onclick = closeSettings;
+$('settings').addEventListener('pointerdown', e => { if (e.target.id === 'settings') closeSettings(); });
+addEventListener('keydown', e => { if (e.code === 'Escape' && !$('settings').hidden) closeSettings(); });
 $('nextBtn').onclick = () => showPanel('how');
-function setDiff(d){ DIFF = d; PAR = parFor(); try { localStorage.setItem('sc-diff', d); } catch(e){}
+// WANT is the level you picked (saved); DIFF is what's played, the same unless this song hasn't opened Expert+ yet
+let WANT = DIFF;
+function setDiff(d, temp){ DIFF = d; PAR = parFor(); if (!temp) { WANT = d; try { localStorage.setItem('sc-diff', d); } catch(e){} }
   document.querySelectorAll('.diffBtn').forEach(b => b.setAttribute('aria-checked', b.dataset.d === d));
+  document.querySelectorAll('.lvlName').forEach(el => el.textContent = DIFFS[d].name);
   $('diffNote').textContent = `${DIFFS[d].note} · ${CHART.levels[d].length} notes`; showBest(); }
 document.querySelectorAll('.diffBtn').forEach(b => b.onclick = () => {
   if (!b.classList.contains('locked')) return setDiff(b.dataset.d);
   b.classList.remove('nudge'); void b.offsetWidth; b.classList.add('nudge');
   const msg = XKEY === 'prologue' ? 'Get a three-star review on Expert to unlock Expert+.' : 'Three stars on Expert unlocks Expert+.';
-  const el = $('mapUI').hidden ? $('diffNote') : $('stopNote'); el.textContent = msg;
+  $('diffNote').textContent = msg;
 });
 setDiff(DIFF); lockXplus('prologue');
 $('backBtn').onclick = () => showPanel('poster');

@@ -1,0 +1,15 @@
+{
+  "name": "star-crossed",
+  "version": "1.0.0",
+  "private": true,
+  "description": "A fan-made, old-Hollywood rhythm game set to Jon Vinyl's music. HTML5 canvas, Web Audio and Three.js.",
+  "scripts": {
+    "build": "python3 tools/build.py",
+    "serve": "python3 -m http.server 8765",
+    "test": "node tests/run-all.js",
+    "media": "node tools/capture_media.js"
+  },
+  "devDependencies": {
+    "playwright": "1.63.0"
+  }
+}

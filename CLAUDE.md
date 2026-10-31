@@ -1,6 +1,7 @@
 # Notes for Claude — Star-Crossed (Jon Vinyl rhythm game)
 
-Read README.md for layout, build and test commands. This file holds the decisions and the person's preferences.
+Read README.md for layout, build and test commands (docs/publishing.md for itch.io and re-charting). This file holds the
+decisions and the person's preferences.
 
 ## Who and what
 - Fan-made rhythm game for the artist **Jon Vinyl** (J-O-N-V-I-N-Y-L), song "Star-Crossed". The owner wants to show it to
@@ -27,7 +28,8 @@ Read README.md for layout, build and test commands. This file holds the decision
   mile."), then **the stranger** (faceless: long coat, fedora, face a void; speaker "???", purple box) steps out of the
   casino door: "I'm afraid she can't be with you," and drags her away ("Jon—!"); Jon runs after them; fade.
 - **How-to pop-up** (the three bubbles: Catch left / Kick right / Find her) → "Start the chase" → the song starts
-  (title cards over Jon alone, "She's somewhere on this ship."). The lobby panel now just picks difficulty and timing.
+  (title cards over Jon alone, "She's somewhere on this ship."). The lobby panel ("Now showing") just rolls the film
+  and says the level and timing are in Settings.
 - **The chase** (Star-Crossed): glimpses (`GLIMPSE`) show him dragging her by the wrist while she pulls back toward Jon
   (Bowser/Peach). At the end he holds her at the bow.
 - **The bow**: hold right to walk up; she breaks free and runs to Jon; reunion lines call back the plans; the stranger
@@ -88,6 +90,12 @@ Read README.md for layout, build and test commands. This file holds the decision
   `song`, `seconds`, `measured` in album.json; the build ships `songs/<s>/<s>.mp3` (160 kbps) and the chart.
 
 ## Things the owner asked for / against (keep honouring these)
+- **Level and timing live in Settings** (owner): default level **Normal**; Settings (`#settings`, `openSettings(from)`)
+  opens from the title, the lobby and the level chip on the record's stop card; it holds the five levels (Expert+ lock),
+  timing ± and the sound check (which comes back to Settings). The lobby says "Playing on Normal. Change the level or
+  the timing any time in Settings." `WANT` is the saved pick, `DIFF` what's played (Expert where Expert+ isn't open yet).
+- The repo is the owner's portfolio piece for job applications: keep README.md polished (docs/media from
+  `tools/capture_media.js` + test screenshots), `npm test` = `tests/run-all.js`. Audio stays in the repo (owner's call).
 - No intermission, no 3-2-1 film leader. No "the house wins" ending text. No sunglasses power-up (he still wears shades).
 - Sound effects are tuned to E♭ minor; reuse the existing ones rather than adding new sounds unless asked.
 - Shoes: generic retro high-top — do not copy the Jordan 4 design 1:1 (Nike's design).

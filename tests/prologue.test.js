@@ -10,7 +10,7 @@ const C = require('./config');
     p.on('pageerror', e => errs.push(e.message)); p.on('console', m => { if (m.type() === 'error' && !/Failed to load resource/.test(m.text())) errs.push(m.text()); });
     await p.goto(process.env.USE_FILE ? C.FILE_URL : C.URL);
     await p.waitForFunction(() => !document.getElementById('startBtn').disabled, null, { timeout: 30000 });
-    await p.evaluate(() => goTitle()); await p.click('#nextBtn'); await p.click('#dEasy');
+    await p.evaluate(() => goTitle()); await p.click('#nextBtn'); await p.evaluate(() => setDiff('easy'));
     const shot = async (name, ms = 0) => { if (ms) await p.waitForTimeout(ms); await p.screenshot({ path: C.OUT + `pro-${n}-${name}.png` }); };
     const hold = async on => { if (n === 'desk') { on ? await p.keyboard.down('ArrowRight') : await p.keyboard.up('ArrowRight'); }
       else await p.evaluate(on => cv.dispatchEvent(new PointerEvent(on ? 'pointerdown' : 'pointerup', { pointerId: 7, pointerType: 'touch', clientX: innerWidth*0.8, clientY: innerHeight/2, bubbles: true })), on); };

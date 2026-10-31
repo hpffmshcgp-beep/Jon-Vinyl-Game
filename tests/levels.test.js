@@ -6,7 +6,7 @@ const C = require('./config');
     const ctx = await b.newContext(o); const p = await ctx.newPage(); const errs = []; p.on('pageerror', e => errs.push(e.message));
     await p.goto(C.FILE_URL);
     await p.waitForFunction(() => !document.getElementById('startBtn').disabled, null, { timeout: 30000 });
-    await p.evaluate(() => goTitle()); await p.click('#nextBtn'); await p.click('#d'+LV); await p.waitForTimeout(300);
+    await p.evaluate(() => goTitle()); await p.click('#nextBtn'); await p.evaluate(d => { PROG.xplus.prologue = true; lockXplus('prologue'); setDiff(d); }, LV.toLowerCase()); await p.waitForTimeout(300);
     await p.screenshot({ path: C.OUT + `lv-${LV}-${n}-how.png` });
     await p.click('#startBtn'); await p.waitForFunction(() => mode === 'intro', null, { timeout: 20000 }); await p.evaluate(() => startSong());   // test shortcut past the opening await p.waitForFunction(() => mode === 'play', null, { timeout: 20000 });
     const info = await p.evaluate(() => [DIFF, PAR, S.notes.length]);

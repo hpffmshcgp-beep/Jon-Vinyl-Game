@@ -1,64 +1,96 @@
-# Star-Crossed — a Jon Vinyl rhythm game
+# Star-Crossed
 
-A fan-made, old-Hollywood rhythm picture set to Jon Vinyl's music. Unofficial — music by Jon Vinyl.
+**A fan-made rhythm game in the style of an old-Hollywood picture, set to the music of Jon Vinyl.**
+It runs in the browser on desktop and phones, built with plain HTML5 canvas, Web Audio and Three.js. No engine, no framework.
 
-**The story.** *Prologue — Star-Crossed:* Jon and the girl he loves have finally got away together on an ocean liner.
-You start in their cabin — walk around, talk to her, make plans — then head up on deck for some air, where a faceless
-stranger steps out of the casino and takes her. Jon chases them
-across the ship on the beat (your score earns a rating and a high score, but the story always goes on) and gets her back at the bow. The stranger plays
-the gracious loser and hands over a gift: the album *Lost in You*. Jon slides the record out, it starts to spin, and it
-pulls him in. *The record:* a 3D map of the vinyl, one ring of grooves per song, only the next ring revealed.
+<p align="center">
+  <img src="docs/media/void.gif" width="49%" alt="Void: Jon surfs at sunset, launches off the lip and backflips through a curve of gems">
+  <img src="docs/media/deflect.gif" width="49%" alt="Deflect: Jon stands on a spinning record and turns a golden shield to knock away hearts">
+</p>
 
-**Play:** open `dist/Star-Crossed.html` after building, or upload `dist/Star-Crossed-itch.zip` to itch.io.
+Jon and the girl he loves have finally slipped away together on an ocean liner. Then a faceless stranger steps out of
+the casino and takes her. You chase them across the ship on the beat, win her back at the bow, and accept the
+stranger's "no hard feelings" gift: the album *Lost in You*. Jon slides the record out of its sleeve and it pulls him
+in. To get home, he has to beat every song on it.
 
-## How to play
-- **Phone:** tap the **left** side for stars (snare and hi-hats), the **right** side for the kick drum.
-- **Computer:** left hand **A S D F / ←**, right hand **J K L ; / →**.
-- Five levels, like Beat Saber: Easy, Normal, Hard, Expert, Expert+.
-- In the cabin, tap (or click) her, the door or anything in the room and Jon walks over.
-- Play the chase on the beat; whatever you score, you reach the bow. Then walk to her and see what the stranger brings.
-- Deflect: on a phone, tap where a heart is coming from and the shield turns to meet it.
-- Void: hold to climb the wave, let go to carve down through the gems; ride off the top to fly, hold in the air to backflip,
-  land flat or wipe out (three boards).
+<p align="center">
+  <img src="docs/media/cabin.jpg" width="32%" alt="Their cabin: wood panels, brass portholes onto the sunset, Jon and her talking">
+  <img src="docs/media/chase.jpg" width="32%" alt="The chase: a two-lane rhythm run along the deck">
+  <img src="docs/media/pull.jpg" width="32%" alt="The pull-in: the record spins up behind Jon and draws him into the label">
+</p>
+
+## What's in it
+
+| Part | What you do |
+|---|---|
+| **Prologue: Star-Crossed** | A walkable cabin (tap her, the door, the turntable…), a cutscene on deck, then a two-lane rhythm chase: left hand for the snare and hi-hats, right hand for the kick. Five difficulties. The score earns a review, but the story always goes on. |
+| **The record** | A 3D level map made to match the real vinyl pressing: one band of grooves per song, sized to the song's length, walked from the rim toward the label like a record plays. |
+| **Track 3: Deflect** | Jon stands on the label while hearts (rhythm-guitar strums) and heartbreaks (lead-guitar notes) fly in from eight directions; turn the shield to meet each one. Inspired by *Beatblock*. |
+| **Track 4: Void** | A sunset surf. Hold to climb the wave, let go to carve, and collect gems that sit on the drum hits. Ride off the lip to fly, hold in the air to backflip, and land flat or wipe out (three boards). |
+
+Each album song scores up to three stars. Expert+ unlocks per song with three stars on Expert, and the Outro opens with
+three stars on every song. Tracks 1, 2 and 5–7 are still to come, one song at a time.
+
+<p align="center">
+  <img src="docs/media/map.jpg" width="49%" alt="The 3D record map with the real orange label and a stop for each song">
+  <img src="docs/media/title.jpg" width="49%" alt="The title card: Jon Vinyl in Star-Crossed">
+</p>
+
+## How it works
+
+- **Charts come from the music, not a grid.** Each song is split into stems (drums into kick, snare, hi-hat and
+  more with drumsep, plus Demucs, and lead and rhythm guitar for Deflect). `tools/find_hits.py` finds the attack of
+  every hit on a 2 ms envelope, and the chart scripts place notes on those exact moments. The prologue's groove is
+  swung with triplet kicks, so snapping to a 16th-note grid would put notes where nothing plays.
+- **Charts are checked for playability.** In Void, a gem is only kept if a rider can physically get there from the one
+  before. Every jump follows the same arc, so the chart lines gems up along it.
+- **Timing is honest.** The game reads the audio clock (`AudioContext.getOutputTimestamp`, with a latency fallback),
+  so notes line up with what you *hear*, Bluetooth delay included. A tap-along sound check sets a personal offset, and
+  the results screen offers to fix it from your median error.
+- **Everything is drawn in code.** Characters, the ship, the cabin, the waves and the skies are painted with the
+  Canvas 2D API in layered passes. The only images are the real album cover and record label.
+- **One build, three shapes.** `tools/build.py` turns `game/` into a web build, an itch.io zip, and a single
+  self-contained HTML file with the audio and Three.js embedded. That file plays offline, straight from disk.
+- **Tested by bots.** Playwright scripts play every level at desktop and phone sizes: they walk the cabin, play the
+  chase, deflect hearts, surf, flip and wipe out on purpose. Each run saves screenshots for review.
+
+## Run it
+
+```bash
+npm install                 # Playwright, for the tests
+pip install -r requirements.txt   # only needed to re-chart songs; ffmpeg too
+npm run build               # writes dist/: web build, itch.io zip, single-file HTML
+npm run serve               # then open http://localhost:8765/dist/web/
+npm test                    # play-tests (keep `npm run serve` running); screenshots land in test-output/
+```
+
+**Controls.** Phone: tap the left or right side (Deflect: tap where a heart is coming from; Void: hold anywhere).
+Computer: `A S D F` / `←` and `J K L ;` / `→` (Deflect: mouse or arrows; Void: hold any key).
+Level and timing live in **Settings**.
 
 ## Project layout
+
 | Path | What it is |
 |---|---|
-| `game/src.html` | The whole game: code, drawing, audio, story. `__CHART__`, `__ALBUM__`, `__COVER__` are filled in at build time. |
-| `game/map.js` | The 3D record map (Three.js), pulled into the page by the build. |
-| `album/lost-in-you/` | `album.json` (tracklist and song lengths), `cover.jpg`, and `label.jpg` (the real record label). |
-| `vendor/three.module.min.js` | Three.js 0.169.0 (MIT); the build turns it into a plain script inside every page. |
-| `songs/star-crossed/chart.json` | Tempo, story timings and the five difficulty charts. |
-| `songs/star-crossed/songplay.mp3`, `below.mp3` | The song, and the muffled band heard on the title screen. |
-| `songs/star-crossed/stems/` | Separated drums (drumsep: kick, snare, hh, crash, toms, ride, residual), Demucs stems, vocals. |
-| `songs/star-crossed/analysis/` | Every detected drum hit, used to make the charts. |
-| `tools/` | `find_hits.py` → `make_charts.py` → `build.py`. |
-| `songs/deflect/` | Track 3, Deflect: the song, guitar stems, guitar-hit analysis and its Beatblock-style chart. |
-| `game/surf.js` | The Void level: surfing at sunset, gems on the beat, launches, backflips and wipeouts. |
-| `songs/void/` | Track 4, Void: the song, drum and Demucs stems, drum-hit analysis and its surf chart (`tools/make_surf_chart.py`). |
-| `game/deflect.js` | The Deflect level: turn the shield around Jon to knock away hearts and heartbreaks. |
-| `tests/` | Automated play-tests (Playwright). |
+| `game/src.html` | The game: rendering, audio, story, prologue, menus. |
+| `game/map.js` | The 3D record map (Three.js). |
+| `game/deflect.js` | The album-song level engine, results and stars, and the Deflect level. |
+| `game/surf.js` | The Void level: wave physics, launches, flips, wipeouts. |
+| `tools/` | `find_hits.py`, `find_guitar_hits.py` (onset detection) → `make_charts.py`, `make_deflect_chart.py`, `make_surf_chart.py` → `build.py`. `capture_media.js` makes the GIFs above. |
+| `songs/<song>/` | Each song's audio, separated stems, detected hits (`analysis/`) and `chart.json`. |
+| `album/lost-in-you/` | Tracklist and song lengths, the album cover and the record label. |
+| `tests/` | Playwright play-tests; `run-all.js` runs them all. |
+| `vendor/` | Three.js r169 (MIT). |
 
-## Building
-```bash
-python3 tools/build.py            # makes dist/ (web build, itch zip, single-file HTML, artifact page)
-```
-Re-chart a song after changing its stems or the charting rules:
-```bash
-python3 tools/find_hits.py songs/star-crossed
-python3 tools/make_charts.py songs/star-crossed
-```
-Needs Python 3 with `librosa`, `numpy`, `scipy`; `ffmpeg`.
+## How this was built
 
-## Testing
-```bash
-python3 -m http.server 8765 &     # from the repo root
-cd tests && node left-right.test.js && node cold-open.test.js && node prologue.test.js && node map.test.js && node three-inline.test.js && node deflect.test.js && node void.test.js && node levels.test.js
-python3 ../tools/build.py && node standalone-file.test.js
-```
-Screenshots land in `test-output/`.
+I designed and directed the game: the story, the look, how each song should feel to play, and what stayed or went
+after each playtest. The code was written with [Claude Code](https://claude.com/claude-code) as an AI
+pair-programmer. [`CLAUDE.md`](CLAUDE.md) is the running design document from that collaboration. It records every
+decision, the feedback that changed the game (controls rejected on phones, a redesign that was rolled back), and the
+hard-won timing rules.
 
-## Publishing to itch.io
-New project → Kind of project: **HTML** → upload `dist/Star-Crossed-itch.zip` (index.html and the audio) → tick **"This file will be played in the
-browser"** → embed size about 960 × 600, **Mobile friendly** and **Fullscreen button** on. Keep the page Draft/Restricted
-until Jon has given his OK.
+## Credits
+
+Fan-made and unofficial, not affiliated with Jon Vinyl. Music, album cover and label art © Jon Vinyl, used here for a
+non-commercial fan project. Three.js © its authors, MIT licence (`vendor/three.LICENSE`).
