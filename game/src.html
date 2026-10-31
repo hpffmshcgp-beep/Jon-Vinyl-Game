@@ -509,7 +509,7 @@ function newState(){
     startAt: 0, running:false, ended:false, paused:false, lastT: -PREROLL, audioStage: 0,
     score:0, combo:0, maxCombo:0, counts:{ perfect:0, great:0, ok:0, miss:0 },
     meter:0, shadesUntil:-99, scene:-1, banner:{ t:-99, i:0 }, nextIdx:0, lastFwBar: -1,
-    jumpAt:-9, kickAt:-9, slideAt:-9, stumbleAt:-9, lesson:null, popups:[], beams:[], bursts:[], flyers:[], hearts:[], fw:[], flash:[-9,-9],
+    jumpAt:-9, kickAt:-9, jump:null, slide:null, slam:null, stumbleAt:-9, crashT:-9, lesson:null, popups:[], beams:[], bursts:[], flyers:[], hearts:[], fw:[], flash:[-9,-9],
   };
 }
 function heardCtx(p){
@@ -611,7 +611,6 @@ function press(lane, p){
   if (S.lesson) { lessonInput(lane); return; }   // the first jump / slide: the song waits for the right side
   const t = songTime(p); if (t < OPEN.start - 1 || t > CUT.stop) return;
   S.flash[lane] = t;
-  if (lane === 0) { if (t - S.jumpAt > 0.2) S.jumpAt = t; } else S.slideAt = t;   // left: jump over it; right: slide under it
   const wm = 1;
   let best = null, bd = 1e9;
   for (let i = S.nextIdx; i < S.notes.length; i++) {
@@ -619,8 +618,8 @@ function press(lane, p){
     if (n.judged || (n.lane !== lane && n.lane !== 2)) continue;
     const d = Math.abs(n.t - t); if (d <= WIN.ok*wm && d < bd) { best = n; bd = d; }
   }
-  if (!best) return;
-  judgeNote(best, bd <= WIN.perfect*wm ? 'perfect' : bd <= WIN.great*wm ? 'great' : 'ok', t, Math.round((t - best.t)*1000));
+  if (best) judgeNote(best, bd <= WIN.perfect*wm ? 'perfect' : bd <= WIN.great*wm ? 'great' : 'ok', t, Math.round((t - best.t)*1000));
+  startMove(lane, t, best && best.lane !== 2 ? best : null);   // jump over it / slide under it (or a little hop on nothing)
 }
 function judgeNote(best, k, t, ms){
   best.judged = true; best.hit = true; S.counts[k]++;
@@ -640,7 +639,7 @@ function skipIntro(){
   return false;
 }
 // left hand / left side of the screen = stars (snare, hi-hats); right hand / right side = the kick
-const KEYS_L = new Set(['KeyA','KeyS','KeyD','KeyF','ArrowLeft','ArrowUp']);
+const KEYS_L = new Set(['KeyA','KeyS','KeyD','KeyF','ArrowLeft','ArrowUp','KeyW','Space']);
 const KEYS_R = new Set(['KeyJ','KeyK','KeyL','Semicolon','ArrowRight','ArrowDown']);
 const inScene = () => S && S.sc && S.running && !S.paused;
 addEventListener('keydown', e => {
@@ -648,7 +647,7 @@ addEventListener('keydown', e => {
   if (mode === 'level') { if (/^(Arrow|Key[WASD])/.test(e.code)) { AIM.keys.add(e.code); e.preventDefault(); } return; }
   const L0 = KEYS_L.has(e.code), R0 = KEYS_R.has(e.code);
   if (inScene()) {
-    if (L0 && e.code !== 'ArrowUp') HOLD.kl = true; if (R0 && e.code !== 'ArrowDown') HOLD.kr = true;
+    if (L0 && !['ArrowUp', 'KeyW', 'Space'].includes(e.code)) HOLD.kl = true;   // in the scenes Space / W / ↑ act, they don't walk if (R0 && e.code !== 'ArrowDown') HOLD.kr = true;
     const act = ['Space', 'Enter', 'KeyE', 'ArrowUp', 'KeyW'].includes(e.code), tapKey = act || L0 || R0;
     if (tapKey) e.preventDefault();
     if (!e.repeat && tapKey) { if (S.sc.dlg || S.sc.ph === 'album' || S.sc.ph === 'rating') sceneTap(); else if (act) cabinAct(); }
@@ -677,10 +676,11 @@ cv.addEventListener('pointerdown', e => {
     if (S.sc.kind === 'bow' && S.sc.ph === 'walk' && !S.sc.dlg && e.pointerType === 'touch') S.sc.autoWalk = true;   // the bow: a tap sends him to her
     HOLD.ptr.set(e.pointerId, right); sceneTap(); return;
   }
+  if (e.pointerType === 'touch' && mode === 'play') { gestStart(e); return; }   // a swipe up / down, or a tap on a side
   press(right ? 1 : 0, evTime(e)); tapFx(right ? 1 : 0);
 });
-['pointerup', 'pointercancel', 'pointerleave'].forEach(n => cv.addEventListener(n, e => { HOLD.ptr.delete(e.pointerId); levelTouch(e, 'up'); if (LV && LV.mode === 'surf') surfUp(e); }));
-cv.addEventListener('pointermove', e => { if (mode !== 'level') return; if (e.pointerType === 'touch') { e.preventDefault(); levelTouch(e, 'move'); return; } AIM.mouse = true; levelAimFromPoint(e.clientX, e.clientY); });
+['pointerup', 'pointercancel', 'pointerleave'].forEach(n => cv.addEventListener(n, e => { HOLD.ptr.delete(e.pointerId); if (GEST.has(e.pointerId)) gestEnd(e.pointerId, null); levelTouch(e, 'up'); if (LV && LV.mode === 'surf') surfUp(e); }));
+cv.addEventListener('pointermove', e => { if (GEST.size) gestMove(e); if (mode !== 'level') return; if (e.pointerType === 'touch') { e.preventDefault(); levelTouch(e, 'move'); return; } AIM.mouse = true; levelAimFromPoint(e.clientX, e.clientY); });
 $('startBtn').onclick = startGame; $('againBtn').onclick = startGame; $('menuBtn').onclick = toTitle;
 $('intoBtn').onclick = () => enterMap(true); $('actBtn').onclick = () => cabinAct(); $('recordBtn').onclick = () => enterMap(false);
 $('stopPrologue').onclick = () => { leaveMap(); toTitle(); };
@@ -886,9 +886,9 @@ const COILS = (() => {
 function drawJon(x, gy, h, st){
   const s = h / 100, TAU = Math.PI*2, p = st.phase, amp = st.amp ?? 1, dir = st.dir || 1, OUT = PAL.out;
   g.save(); g.translate(x, gy); g.scale(s*dir, s);
-  const run = st.running, jump = st.jumpK >= 0, kick = st.kick, sl = st.slide || 0;
-  const jy = jump ? -Math.sin(st.jumpK*Math.PI) * 34 : 0;
-  const shR = 22 - (jump ? Math.sin(st.jumpK*Math.PI)*9 : 0);
+  const run = st.running, jy0 = st.jumpY != null ? st.jumpY : st.jumpK >= 0 ? Math.sin(st.jumpK*Math.PI) : 0, jump = st.jumpY != null ? st.jumpY > 0.02 : st.jumpK >= 0, kick = st.kick, sl = st.slide || 0;
+  const jy = jump ? -jy0*36 : 0;
+  const shR = 22 - (jump ? jy0*9 : 0);
   const shg = g.createRadialGradient(2, 0, 0, 2, 0, shR); shg.addColorStop(0, 'rgba(0,0,0,.45)'); shg.addColorStop(1, 'rgba(0,0,0,0)');
   g.save(); g.scale(1, 0.16); g.fillStyle = shg; g.beginPath(); g.arc(2, 0, shR, 0, 7); g.fill(); g.restore();
   const lean = (run ? 0.11*amp : 0)*(1 - sl) - sl*0.95 - (st.stumble > 0 ? 0.35*st.stumble : 0) - (st.lookUp ? 0.05 : 0) + (st.reach || 0)*0.4 + (st.push ? 0.22 : 0);
@@ -1675,10 +1675,10 @@ function frame(){
   for (let i = S.nextIdx; i < S.notes.length; i++) {
     const n = S.notes[i]; if (n.t > t) break;
     if (!n.judged && t - n.t > WIN.ok) {
-      n.judged = true; n.miss = true; n.missT = t; S.counts.miss++;
+      n.judged = true; n.miss = true; n.missT = n.t + OB.lead; S.counts.miss++;
       if (S.combo >= 5) scratch();
       S.combo = 0; S.popups.push({ t, lane: n.lane, text:'MISS', k:'miss' });
-      if (n.lane !== 2) S.stumbleAt = t;   // he runs into it
+      if (n.lane !== 2) S.stumbleAt = n.t + OB.lead;   // he runs into it, the moment it reaches him
     }
     if (n.judged && i === S.nextIdx) S.nextIdx++;
   }
@@ -1735,14 +1735,15 @@ function frame(){
   let jonX = L.jx;
   if (t > CUT.stop && !S.sc && herX < W + L.jh) heldAtBow(L, herX, now);
   if (opening) jonX = coldOpen(L, t, now);
-  const jumpK = playing && (t - S.jumpAt) < 0.38 ? (t - S.jumpAt) / 0.38 : -1;
-  const stumble = Math.max(0, 1 - (t - S.stumbleAt) / 0.3);
+  if (t >= S.stumbleAt && S.crashT !== S.stumbleAt) { S.crashT = S.stumbleAt; S.jump = S.slide = S.slam = null; }   // a crash knocks him out of any move
+  const jumpY = playing ? jumpH(t) : 0;
+  const stumble = t >= S.stumbleAt ? Math.max(0, 1 - (t - S.stumbleAt) / 0.3) : 0;
   const runningNow = t >= OPEN.run && t < CUT.stop + CUT.stopDur*0.75;
   let lens, scn = null;
   if (S.sc) { scn = drawScene(L, now, herX); lens = scn.lens; }
   else lens = drawJon(jonX, L.groundY, L.jh, {
     running: runningNow, amp: 1, phase: (((t - PH) / BEAT) % 1 + 1) % 1, idle: now*0.8,
-    jumpK, kick: false, slide: playing ? slideAmt(t) : 0, stumble: playing ? stumble : 0, reach: 0,
+    jumpK: -1, jumpY, kick: false, slide: playing ? slideAmt(t) : 0, stumble: playing ? stumble : 0, reach: 0,
     shades: true, glow: 0, holdHand: false, lookUp: false, smile: false,
   });
   if (opening) coldOpenOver(L, t, now, lens);
@@ -2325,8 +2326,8 @@ function sideCues(L, t, now){
   });
   // small tags in the bottom corners: which side does what
   const ty = L.bot - 10; g.font = `700 ${clamp(W*0.022, 9, 11)}px ${FONT.type}`; g.fillStyle = 'rgba(243,230,200,.6)';
-  g.textAlign = 'left'; g.fillText(TOUCH ? '◀ TAP · JUMP' : 'F ← ↑ · JUMP', 14, ty);
-  g.textAlign = 'right'; g.fillText(TOUCH ? 'SLIDE · TAP ▶' : 'SLIDE · J → ↓', W - 14, ty);
+  g.textAlign = 'left'; g.fillText(TOUCH ? 'JUMP · SWIPE ↑ · TAP ◀' : 'JUMP · ↑  SPACE  F', 14, ty);
+  g.textAlign = 'right'; g.fillText(TOUCH ? 'SWIPE ↓ · TAP ▶ · SLIDE' : '↓  J · SLIDE', W - 14, ty);
   // as the music starts (once you've learned both moves): the screen split in two, as a reminder
   if (!(LESSONS[0] && LESSONS[1])) return;
   const k = (t - (OPEN.start - 0.8)) / 4; if (k < 0 || k > 1) return;
@@ -2334,7 +2335,7 @@ function sideCues(L, t, now){
   g.save(); g.globalAlpha = a*0.9;
   g.strokeStyle = 'rgba(243,230,200,.4)'; g.setLineDash([6, 8]); g.lineWidth = 1.5; g.beginPath(); g.moveTo(W/2, L.top + 8); g.lineTo(W/2, L.bot - 8); g.stroke(); g.setLineDash([]);
   const y = L.groundY + (L.bot - L.groundY)*(L.portrait ? 0.3 : 0.32), fs = clamp(W*0.03, 11, 15);   // down on the hull, clear of the notes
-  [[0, W*0.25, TOUCH ? 'TAP LEFT' : 'F  ←  ↑'], [1, W*0.75, TOUCH ? 'TAP RIGHT' : 'J  →  ↓']].forEach(([side, x, txt]) => {
+  [[0, W*0.25, TOUCH ? 'SWIPE ↑ · TAP LEFT' : '↑  SPACE  F'], [1, W*0.75, TOUCH ? 'SWIPE ↓ · TAP RIGHT' : '↓  J']].forEach(([side, x, txt]) => {
     g.textAlign = 'center'; g.font = `400 ${fs*1.6}px ${FONT.deco}`; g.fillStyle = side ? '#f0a3a0' : PAL.gold; g.fillText(side ? 'SLIDE' : 'JUMP', x, y);
     g.font = `700 ${fs}px ${FONT.type}`; g.fillStyle = PAL.cream; g.fillText(txt, x, y + L.r*1.3);
   });

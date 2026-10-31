@@ -3,10 +3,51 @@
    what hangs overhead (the kick). Every obstacle sits on a measured drum hit, as the stars and kicks did before.
    The first time each move comes up (ever), the song stops with Jon at the obstacle and waits for the right side. */
 
-// where an obstacle is: at its note's time it sits just ahead of Jon, so the jump (or slide) carries him across it
-const OB = { lead: 0.2, lowH: 0.25, lowW: 0.44, highBot: 0.62, highH: 0.24, highW: 0.5 };
+// Rhythm-true: every obstacle crosses the take-off mark exactly on its drum hit, and reaches Jon OB.lead later.
+// A hit shapes his jump (or slide) so he's at the top of it (or lowest) right as it passes: on the beat is the cleanest.
+// A miss runs him into it at the moment it reaches him. So what you see always matches what you heard and pressed.
+const OB = { lead: 0.22, lowH: 0.25, lowW: 0.44, highBot: 0.62, highH: 0.24, highW: 0.5 };
+const MOVE = { hop: 0.15, minHalf: 0.1, maxHalf: 0.3, slideHold: 0.16, slam: 0.07 };
 const obX = (L, n, t) => L.jx + (n.t - t + OB.lead)*L.speed;
-const slideAmt = t => { const e = t - S.slideAt; if (e < 0 || e > 0.56) return 0; return e < 0.07 ? e/0.07 : e < 0.42 ? 1 : 1 - (e - 0.42)/0.14; };
+const markX = L => L.jx + OB.lead*L.speed;
+function jumpH(t){   // 0 on the deck .. 1 at the top of the jump
+  const j = S.jump, sl = S.slam ? Math.max(0, S.slam.h*(1 - (t - S.slam.t)/MOVE.slam)) : 0;
+  if (!j || t < j.p) return sl;
+  if (t < j.c) { const k = (t - j.p)/(j.c - j.p); return Math.max(sl, j.h0 + (1 - j.h0)*(1 - (1 - k)*(1 - k))); }
+  if (t < j.land) { const k = (t - j.c)/(j.land - j.c); return Math.max(sl, 1 - k*k); }
+  return sl;
+}
+function slideAmt(t){   // 0 upright .. 1 flat out
+  const s = S.slide; if (!s || t < s.p) return 0;
+  const down = clamp(s.c - s.p, 0.03, 0.08);
+  if (t < s.p + down) return (t - s.p)/down;
+  if (t < s.end) return 1;
+  return Math.max(0, 1 - (t - s.end)/0.12);
+}
+// a press: jump (lane 0) or slide (lane 1), aimed at the obstacle it was judged against (or a little hop / dip on nothing)
+function startMove(lane, t, n){
+  if (lane !== 1) {
+    const h0 = jumpH(t), c = n ? Math.max(n.t + OB.lead, t + MOVE.minHalf) : t + MOVE.hop;
+    S.jump = { p: t, c, land: c + (n ? clamp(c - t, MOVE.minHalf, MOVE.maxHalf) : MOVE.hop), h0 }; S.slide = null; S.slam = null;
+  } else {
+    const h = jumpH(t); if (h > 0.02) S.slam = { t, h };   // sliding out of a jump slams him straight down
+    const c = n ? Math.max(n.t + OB.lead, t + 0.05) : t + 0.06;
+    S.slide = { p: t, c, end: c + (n ? MOVE.slideHold : 0.12) }; S.jump = null;
+  }
+}
+// the take-off mark: a soft line on the deck (and its twin overhead) that every obstacle crosses right on its beat
+function drawMark(L, t){
+  const x = markX(L), ph = ((((t - PH)/BEAT) % 1) + 1) % 1, beat = Math.max(0, 1 - ph*3.2);
+  const top = L.groundY - L.jh*(OB.highBot + OB.highH*0.5), fl0 = clamp(1 - (t - S.flash[0])*5, 0, 1), fl1 = clamp(1 - (t - S.flash[1])*5, 0, 1);
+  const lg = g.createLinearGradient(0, L.groundY, 0, top); lg.addColorStop(0, `rgba(255,226,150,${0.4 + beat*0.3 + fl0*0.3})`); lg.addColorStop(1, `rgba(232,116,106,${0.4 + beat*0.3 + fl1*0.3})`);
+  g.fillStyle = lg; g.fillRect(x - 2, top, 4, L.groundY - top);
+  const halo = g.createRadialGradient(x, L.groundY, 0, x, L.groundY, L.jh*0.3); halo.addColorStop(0, `rgba(255,226,150,${0.25 + beat*0.3})`); halo.addColorStop(1, 'rgba(255,226,150,0)');
+  g.save(); g.scale(1, 0.25); g.fillStyle = halo; g.fillRect(x - L.jh*0.3, L.groundY*4 - L.jh*0.3, L.jh*0.6, L.jh*0.6); g.restore();   // a pool of light on the deck at the mark
+  const dia = (y, c, a, r) => { g.save(); g.translate(x, y); g.rotate(Math.PI/4); g.fillStyle = rgba(c, a); g.fillRect(-r, -r, r*2, r*2); g.restore(); };
+  const r = Math.max(4, L.jh*0.03);
+  dia(L.groundY - 2, PAL.gold, 0.8 + beat*0.2, r*(1 + beat*0.3 + fl0*0.6));
+  dia(top, PAL.rose, 0.8 + beat*0.2, r*(1 + beat*0.3 + fl1*0.6));
+}
 const obKind = n => Math.min(4, Math.max(1, actAt(n.t)));   // one look per act: 1 verse, 2 pre-chorus, 3 chorus, 4 outro
 function inked(path, fill, lw = 2){ path(); g.fillStyle = fill; g.fill(); g.lineJoin = 'round'; g.lineWidth = lw; g.strokeStyle = PAL.out; g.stroke(); }
 
@@ -87,6 +128,7 @@ function highObstacle(L, kind, x, now, swing){
 }
 // the notes of the chase, as obstacles in the world (the last one, her hand, is still the heart in the middle)
 function drawObstacles(L, t, now){
+  drawMark(L, t);
   for (let i = Math.max(0, S.nextIdx - 12); i < S.notes.length; i++) {
     const n = S.notes[i]; if (n.lane === 2) continue;
     const x = obX(L, n, t); if (x > W + L.jh) break; if (x < -L.jh) continue;
@@ -219,8 +261,7 @@ function lessonInput(side){   // true if the lesson took the input
   LESSONS[ls.lane] = true; try { localStorage.setItem(LESSON_KEY, JSON.stringify(LESSONS)); } catch(e){}
   S.lesson = null;
   ac.resume().then(() => { const gn = nodes.songplay.gn.gain, now = ac.currentTime; gn.cancelScheduledValues(now); gn.setValueAtTime(0.0001, now); gn.linearRampToValueAtTime(1, now + 0.06); });
-  const t = songTime(); judgeNote(ls.n, 'perfect', t, 0);
-  if (ls.lane === 0) S.jumpAt = t; else S.slideAt = t; S.flash[ls.lane] = t;
+  const t = songTime(); judgeNote(ls.n, 'perfect', t, 0); startMove(ls.lane, t, ls.n); S.flash[ls.lane] = t;
   return true;
 }
 function drawLesson(L, now){
@@ -248,17 +289,20 @@ function drawLesson(L, now){
     }
     const shake = wrong ? Math.sin(now*60)*6*(1 - (now - ls.wrong)/0.7) : 0;
     const ty = L.top + L.fh*0.2;   // the words across the middle, so they fit on a phone
-    g.textAlign = 'center'; g.fillStyle = PAL.cream; g.font = `400 ${clamp(W*0.085, 26, 44)}px ${FONT.deco}`; g.fillText(`TAP TO ${verb}`, W/2 + shake, ty);
-    g.font = `700 ${clamp(W*0.032, 11, 14)}px ${FONT.type}`; g.fillStyle = rgba(col, 1); g.fillText(jump ? 'LEFT SIDE  ·  OVER IT' : 'RIGHT SIDE  ·  UNDER IT', W/2 + shake, ty + clamp(W*0.06, 20, 30));
+    g.textAlign = 'center'; g.fillStyle = PAL.cream; g.font = `400 ${clamp(W*0.075, 24, 42)}px ${FONT.deco}`; g.fillText(`SWIPE ${jump ? 'UP' : 'DOWN'} TO ${verb}`, W/2 + shake, ty);
+    g.font = `700 ${clamp(W*0.032, 11, 14)}px ${FONT.type}`; g.fillStyle = rgba(col, 1); g.fillText(`OR TAP THE ${jump ? 'LEFT' : 'RIGHT'} SIDE`, W/2 + shake, ty + clamp(W*0.06, 20, 30));
+    const ay = L.groundY - L.jh*1.25 + (jump ? -1 : 1)*((now*1.4) % 1)*L.jh*0.35;   // an arrow sweeping the way to swipe, by Jon
+    g.globalAlpha = a*(1 - ((now*1.4) % 1)); g.fillStyle = rgba(col, 1); g.font = `700 ${clamp(W*0.09, 28, 48)}px ${FONT.type}`; g.fillText(jump ? '↑' : '↓', L.jx, ay); g.globalAlpha = a;
   } else {   // computers: a small card with the keys
     const cw = Math.min(W - 40, 420), ch = 150, cx = (W - cw)/2, cy = L.top + L.fh*0.18, shake = wrong ? Math.sin(now*60)*8*(1 - (now - ls.wrong)/0.7) : 0;
     g.translate(shake, 0);
     g.fillStyle = 'rgba(10,8,18,.92)'; g.fillRect(cx, cy, cw, ch); g.strokeStyle = PAL.gold; g.lineWidth = 1; g.strokeRect(cx + 0.5, cy + 0.5, cw - 1, ch - 1); g.strokeRect(cx + 5.5, cy + 5.5, cw - 11, ch - 11);
     g.textAlign = 'center'; g.fillStyle = col; g.font = `400 34px ${FONT.deco}`; g.fillText(verb + '!', W/2, cy + 48);
-    const keys = jump ? ['F', '←', '↑'] : ['J', '→', '↓'], kw = 40, gap = 12, kx0 = W/2 - (keys.length*kw + (keys.length - 1)*gap)/2;
-    keys.forEach((k, i) => { const kx = kx0 + i*(kw + gap), ky = cy + 64, pulse = 0.5 + 0.5*Math.sin(now*6);
+    const keys = jump ? ['↑', 'SPACE', 'F'] : ['↓', 'J'], kws = keys.map(k => k.length > 1 ? 86 : 40), gap = 12;
+    let kx = W/2 - (kws.reduce((a, b) => a + b, 0) + (keys.length - 1)*gap)/2;
+    keys.forEach((k, i) => { const kw = kws[i], ky = cy + 64, pulse = 0.5 + 0.5*Math.sin(now*6);
       g.fillStyle = wrong ? rgba(col, 0.55) : rgba(col, 0.15 + pulse*0.2); g.fillRect(kx, ky, kw, 36); g.strokeStyle = col; g.lineWidth = 1.5; g.strokeRect(kx + 0.5, ky + 0.5, kw - 1, 35);
-      g.fillStyle = PAL.cream; g.font = `700 17px ${FONT.type}`; g.fillText(k, kx + kw/2, ky + 24); });
+      g.fillStyle = PAL.cream; g.font = `700 ${k.length > 1 ? 13 : 17}px ${FONT.type}`; g.fillText(k, kx + kw/2, ky + 24); kx += kw + gap; });
     g.fillStyle = PAL.cream; g.font = `italic 500 16px ${FONT.serif}`; g.fillText(jump ? 'over what’s on the deck' : 'under what’s overhead', W/2, cy + ch - 18);
   }
   g.restore();
@@ -268,4 +312,21 @@ function tapTarget(x, y, r, now, col){   // a pulsing button-like target that sa
   g.beginPath(); g.arc(x, y, r*(0.95 + p*0.08), 0, 7); g.fillStyle = rgba(col, 0.28); g.fill(); g.lineWidth = 3; g.strokeStyle = rgba(col, 0.95); g.stroke();
   g.beginPath(); g.arc(x, y, r*0.62, 0, 7); g.fillStyle = 'rgba(246,239,223,.92)'; g.fill();
   g.fillStyle = PAL.out; g.font = `700 ${r*0.42}px ${FONT.type}`; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText('TAP', x, y + 1); g.textBaseline = 'alphabetic';
+}
+
+/* phones: swipe up to jump, swipe down to slide, or tap a side. The move is timed from when the finger lands, so a
+   swipe is as precise as a tap; a finger that doesn't move counts as a tap on its side (after up to 120 ms). */
+const GEST = new Map();
+function gestStart(e){
+  const id = e.pointerId, gs = { x: e.clientX, y: e.clientY, p: evTime(e), side: e.clientX >= innerWidth/2 ? 1 : 0 };
+  gs.timer = setTimeout(() => gestEnd(id, null), 120); GEST.set(id, gs);
+}
+function gestMove(e){
+  const gs = GEST.get(e.pointerId); if (!gs) return;
+  const dx = e.clientX - gs.x, dy = e.clientY - gs.y;
+  if (Math.abs(dy) > 16 && Math.abs(dy) > Math.abs(dx)*1.2) gestEnd(e.pointerId, dy < 0 ? 0 : 1);
+}
+function gestEnd(id, lane){
+  const gs = GEST.get(id); if (!gs) return; GEST.delete(id); clearTimeout(gs.timer);
+  const ln = lane ?? gs.side; press(ln, gs.p); tapFx(ln);
 }

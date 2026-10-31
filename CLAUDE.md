@@ -37,8 +37,13 @@ decisions and the person's preferences.
 - **The chase** (Star-Crossed, `game/chase.js`): **obstacles on the beat** (owner's redesign): left side = **JUMP** over
   what's on the deck (lane 0: snare, hi-hats), right side = **SLIDE** under what hangs overhead (lane 1: kick; sliding
   sells the speed). One look per act: chip stacks / casino sign (verse), deck chairs / striped canopy (pre-chorus),
-  steamer trunks / lifebuoys (chorus), firework crates / BON VOYAGE banner (outro). An obstacle sits `OB.lead` (0.2 s)
-  ahead of Jon at its note so the move carries him across; a miss trips him and knocks it over. Slide pose in
+  steamer trunks / lifebuoys (chorus), firework crates / BON VOYAGE banner (outro). **Rhythm-true** (owner: "you're not
+  jumping on beat precisely to make the jump"): every obstacle crosses a glowing **take-off mark** (`drawMark`, a line
+  with a diamond on the deck and one overhead, pulsing on the beat) exactly on its drum hit, and reaches Jon `OB.lead`
+  (0.22 s) later. A judged hit shapes the move (`startMove`: `S.jump` {p, c, land, h0} / `S.slide`) so he's at the top
+  of the jump / lowest in the slide right as it passes, early, on the beat or late; a miss crashes him into it at that
+  moment (`stumbleAt = n.t + OB.lead`). Slide mid-air slams down; a jump cancels a slide; a press on nothing is a hop.
+  `tests/chase-feel.test.js` checks every hit clears and every miss crashes. Slide pose in
   `drawJon` (`st.slide`; leg angles are inside the leaned frame: world = local + 0.95). **Passengers cheer him on**
   (Mario Wonder flowers): `CHEERS` — sailor, lady with parasol, old gent, bellhop, kid, lady in green — short bubbles
   as they come on screen, plus Jon's own lines ("I gotta catch her!", "Should've trained at the cruise gym…").
@@ -132,8 +137,10 @@ decisions and the person's preferences.
 - Sound effects are tuned to E♭ minor; reuse the existing ones rather than adding new sounds unless asked.
 - Shoes: generic retro high-top — do not copy the Jordan 4 design 1:1 (Nike's design).
 - Title screens: few words, silent-mode reminder as an icon on phones. Teach by doing, never a pop-up to dismiss.
-- Controls: **left side / left hand = JUMP (lane 0: snare, hi-hats; F A S D ← ↑); right side / right hand = SLIDE
-  (lane 1: kick; J K L ; → ↓)**. Final heart note (lane 2) takes either side.
+- Controls: **JUMP = lane 0 (snare, hi-hats): swipe up, or tap the left side; ↑ Space W F A S D ←. SLIDE = lane 1
+  (kick): swipe down, or tap the right side; ↓ J K L ; →.** Both phone styles are live so the owner can pick (he found
+  left/right "not natural"). Swipes are timed from the finger landing (`gestStart`/`gestEnd`, 16 px, a still finger
+  counts as a tap after 120 ms). Final heart note (lane 2) takes either.
 
 ## Timing and charts (hard-won — don't regress)
 - Tempo 94.5 BPM, phase 0.077 s. The groove is **swung with triplet kicks**: never snap notes to a 16th grid.
