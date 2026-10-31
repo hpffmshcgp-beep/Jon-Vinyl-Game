@@ -3,6 +3,9 @@
 **A fan-made rhythm game in the style of an old-Hollywood picture, set to the music of Jon Vinyl.**
 It runs in the browser on desktop and phones, built with plain HTML5 canvas, Web Audio and Three.js. No engine, no framework.
 
+> 🚧 **Work in progress.** The prologue, the record map and two of the album's seven songs are playable. The rest of
+> the songs and the ending are still being built, one at a time. See [Status](#status).
+
 <p align="center">
   <img src="docs/media/void.gif" width="49%" alt="Void: Jon surfs at sunset, launches off the lip and backflips through a curve of gems">
   <img src="docs/media/deflect.gif" width="49%" alt="Deflect: Jon stands on a spinning record and turns a golden shield to knock away hearts">
@@ -29,7 +32,16 @@ in. To get home, he has to beat every song on it.
 | **Track 4: Void** | A sunset surf. Hold to climb the wave, let go to carve, and collect gems that sit on the drum hits. Ride off the lip to fly, hold in the air to backflip, and land flat or wipe out (three boards). |
 
 Each album song scores up to three stars. Beating every song opens the Outro, the way home; three stars on all of them
-adds the full ending. Expert+ unlocks per song with three stars on Expert. Tracks 1, 2 and 5–7 are still to come.
+adds the full ending. Expert+ unlocks per song with three stars on Expert.
+
+## Status
+
+This is a work in progress, built one song at a time.
+
+- **Playable now:** the prologue (cabin, deck, the chase, the bow and the pull into the record), the 3D record map with
+  progress and stars, Track 3 *Deflect* and Track 4 *Void*, results with coaching, and Settings for level and timing.
+- **Still to come:** Tracks 1 *Chrome Hearts*, 2 *Stacy*, 5 *Always*, 6 *Told You* and 7 *All Bad*; the Outro escape
+  and the full ending; unlock animations on the record; and more variety inside each song as it plays.
 
 <p align="center">
   <img src="docs/media/map.jpg" width="49%" alt="The 3D record map with the real orange label and a stop for each song">
