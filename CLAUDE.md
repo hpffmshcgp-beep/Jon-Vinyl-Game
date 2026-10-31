@@ -66,13 +66,17 @@ Read README.md for layout, build and test commands. This file holds the decision
   three ideas ("hold to ride"). Owner: F minor, 130.4 BPM (half-time groove, relaxed); vibe = sunset surfing, *no lyric
   text in the game*. Side view: Jon on a board riding a long wave that curls behind him; over the song the sun sets
   ahead and the moon rises behind (stars come out), a liner sails the horizon. **Hold anywhere / any key to climb the
-  face, let go to carve down** (full climb `rise` 0.36 s, 50 ms ease). Gems on the measured drum attacks: kick = low
-  (teal), snare = high (gold), hi-hat = mid (rose, hard+ only); collected by being at its height as it reaches him
-  (±0.10 PERFECT, ±0.21 GOOD); only reachable gems are kept; a dotted racing line joins the next ones. At five big
-  moments (29.6 kick in, 80.8 crash, 103.5 kick back after the break, 132.8 and 140.2 crashes) the wave lifts him to the
-  lip and throws him into the air for 4 beats: **tap on each star cue to spin** (±50 ms PERFECT, ±110 GOOD). Gems:
-  easy 76, normal 107, hard 171, expert 182, expertplus 330; spins 5/8/9/14/17; scroll 2.6/2.3/2.0/1.8/1.6 s. Intro
-  0–14.5 s has no gems (title, practice). Ends ~2 s after the last note with a fade. Surf stance: `drawJon(..., {surf:true})`.
+  face, let go to carve down** (`rise` 0.36 s for 0.12→0.88, 50 ms ease). Ground gems on the measured drum attacks:
+  kick = low 0.12 (teal), hi-hat = 0.37 (rose, hard+ only), snare = 0.62 (gold). **Riding up to the lip (1.0) launches
+  him himself, anywhere** (owner asked: "go in the air all by himself", "a lot more" air): always the same arc (4 beats,
+  0.8 above the lip), so the chart puts a launch star on the lip on a strong hit and an arc of gems on the drum hits
+  (airs every ~9.5/7.3/6.2/5.6/5.1 s by level, the 5 big moments always included). In the air **a new press = backflip
+  while held** (2π per 0.7 s; a hold carried over from the climb doesn't flip, a hold from the air doesn't climb after
+  landing); let go and the board settles into the jump's line if within 0.9 rad. **Land within ±0.78 rad or the board
+  catches and he wipes out**; 3 boards (lives) — owner's pick — then the song is over ("wiped out", no stars, Try again).
+  Flips score 1000 each × multiplier, not accuracy. Gems ±0.10 PERFECT, ±0.21 GOOD (height). Gems: easy 99, normal 133,
+  hard 196, expert 251, expertplus 343; scroll 2.6/2.3/2.0/1.8/1.6 s. Physics runs on the song clock. Intro 0–14.5 s has
+  no gems. Ends ~2 s after the last note with a fade. Surf stance: `drawJon(..., {surf:true})`.
   Owner's files: full song, drumsep stems (kick/snare/hh/crash/toms/ride/residual), Demucs bass/music/vocals.
 - Results (album songs): 3 stars from accuracy (perfect 1, good 0.7), score, high score per track+difficulty; "Back to
   the record" / "Play again". Songs not added yet don't block the way on the map; ◀ ▶ walk between reached stops.

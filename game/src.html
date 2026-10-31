@@ -541,7 +541,7 @@ function endGame(){
   const won = S.won !== false;
   if (won && S.into) { PROG.prologue = true; saveProg(); }
   $('resTitle').textContent = won ? (S.into ? 'Prologue' : 'The End') : 'To Be Continued';
-  $('intoBtn').hidden = !(won && S.into);
+  $('intoBtn').hidden = !(won && S.into); $('intoBtn').className = 'btn';
   $('againBtn').className = won && S.into ? 'ghost' : 'btn';
   const dl = ' · ' + DIFFS[DIFF].name.toLowerCase();
   $('resBilling').textContent = 'Fan-made and unofficial · music “Star-Crossed” by Jon Vinyl';

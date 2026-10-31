@@ -1,65 +1,101 @@
 /* ---------- album levels: Void (surf) ----------
    Jon rides a long wave while the sun goes down and the moon comes up over the song. Hold anywhere (or any key) to
-   climb the face, let go to carve down. Gems sit on the beat: kick = low in the trough, snare = high at the lip, hi-hat =
-   in between. You collect one by being at its height as it reaches him (closer = PERFECT). At the song's big moments
-   the wave throws him into the air for four beats: tap on each star cue to spin. Scored like the other album songs. */
+   climb the face, let go to carve down. Gems sit on the beat: kick = low in the trough, hi-hat = in between, snare =
+   high on the face. You collect one by being at its height as it reaches him (closer = PERFECT). Ride all the way up
+   off the lip and he flies (always the same arc, so the chart can line gems along it). In the air, press and hold to
+   backflip; land flat or the tail catches and he wipes out. Three wipeouts and the song is over. */
 const lerp = (a, b, k) => a + (b - a)*k;
-const SURF = { low: 0.12, high: 0.88, perfect: 0.1, good: 0.21, spinWin: 0.11, spinPerfect: 0.05, ease: 0.05, preroll: 2.0 };
+const SURF = { low: 0.12, lip: 1.0, perfect: 0.1, good: 0.21, ease: 0.05, preroll: 2.0,
+  flipRate: Math.PI*2/0.7, land: 0.15, landWin: 0.78, settle: 0.9, downFor: 1.8, lives: 3 };
+const wrapA = a => Math.atan2(Math.sin(a), Math.cos(a));
 function surfGeo(){
   const L = layout(), port = L.portrait;
   const horizon = L.top + L.fh*(port ? 0.3 : 0.34), lipY = L.top + L.fh*(port ? 0.5 : 0.5), troughY = L.top + L.fh*(port ? 0.84 : 0.88);
   const jh = Math.min(L.fh*(port ? 0.13 : 0.19), W*0.2), jonX = W*(port ? 0.26 : 0.27);
-  const yOf = h => troughY - h*(troughY - lipY);   // where the board sits for a height on the face (0 trough, 1 lip)
+  const yOf = h => troughY - h*(troughY - lipY);   // where the board sits for a height (0 trough, 1 lip, above 1 = in the air)
   return { L, horizon, lipY, troughY, jh, jonX, yOf, gem: clamp(jh*0.17, 9, 18), speed: (W - jonX + 60)/LV.approach };
 }
 function surfInit(t, chart){
-  const lv = chart.levels[DIFF];
-  const gems = lv.gems.map(([tt, h, kind]) => ({ t: tt, h, kind, judged: false, hit: false, k: '', jt: 0 }));
-  const spins = lv.spins.map(tt => ({ t: tt, spin: true, judged: false, hit: false, k: '', jt: 0 }));
-  const notes = [...gems, ...spins].sort((a, b) => a.t - b.t);
-  const last = notes.length ? notes[notes.length - 1].t : chart.duration;
-  return { mode: 'surf', notes, gems, spins, airs: chart.airs, rise: chart.rise, endAt: Math.min(chart.duration - 0.6, last + 2.0),
-    h: 0.3, vel: 0, hold: new Set(), spinAt: -9, spinDir: 1, spray: [], sparks: [], gNext: 0, sNext: 0, hint: -1 };
+  const lv = chart.levels[DIFF], airs = lv.airs, AIRT = chart.air, PEAK = chart.peak, GR = 8*PEAK/(AIRT*AIRT);
+  const gems = lv.gems.map(([tt, h, kind]) => ({ t: tt, h, kind, judged: false, hit: false, k: '', jt: 0, air: airs.find(([a, b]) => tt >= a - 1e-3 && tt <= b) || null }));
+  const last = gems.length ? gems[gems.length - 1].t : chart.duration;
+  return { mode: 'surf', notes: gems, gems, airs, rise: chart.rise, airT: AIRT, grav: GR, v0: GR*AIRT/2, endAt: Math.min(chart.duration - 0.6, last + 2.0),
+    h: 0.3, vel: 0, ang: 0, angVel: 0, piv: 0, cam: 0, air: null, hold: new Set(), airIds: new Set(),
+    lives: SURF.lives, down: -9, back: -9, wipe: null, over: false, flips: 0, flown: 0, landT: -9,
+    spray: [], drops: [], sparks: [] };
 }
-const surfAir = t => LV.airs.find(([a, b]) => t >= a && t < b);
-function surfDown(e){   // a finger or a key goes down: climb; in the air it's a spin
+const surfArc = (tau) => SURF.lip + LV.v0*tau - 0.5*LV.grav*tau*tau;
+function surfDown(e){   // a finger or a key goes down: climb; a press in the air is a backflip for as long as it's held
   if (!LV || !LV.running || LV.ended) return;
   const id = e.pointerId != null ? 'p' + e.pointerId : e.code; if (LV.hold.has(id)) return; LV.hold.add(id);
-  const t = levelTime(evTime(e));
-  if (!surfAir(t + 0.12) && !surfAir(t - 0.12)) return;
-  let best = null;
-  for (const s of LV.spins) { if (s.judged) continue; const d = Math.abs(t - s.t); if (d <= SURF.spinWin && (!best || d < Math.abs(t - best.t))) best = s; }
-  if (!best) return;
-  const k = Math.abs(t - best.t) <= SURF.spinPerfect ? 'perfect' : 'good';
-  surfScore(best, t, k); LV.spinAt = t; LV.spinDir = -LV.spinDir;
+  if (LV.air) LV.airIds.add(id);
 }
-function surfUp(e){ if (LV && LV.hold) LV.hold.delete(e.pointerId != null ? 'p' + e.pointerId : e.code); }
+function surfUp(e){ if (!LV || !LV.hold) return; const id = e.pointerId != null ? 'p' + e.pointerId : e.code; LV.hold.delete(id); LV.airIds.delete(id); }
+const surfMult = () => Math.min(4, 1 + Math.floor(LV.combo/10));
 function surfScore(n, t, k){
   n.judged = true; n.hit = k !== 'miss'; n.k = k; n.jt = t; LV.counts[k]++;
-  if (k === 'miss') { if (LV.combo >= 5) scratch(); LV.combo = 0; LV.popups.push({ t, text: n.spin ? 'MISS' : '', k, h: n.h ?? 1.3 }); return; }
+  if (k === 'miss') { if (LV.combo >= 5 && LV.down < 0) scratch(); LV.combo = 0; return; }
   LV.combo++; LV.maxCombo = Math.max(LV.maxCombo, LV.combo); LV.comboT = t;
-  LV.score += (k === 'perfect' ? 300 : 150)*Math.min(4, 1 + Math.floor(LV.combo/10)); LV.flash = t;
-  LV.popups.push({ t, text: n.spin ? (k === 'perfect' ? 'PERFECT SPIN' : 'SPIN') : k === 'perfect' ? 'PERFECT' : 'NICE', k, h: n.h ?? 1.3 });
+  LV.score += (k === 'perfect' ? 300 : 150)*surfMult(); LV.flash = t;
+  LV.popups = LV.popups.filter(q => q.big); LV.popups.push({ t, text: k === 'perfect' ? 'PERFECT' : 'NICE', k });   // one at a time, so they never stack
+}
+function surfLaunch(t0){
+  LV.air = { t0, rot: 0 }; LV.flown++; LV.airIds.clear(); LV.angVel = 0;
+  for (let i = 0; i < 16; i++) LV.drops.push({ t0, h: SURF.lip, dx: -Math.random()*30, vx: -(40 + Math.random()*140), vy: -(80 + Math.random()*160), r: 1.5 + Math.random()*2.5 });
+}
+function surfLand(t){
+  const rel = wrapA(LV.ang - SURF.land), flips = Math.floor((-LV.air.rot + 0.9)/(Math.PI*2));
+  LV.air = null; LV.landT = t;
+  if (Math.abs(rel) > SURF.landWin) { surfWipe(t, rel < 0 ? 'tail' : 'nose'); return; }
+  const reach = (0.88 - SURF.low)/LV.rise; LV.h = SURF.lip - 0.002; LV.vel = -reach; LV.ang = clamp(LV.ang, -0.4, 0.5);
+  if (flips > 0) { LV.flips += flips; LV.score += 1000*flips*surfMult(); LV.flash = t;
+    LV.popups.push({ t, text: ['', 'BACKFLIP', 'DOUBLE BACKFLIP', 'TRIPLE BACKFLIP'][Math.min(3, flips)], k: 'perfect', big: true }); }
+  for (let i = 0; i < 22; i++) LV.drops.push({ t0: t, h: SURF.lip, dx: (Math.random() - 0.5)*30, vx: (Math.random() - 0.6)*180, vy: -(60 + Math.random()*170), r: 1.5 + Math.random()*3 });
+}
+function surfWipe(t, how){
+  const G = surfGeo();
+  LV.down = t; LV.lives--; LV.combo = 0; LV.air = null; LV.airIds.clear(); scratch();
+  LV.wipe = { t, how, ang: LV.ang, y: G.yOf(SURF.lip) };
+  if (LV.lives <= 0) LV.over = true;
+  LV.popups.push({ t, text: 'WIPEOUT', k: 'miss', big: true });
+  for (let i = 0; i < 60; i++) LV.drops.push({ t0: t, h: SURF.lip, dx: (Math.random() - 0.5)*40, vx: (Math.random() - 0.5)*320, vy: -(120 + Math.random()*320), r: 2 + Math.random()*4.5 });
 }
 function surfStep(t, dt){
-  // the ride: holding climbs, letting go carves down; a short ease keeps it smooth
-  const reach = (SURF.high - SURF.low)/LV.rise, want = LV.hold.size > 0 ? reach : -reach;
-  LV.vel += (want - LV.vel)*(1 - Math.exp(-dt/SURF.ease));
-  LV.h = clamp(LV.h + LV.vel*dt, SURF.low, SURF.high);
-  if ((LV.h <= SURF.low && LV.vel < 0) || (LV.h >= SURF.high && LV.vel > 0)) LV.vel = 0;
-  const air = surfAir(t), next = LV.airs.find(([a]) => a > t && a - t < 0.55);
-  if (next) { const k = 1 - (next[0] - t)/0.55; LV.h = lerp(LV.h, SURF.high, k*k); }   // the wave lifts him to the lip
-  if (air) { LV.h = SURF.high; LV.vel = 0; }
-  // gems: judged as they reach him, by how close his height is
+  const reach = (0.88 - SURF.low)/LV.rise;
+  const under = LV.down >= 0;
+  if (under && !LV.over && t >= LV.down + SURF.downFor) { LV.down = -9; LV.back = t; LV.h = SURF.low; LV.vel = 0; LV.ang = 0; LV.wipe = null; }
+  if (LV.down >= 0) { LV.h = SURF.low; LV.vel = 0; }
+  else if (!LV.air) {
+    // the ride: holding climbs, letting go carves down; a short ease keeps it smooth. A hold that began in the air
+    // (a flip) doesn't count on the wave, so landing mid-press carves down instead of throwing him straight back up.
+    const climbing = [...LV.hold].some(id => !LV.airIds.has(id)), want = climbing ? reach : -reach;
+    LV.vel += (want - LV.vel)*(1 - Math.exp(-dt/SURF.ease));
+    LV.h += LV.vel*dt;
+    if (LV.h <= SURF.low && LV.vel < 0) { LV.h = SURF.low; LV.vel = 0; }
+    if (LV.h >= SURF.lip && LV.vel > 0) { const t0 = t - (LV.h - SURF.lip)/LV.vel; surfLaunch(t0); LV.h = surfArc(t - t0); }
+    else LV.ang += (clamp(-LV.vel*0.16, -0.38, 0.38) - LV.ang)*(1 - Math.exp(-dt/0.08));
+  }
+  if (LV.air) {
+    const tau = t - LV.air.t0, flipping = LV.airIds.size > 0;
+    LV.h = surfArc(tau);
+    LV.angVel += ((flipping ? -SURF.flipRate : 0) - LV.angVel)*(1 - Math.exp(-dt/0.06));
+    LV.ang += LV.angVel*dt; LV.air.rot += LV.angVel*dt;
+    if (!flipping) {   // let go and the board settles into the line of the jump, if it's close
+      const nat = -0.45*(LV.v0 - LV.grav*tau)/LV.v0, rel = wrapA(LV.ang - nat);
+      if (Math.abs(rel) < SURF.settle) LV.ang -= rel*(1 - Math.exp(-dt/0.22));
+    }
+    if (tau >= LV.airT) surfLand(LV.air.t0 + LV.airT);
+  }
+  // gems: judged as they reach him, by how close his height is (all missed while he's under)
   for (const n of LV.gems) { if (n.judged) continue; if (n.t > t) break;
+    if (LV.down >= 0) { surfScore(n, t, 'miss'); continue; }
     const d = Math.abs(LV.h - n.h); surfScore(n, t, d <= SURF.perfect ? 'perfect' : d <= SURF.good ? 'good' : 'miss');
     if (n.hit) surfBurst(t, n.h, n.kind, n.k === 'perfect' ? 14 : 9); }
-  for (const n of LV.spins) { if (n.judged) continue; if (n.t > t - SURF.spinWin) break; surfScore(n, t, 'miss'); }
 }
 function surfBurst(t, h, kind, count){
   for (let i = 0; i < count; i++) LV.sparks.push({ t0: t, h, kind, a: Math.random()*Math.PI*2, sp: 0.4 + Math.random(), life: 0.4 + Math.random()*0.35, sz: 0.5 + Math.random() });
 }
-const GEMCOL = [['#7fe7dc', '#1f7f86'], ['#ffe2a0', '#c98a2a'], ['#ffc4d8', '#b9587e']];   // kick (low), snare (high), hi-hat (mid)
+const GEMCOL = [['#7fe7dc', '#1f7f86'], ['#ffe2a0', '#c98a2a'], ['#ffc4d8', '#b9587e'], ['#fff6dc', '#e6b85c']];   // kick (low), snare (high), hi-hat (mid), launch (the lip)
 function gemShape(x, y, s, kind, rot, alpha){
   const [hi, lo] = GEMCOL[kind];
   g.save(); g.translate(x, y); g.rotate(rot); g.globalAlpha = alpha;
@@ -142,53 +178,79 @@ function surfBoard(x, y, ang, len){
   g.fillStyle = '#8e2335'; g.fillRect(-len*0.42, -3.6, len*0.8, 2.2); g.fillStyle = '#e6b85c'; g.fillRect(-len*0.42, -1.2, len*0.8, 0.9);
   g.restore();
 }
+function surfPathH(ts, A, B){   // the racing line's height at a time between two gems: along the arc while in the air
+  const air = (A && A.air && ts <= A.air[1]) ? A.air : (B && B.air && ts >= B.air[0]) ? B.air : null;
+  if (air && ts >= air[0] && ts <= air[1]) return surfArc(ts - air[0]);
+  const ha = A ? (A.air ? SURF.lip : A.h) : LV.h, ta = A ? (A.air ? Math.max(A.t, A.air[1]) : A.t) : ts;
+  return B.t <= ta ? B.h : lerp(ha, B.h, clamp((ts - ta)/(B.t - ta), 0, 1));
+}
 function surfFrame(now){
-  const t = LV.running ? levelTime() : LV.lastT || 0, dt = clamp(now - (LV.lastNow || now), 0, 0.1); LV.lastT = t; LV.lastNow = now;
+  const t = LV.running ? levelTime() : LV.lastT || 0, dt = clamp(t - (LV.lastT ?? t), 0, 0.25); LV.lastT = t; LV.lastNow = now;   // physics on the song's clock, so slow frames don't change a flip
   if (LV.running && !LV.paused) surfStep(t, dt);
   const G = surfGeo(), { L, jonX, jh, yOf } = G, p = clamp(t/LV.chart.duration, 0, 1);
   g.fillStyle = '#050307'; g.fillRect(0, 0, W, H);
   surfSky(G, p, now);
+  // in the air the camera rises with him a little, so the whole jump stays in frame
+  const camWant = LV.down < 0 ? clamp((LV.h - 1)/LV.chart.peak, 0, 1)*L.fh*(L.portrait ? 0.16 : 0.13) : 0;
+  LV.cam += (camWant - LV.cam)*(1 - Math.exp(-dt/0.18)); LV.piv += ((LV.air ? 1 : 0) - LV.piv)*(1 - Math.exp(-dt/0.1));
+  const sk = LV.wipe ? Math.max(0, 1 - (t - LV.wipe.t)/0.35) : 0, shx = sk ? Math.sin(now*90)*6*sk : 0;
+  g.save(); g.translate(shx, LV.cam);
   surfWave(G, t, p);
-  // where he is: on the face, or up in the air
-  const air = surfAir(t), ak = air ? (t - air[0])/(air[1] - air[0]) : -1;
-  const boardY = air ? yOf(SURF.high) - Math.sin(ak*Math.PI)*L.fh*0.2 : yOf(LV.h);
-  const tilt = air ? -0.5 + ak*0.9 : clamp(-LV.vel*0.16, -0.38, 0.38);
-  const se = t - LV.spinAt, spinning = se >= 0 && se < 0.38, spinA = spinning ? easeIO(se/0.38)*Math.PI*2*LV.spinDir : 0;
-  // the racing line: faint dots joining the gems still to come
+  const boardY = yOf(LV.h);
+  // the racing line: faint dots joining the gems still to come (curving along each jump)
   g.fillStyle = 'rgba(255,255,255,.25)';
-  let prev = [jonX, boardY - jh*0.45];
-  for (const n of LV.gems) { if (n.judged) continue; const x = jonX + (n.t - t)*G.speed; if (x > W + 40) break; const y = yOf(n.h) - jh*0.45;
-    const steps = Math.max(1, Math.floor(Math.hypot(x - prev[0], y - prev[1])/14)); for (let i = 1; i < steps; i++) { const k = i/steps; g.beginPath(); g.arc(lerp(prev[0], x, k), lerp(prev[1], y, k), 1.2, 0, 7); g.fill(); } prev = [x, y]; }
-  // spray off the tail
-  if (LV.running && !air) for (let i = 0; i < 2; i++) LV.spray.push({ t0: now, x: jonX - jh*0.3, y: boardY, vx: -(60 + Math.random()*90), vy: -(30 + Math.random()*80) - Math.abs(LV.vel)*40 });
-  LV.spray = LV.spray.filter(s => now - s.t0 < 0.6);
-  for (const s of LV.spray) { const e = now - s.t0; g.fillStyle = `rgba(255,255,255,${0.7*(1 - e/0.6)})`; g.beginPath(); g.arc(s.x + s.vx*e, s.y + s.vy*e + 260*e*e, 1.6 + e*3, 0, 7); g.fill(); }
-  // Jon on his board
-  g.save(); g.translate(jonX, boardY); g.rotate(tilt + spinA); g.translate(-jonX, -boardY);
-  surfBoard(jonX, boardY, 0, jh*0.95);
-  drawJon(jonX, boardY - 3, jh, { running: false, amp: 0, phase: 0, idle: now*0.8, jumpK: -1, kick: false, stumble: 0, reach: 0,
-    dir: 1, shades: true, glow: 0, holdHand: false, lookUp: false, surf: true, smile: LV.combo >= 10 });
-  g.restore();
-  // the gems coming in, and the spin cues in the air
-  for (const n of LV.notes) {
+  { let A = null, tA = t; const step = 14/G.speed;
+    for (const n of LV.gems) { if (n.judged) { A = n; continue; } const x = jonX + (n.t - t)*G.speed; if (x > W + 40) break;
+      for (let ts = Math.max(t, tA) + step; ts < n.t; ts += step) { const xx = jonX + (ts - t)*G.speed; g.beginPath(); g.arc(xx, yOf(surfPathH(ts, A, n)) - jh*0.45, 1.2, 0, 7); g.fill(); }
+      A = n; tA = n.t; } }
+  // spray off the tail on the wave; drops from takeoffs, landings and wipeouts
+  if (LV.running && !LV.air && LV.down < 0) for (let i = 0; i < 2; i++) LV.spray.push({ t0: now, x: jonX - jh*0.3, y: boardY, vx: -(60 + Math.random()*90), vy: -(30 + Math.random()*80) - Math.abs(LV.vel)*40 });
+  LV.spray = LV.spray.filter(q => now - q.t0 < 0.6);
+  for (const q of LV.spray) { const e = now - q.t0; g.fillStyle = `rgba(255,255,255,${0.7*(1 - e/0.6)})`; g.beginPath(); g.arc(q.x + q.vx*e, q.y + q.vy*e + 260*e*e, 1.6 + e*3, 0, 7); g.fill(); }
+  LV.drops = LV.drops.filter(q => t - q.t0 < 0.9 && t >= q.t0 - 0.05);
+  for (const q of LV.drops) { const e = Math.max(0, t - q.t0); g.fillStyle = `rgba(255,255,255,${0.85*(1 - e/0.9)})`; g.beginPath(); g.arc(jonX + q.dx + q.vx*e, yOf(q.h) + q.vy*e + 520*e*e, q.r*(1 - e*0.5), 0, 7); g.fill(); }
+  // Jon on his board, or tumbling off it
+  const pose = { running: false, amp: 0, phase: 0, idle: now*0.8, jumpK: -1, kick: false, stumble: 0, reach: 0, dir: 1, shades: true, glow: 0, holdHand: false, lookUp: false, surf: true, smile: LV.combo >= 10 };
+  if (LV.wipe) {
+    const e = t - LV.wipe.t, w = LV.wipe;
+    const bx = jonX - e*G.speed*0.3 + e*40, by = w.y - L.fh*0.32*e + L.fh*0.9*e*e;   // the board flips away behind him
+    if (by < L.bot + 40) surfBoard(bx, by, w.ang + e*11, jh*0.95);
+    const ja = clamp(1 - (e - 0.3)/0.35, 0, 1);
+    if (ja > 0) { const jx = jonX + e*30, jy = w.y - L.fh*0.12*e + L.fh*0.7*e*e;
+      g.save(); g.globalAlpha = ja; g.translate(jx, jy - jh*0.45); g.rotate(w.ang - e*7); g.translate(-jx, -(jy - jh*0.45));
+      drawJon(jx, jy, jh, { ...pose, smile: false, stumble: 1 }); g.restore(); }
+  } else {
+    const blink = t - LV.back < 0.7 ? 0.45 + 0.55*Math.abs(Math.cos((t - LV.back)*14)) : 1;
+    const py = boardY - jh*0.42*LV.piv;
+    g.save(); g.globalAlpha = blink; g.translate(jonX, py); g.rotate(LV.ang); g.translate(-jonX, -py);
+    surfBoard(jonX, boardY, 0, jh*0.95);
+    drawJon(jonX, boardY - 3, jh, pose);
+    g.restore();
+  }
+  // the gems coming in (the launch gem on the lip is a star)
+  for (const n of LV.gems) {
     if (n.t - t > LV.approach + 0.2) break;
     if (n.judged && n.hit) continue;
     const x = jonX + (n.t - t)*G.speed; if (x < -30) continue;
     const fade = n.judged ? clamp(1 - (t - n.jt)/0.4, 0, 1) : 1; if (fade <= 0) continue;
-    if (n.spin) { const a = LV.airs.find(([a, b]) => n.t >= a && n.t <= b), k2 = a ? (n.t - a[0])/(a[1] - a[0]) : 0.5, y = yOf(SURF.high) - Math.sin(k2*Math.PI)*L.fh*0.2 - jh*0.5;
-      star(x, y + (n.judged ? (t - n.jt)*60 : 0), G.gem*1.3, now*2, `rgba(255,236,170,${fade})`, `rgba(255,255,255,${fade*0.8})`); }
-    else gemShape(x, yOf(n.h) - jh*0.45 + (n.judged ? (t - n.jt)*90 : 0), G.gem, n.kind, Math.sin(now*2 + n.t)*0.25, n.judged ? fade*0.5 : 1);
+    const y = yOf(n.h) - jh*0.45 + (n.judged ? (t - n.jt)*90 : 0);
+    if (n.kind === 3) { const pulse = 1 + Math.sin(now*6)*0.08;
+      const gl = g.createRadialGradient(x, y, 0, x, y, G.gem*3); gl.addColorStop(0, `rgba(255,236,170,${0.45*fade})`); gl.addColorStop(1, 'rgba(255,236,170,0)'); g.fillStyle = gl; g.fillRect(x - G.gem*3, y - G.gem*3, G.gem*6, G.gem*6);
+      star(x, y, G.gem*1.35*pulse, now*1.5, `rgba(255,236,170,${n.judged ? fade*0.5 : 1})`, `rgba(255,255,255,${fade*0.85})`); }
+    else gemShape(x, y, G.gem, n.kind, Math.sin(now*2 + n.t)*0.25, n.judged ? fade*0.5 : 1);
   }
   // sparkles where gems were picked up
-  LV.sparks = LV.sparks.filter(s => t - s.t0 < s.life);
-  for (const s of LV.sparks) { const e = t - s.t0, k = e/s.life, r = jh*0.5*s.sp*(1 - Math.pow(1 - k, 2));
-    g.globalAlpha = 1 - k; g.fillStyle = k < 0.3 ? '#ffffff' : GEMCOL[s.kind][0];
-    g.beginPath(); g.arc(jonX + Math.cos(s.a)*r, yOf(s.h) - jh*0.45 + Math.sin(s.a)*r - e*20, G.gem*0.18*s.sz, 0, 7); g.fill(); }
+  LV.sparks = LV.sparks.filter(q => t - q.t0 < q.life);
+  for (const q of LV.sparks) { const e = t - q.t0, k = e/q.life, r = jh*0.5*q.sp*(1 - Math.pow(1 - k, 2));
+    g.globalAlpha = 1 - k; g.fillStyle = k < 0.3 ? '#ffffff' : GEMCOL[q.kind][0];
+    g.beginPath(); g.arc(jonX + Math.cos(q.a)*r, yOf(q.h) - jh*0.45 + Math.sin(q.a)*r - e*20, G.gem*0.18*q.sz, 0, 7); g.fill(); }
   g.globalAlpha = 1;
-  LV.popups = LV.popups.filter(q => t - q.t < .6);
-  LV.popups.forEach(q => { if (!q.text) return; const k = (t - q.t)/.6, pop = swingPop(k*0.6/0.22); g.globalAlpha = 1 - k*k; g.textAlign = 'center';
-    g.fillStyle = q.k === 'miss' ? '#c8bfb2' : q.k === 'perfect' ? PAL.gold : PAL.cream; g.font = `400 ${clamp(jh*0.2, 13, 20)*pop}px ${FONT.deco}`;
-    g.fillText(q.text, jonX + jh*0.2, boardY - jh*1.25 - k*16); g.globalAlpha = 1; });
+  LV.popups = LV.popups.filter(q => t - q.t < (q.big ? 1.1 : 0.6));
+  LV.popups.forEach(q => { if (!q.text) return; const life = q.big ? 1.1 : 0.6, k = (t - q.t)/life, pop = swingPop(k*life/0.22); g.globalAlpha = 1 - k*k; g.textAlign = 'center';
+    g.fillStyle = q.k === 'miss' ? '#e9e1d4' : q.k === 'perfect' ? PAL.gold : PAL.cream;
+    g.font = `400 ${clamp(jh*(q.big ? 0.3 : 0.2), q.big ? 18 : 13, q.big ? 30 : 20)*pop}px ${FONT.deco}`;
+    const py = q.big ? Math.min(boardY, yOf(SURF.lip)) - jh*1.45 : boardY - jh*1.25; g.fillText(q.text, jonX + jh*(q.big ? 0.5 : 0.2), py - k*16); g.globalAlpha = 1; });
+  g.restore();
   filmPost(0.55); letterbox(L);
   // HUD
   const pad = 16, cyTop = SAFE.t + L.barH/2, sz = Math.min(24, L.barH*0.48);
@@ -196,10 +258,15 @@ function surfFrame(now){
   const sw = g.measureText(LV.score.toLocaleString()).width;
   { const cp = LV.combo >= 2 ? swingPop(clamp((t - LV.comboT)/0.22, 0, 1)) : 1;
     g.save(); g.translate(pad + sw + 10, cyTop + 4); g.scale(cp, cp); g.font = `700 10px ${FONT.type}`; g.fillStyle = LV.combo >= 10 ? PAL.gold : PAL.cream; g.fillText(`${LV.combo} COMBO  ·  ${DIFFS[DIFF].name.toUpperCase()}`, 0, 0); g.restore(); }
-  g.textAlign = 'right'; g.fillStyle = PAL.gold; g.font = `400 ${Math.min(14, L.barH*0.32)}px ${FONT.deco}`; g.fillText(`TRACK ${LV.track.n} · ${LV.track.title.toUpperCase()}`, W - pad, cyTop + 5);
+  g.textAlign = 'right'; g.fillStyle = PAL.gold; const tsz = Math.min(14, L.barH*0.32); g.font = `400 ${tsz}px ${FONT.deco}`;
+  const ttl = L.portrait ? LV.track.title.toUpperCase() : `TRACK ${LV.track.n} · ${LV.track.title.toUpperCase()}`; g.fillText(ttl, W - pad, cyTop + 5);
+  { const tw = g.measureText(ttl).width, bl = clamp(L.barH*0.42, 14, 22);   // lives: three little boards
+    for (let i = 0; i < SURF.lives; i++) { const x = W - pad - tw - 14 - bl*0.55 - i*(bl + 5), lost = i >= LV.lives;
+      g.save(); g.globalAlpha = lost ? 0.25 : 1; g.translate(x, cyTop + 2); g.rotate(-0.5); surfBoard(0, 0, 0, bl); g.restore(); } }
   g.fillStyle = 'rgba(230,184,92,.9)'; g.fillRect(0, L.top - 2, W*clamp(t/LV.endAt, 0, 1), 2);
-  // the title while he paddles into the wave, with how to ride; a reminder just before the first jump
+  // the title while he paddles into the wave, with how to ride; then how to fly, and how to flip the first times up
   const first = LV.gems.length ? LV.gems[0].t : 14;
+  const hint = (txt, a) => { if (a <= 0) return; g.globalAlpha = a; g.textAlign = 'center'; g.fillStyle = PAL.gold; g.font = `700 ${clamp(W*0.03, 11, 14)}px ${FONT.type}`; g.fillText(txt, W/2, L.top + L.fh*0.1); g.globalAlpha = 1; };
   if (t < first - 0.5) { const a = clamp(Math.min((t + SURF.preroll)*2, (first - 0.5 - t)*1.5), 0, 1); g.globalAlpha = a; g.textAlign = 'center';
     const ty = L.top + L.fh*0.14;
     g.fillStyle = PAL.cream; g.font = `italic 500 ${clamp(W*0.04, 15, 22)}px ${FONT.serif}`; g.fillText(`Track ${LV.track.n}`, W/2, ty);
@@ -207,11 +274,13 @@ function surfFrame(now){
     g.fillStyle = PAL.cream; g.font = `700 ${clamp(W*0.026, 10, 13)}px ${FONT.type}`;
     g.fillText(TOUCH ? 'HOLD TO CLIMB  ·  LET GO TO CARVE' : 'HOLD ANY KEY TO CLIMB  ·  LET GO TO CARVE', W/2, ty + clamp(W*0.08, 34, 58) + 32);
     g.globalAlpha = 1; }
-  const jump0 = LV.airs[0];
-  if (jump0 && t > jump0[0] - 1.6 && t < jump0[0] + 0.8) { const a = clamp(Math.min((t - jump0[0] + 1.6)*3, (jump0[0] + 0.8 - t)*3), 0, 1);
-    g.globalAlpha = a; g.textAlign = 'center'; g.fillStyle = PAL.gold; g.font = `700 ${clamp(W*0.03, 11, 14)}px ${FONT.type}`;
-    g.fillText(TOUCH ? 'TAP ON THE STARS TO SPIN' : 'TAP ON THE STARS TO SPIN', W/2, L.top + L.fh*0.1); g.globalAlpha = 1; }
-  if (LV.running && !LV.fading && t > LV.endAt) { LV.fading = true; nodes.songplay.gn.gain.setTargetAtTime(0, ac.currentTime, 0.5); }
-  if (LV.fading) { g.fillStyle = `rgba(3,2,5,${clamp((t - LV.endAt)/1.4, 0, 0.6)})`; g.fillRect(0, 0, W, H); }
-  if (LV.running && !LV.ended && t > LV.endAt + 1.4) levelEnd();
+  const l0 = LV.gems.find(n => n.kind === 3);
+  if (l0 && !LV.flown && t > l0.t - 2.2 && t < l0.t + 0.3) hint('RIDE OFF THE TOP TO FLY', clamp(Math.min((t - l0.t + 2.2)*3, (l0.t + 0.3 - t)*3), 0, 1));
+  if (LV.air && LV.flown <= 2 && !LV.flips) hint(TOUCH ? 'IN THE AIR: HOLD TO FLIP  ·  LAND IT FLAT' : 'IN THE AIR: HOLD TO FLIP  ·  LAND IT FLAT', clamp((t - LV.air.t0)*4, 0, 1));
+  if (LV.wipe && !LV.over) hint(LV.lives === 1 ? 'LAST BOARD' : `${LV.lives} BOARDS LEFT`, clamp(Math.min((t - LV.wipe.t - 0.3)*4, (LV.wipe.t + SURF.downFor - t)*4), 0, 1));
+  // the end: the song fades out (or, after the last wipeout, the run is over)
+  const endAt = LV.over ? LV.wipe.t + 1.0 : LV.endAt;
+  if (LV.running && !LV.fading && t > endAt) { LV.fading = true; nodes.songplay.gn.gain.setTargetAtTime(0, ac.currentTime, LV.over ? 0.35 : 0.5); }
+  if (LV.fading) { g.fillStyle = `rgba(3,2,5,${clamp((t - endAt)/1.4, 0, LV.over ? 0.75 : 0.6)})`; g.fillRect(0, 0, W, H); }
+  if (LV.running && !LV.ended && t > endAt + 1.4) levelEnd(LV.over);
 }

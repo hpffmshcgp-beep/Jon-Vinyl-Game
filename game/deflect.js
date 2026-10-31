@@ -175,21 +175,21 @@ function levelFrame(now){
   if (LV.fading) { g.fillStyle = `rgba(3,2,5,${clamp((t - LV.endAt)/1.4, 0, 0.6)})`; g.fillRect(0, 0, W, H); }
   if (LV.running && !LV.ended && t > LV.endAt + 1.4) levelEnd();
 }
-function levelEnd(){
+function levelEnd(wiped){   // wiped: Void's last board went (no stars, nothing saved; try again)
   LV.ended = true; LV.running = false; stopSources();
-  const n = LV.notes.length, c = LV.counts, acc = n ? (c.perfect + c.good*0.7)/n : 0, st = starsFor(acc, true), tn = LV.track.n;
+  const n = wiped ? LV.notes.filter(x => x.judged).length : LV.notes.length, c = LV.counts, acc = n ? (c.perfect + c.good*0.7)/n : 0, st = wiped ? 0 : starsFor(acc, true), tn = LV.track.n;
   const prevStars = PROG.stars[tn] || 0, key = `${tn}-${DIFF}`, prevBest = PROG.best[key] || 0;
-  PROG.stars[tn] = Math.max(prevStars, st); PROG.best[key] = Math.max(prevBest, LV.score); saveProg();
+  if (!wiped) { PROG.stars[tn] = Math.max(prevStars, st); PROG.best[key] = Math.max(prevBest, LV.score); saveProg(); }
   const lines = ['', 'Got through it.', 'Hardly a scratch.', 'Nothing gets past you.'];
-  $('resEyebrow').textContent = `Track ${tn} · ${DIFFS[DIFF].name.toLowerCase()}` + (LV.score > prevBest ? ' · new high score' : '');
+  $('resEyebrow').textContent = `Track ${tn} · ${DIFFS[DIFF].name.toLowerCase()}` + (wiped ? ' · wiped out' : LV.score > prevBest ? ' · new high score' : '');
   $('resTitle').textContent = LV.track.title;
   $('resStars').innerHTML = [0, 1, 2].map(i => i < st ? `<b class="pop" style="animation-delay:${0.35 + i*0.22}s">★</b>` : '<i>★</i>').join(''); $('resStars').setAttribute('aria-label', st + ' out of 3 stars');
-  $('resLine').textContent = st < 3 ? `${lines[st]} ${st === 1 ? '85%' : '95%'} accuracy for the next star.` : lines[3];
+  $('resLine').textContent = wiped ? 'Three wipeouts. Paddle back out?' : st < 3 ? `${lines[st]} ${st === 1 ? '85%' : '95%'} accuracy for the next star.` : lines[3];
   $('resScore').textContent = LV.score.toLocaleString(); $('resAcc').textContent = (acc*100).toFixed(1) + '%';
   $('resCombo').textContent = LV.maxCombo; $('resPerf').textContent = c.perfect + '/' + n;
   $('resTiming').textContent = ''; $('fixBtn').hidden = true;
-  $('intoBtn').hidden = false; $('intoBtn').textContent = 'Back to the record'; $('intoBtn').onclick = () => { $('results').hidden = true; enterMap(false); };
-  $('againBtn').className = 'ghost'; $('againBtn').textContent = 'Play again'; $('againBtn').onclick = () => { $('results').hidden = true; startLevel(tn); };
+  $('intoBtn').hidden = false; $('intoBtn').className = wiped ? 'ghost' : 'btn'; $('intoBtn').textContent = 'Back to the record'; $('intoBtn').onclick = () => { $('results').hidden = true; enterMap(false); };
+  $('againBtn').className = wiped ? 'btn' : 'ghost'; $('againBtn').textContent = wiped ? 'Try again' : 'Play again'; $('againBtn').onclick = () => { $('results').hidden = true; startLevel(tn); };
   $('menuBtn').hidden = true;
   $('resBilling').textContent = `Fan-made and unofficial · music “${LV.track.title}” by Jon Vinyl`;
   $('results').hidden = false; mode = 'results'; startAmbience();

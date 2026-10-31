@@ -18,7 +18,8 @@ pulls him in. *The record:* a 3D map of the vinyl, one ring of grooves per song,
 - In the cabin, tap (or click) her, the door or anything in the room and Jon walks over.
 - Play the chase on the beat; whatever you score, you reach the bow. Then walk to her and see what the stranger brings.
 - Deflect: on a phone, tap where a heart is coming from and the shield turns to meet it.
-- Void: hold to climb the wave, let go to carve down through the gems; in the air, tap on the stars to spin.
+- Void: hold to climb the wave, let go to carve down through the gems; ride off the top to fly, hold in the air to backflip,
+  land flat or wipe out (three boards).
 
 ## Project layout
 | Path | What it is |
@@ -33,7 +34,7 @@ pulls him in. *The record:* a 3D map of the vinyl, one ring of grooves per song,
 | `songs/star-crossed/analysis/` | Every detected drum hit, used to make the charts. |
 | `tools/` | `find_hits.py` → `make_charts.py` → `build.py`. |
 | `songs/deflect/` | Track 3, Deflect: the song, guitar stems, guitar-hit analysis and its Beatblock-style chart. |
-| `game/surf.js` | The Void level: surfing at sunset, gems on the beat, spins in the air. |
+| `game/surf.js` | The Void level: surfing at sunset, gems on the beat, launches, backflips and wipeouts. |
 | `songs/void/` | Track 4, Void: the song, drum and Demucs stems, drum-hit analysis and its surf chart (`tools/make_surf_chart.py`). |
 | `game/deflect.js` | The Deflect level: turn the shield around Jon to knock away hearts and heartbreaks. |
 | `tests/` | Automated play-tests (Playwright). |
