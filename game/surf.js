@@ -89,7 +89,7 @@ function surfStep(t, dt){
   // gems: judged as they reach him, by how close his height is (all missed while he's under)
   for (const n of LV.gems) { if (n.judged) continue; if (n.t > t) break;
     if (LV.down >= 0) { surfScore(n, t, 'miss'); continue; }
-    const d = Math.abs(LV.h - n.h); surfScore(n, t, d <= SURF.perfect ? 'perfect' : d <= SURF.good ? 'good' : 'miss');
+    const d = Math.abs(LV.h - n.h); n.err = LV.h - n.h; surfScore(n, t, d <= SURF.perfect ? 'perfect' : d <= SURF.good ? 'good' : 'miss');
     if (n.hit) surfBurst(t, n.h, n.kind, n.k === 'perfect' ? 14 : 9); }
 }
 function surfBurst(t, h, kind, count){
@@ -178,6 +178,16 @@ function surfBoard(x, y, ang, len){
   g.fillStyle = '#8e2335'; g.fillRect(-len*0.42, -3.6, len*0.8, 2.2); g.fillStyle = '#e6b85c'; g.fillRect(-len*0.42, -1.2, len*0.8, 0.9);
   g.restore();
 }
+// the mix follows the ride: the drums fill in as the combo builds (a miss drops them back), in the air the bass and
+// most of the drums fall away and slam back in when he lands, and a wipeout pulls the whole song underwater
+function surfMix(t){
+  const M = LV.mix, now = ac.currentTime, down = LV.down >= 0, air = !!LV.air, landed = t - LV.landT < 0.15;
+  const drums = down ? 0.12 : air ? 0.45 : 0.55 + 0.45*Math.min(1, LV.combo/6);
+  const tc = landed ? 0.015 : air ? 0.22 : 0.12;
+  M.dG.gain.setTargetAtTime(drums, now, tc);
+  M.bHP.frequency.setTargetAtTime(air ? 260 : 10, now, landed ? 0.01 : 0.2);
+  M.lp.frequency.setTargetAtTime(down ? 420 : 20000, now, down ? 0.08 : 0.3);
+}
 function surfPathH(ts, A, B){   // the racing line's height at a time between two gems: along the arc while in the air
   const air = (A && A.air && ts <= A.air[1]) ? A.air : (B && B.air && ts >= B.air[0]) ? B.air : null;
   if (air && ts >= air[0] && ts <= air[1]) return surfArc(ts - air[0]);
@@ -187,6 +197,7 @@ function surfPathH(ts, A, B){   // the racing line's height at a time between tw
 function surfFrame(now){
   const t = LV.running ? levelTime() : LV.lastT || 0, dt = clamp(t - (LV.lastT ?? t), 0, 0.25); LV.lastT = t; LV.lastNow = now;   // physics on the song's clock, so slow frames don't change a flip
   if (LV.running && !LV.paused) surfStep(t, dt);
+  if (LV.running && !LV.paused && LV.mix) surfMix(t);
   const G = surfGeo(), { L, jonX, jh, yOf } = G, p = clamp(t/LV.chart.duration, 0, 1);
   g.fillStyle = '#050307'; g.fillRect(0, 0, W, H);
   surfSky(G, p, now);

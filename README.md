@@ -28,8 +28,8 @@ in. To get home, he has to beat every song on it.
 | **Track 3: Deflect** | Jon stands on the label while hearts (rhythm-guitar strums) and heartbreaks (lead-guitar notes) fly in from eight directions; turn the shield to meet each one. Inspired by *Beatblock*. |
 | **Track 4: Void** | A sunset surf. Hold to climb the wave, let go to carve, and collect gems that sit on the drum hits. Ride off the lip to fly, hold in the air to backflip, and land flat or wipe out (three boards). |
 
-Each album song scores up to three stars. Expert+ unlocks per song with three stars on Expert, and the Outro opens with
-three stars on every song. Tracks 1, 2 and 5–7 are still to come, one song at a time.
+Each album song scores up to three stars. Beating every song opens the Outro, the way home; three stars on all of them
+adds the full ending. Expert+ unlocks per song with three stars on Expert. Tracks 1, 2 and 5–7 are still to come.
 
 <p align="center">
   <img src="docs/media/map.jpg" width="49%" alt="The 3D record map with the real orange label and a stop for each song">
@@ -42,6 +42,11 @@ three stars on every song. Tracks 1, 2 and 5–7 are still to come, one song at 
   more with drumsep, plus Demucs, and lead and rhythm guitar for Deflect). `tools/find_hits.py` finds the attack of
   every hit on a 2 ms envelope, and the chart scripts place notes on those exact moments. The prologue's groove is
   swung with triplet kicks, so snapping to a 16th-note grid would put notes where nothing plays.
+- **The mix follows your riding.** Void plays as two layers, the drums and the rest of the song, mixed live. The
+  drums fill in as your combo builds and drop back when you miss. In the air the bass falls away, then slams back in
+  when you land. A wipeout pulls the whole song underwater.
+- **Results coach you.** After a song the card names one thing that went well and one thing to try ("most of what got
+  through came from the left"), and offers the next level up after a near-perfect run.
 - **Charts are checked for playability.** In Void, a gem is only kept if a rider can physically get there from the one
   before. Every jump follows the same arc, so the chart lines gems up along it.
 - **Timing is honest.** The game reads the audio clock (`AudioContext.getOutputTimestamp`, with a latency fallback),

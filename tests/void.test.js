@@ -44,8 +44,10 @@ const C = require('./config');
     console.log(n, 'lands so far', await p.evaluate(() => [LV.lives, LV.flips, LV.flown, window.__lands.map(x => x.join(':')).join(' ')]));
     await p.evaluate(() => { LV.startAt -= (106 - levelTime()); }); await p.waitForFunction(() => LV.flown && LV.air, null, { timeout: 20000, polling: 20 });
     await p.waitForFunction(() => LV.air && levelTime() - LV.air.t0 > 0.6, null, { timeout: 20000, polling: 20 }); await p.screenshot({ path: C.OUT + `void-${n}-3c-flip.png` });
+    const airMix = await p.evaluate(() => [Math.round(LV.mix.bHP.frequency.value), +LV.mix.dG.gain.value.toFixed(2)]);
     await p.evaluate(() => { LV.startAt -= (126 - levelTime()); }); await at(128, '4-night'); await at(133.6, '4b-air');
-    if (n === 'phone') { await p.waitForFunction(() => LV.wipe || !LV.running, null, { timeout: 30000, polling: 20 }); console.log('after 134', await p.evaluate(() => [levelTime(), LV.lives, LV.flown, window.__lands.map(x => x.join(':')).join(' '), LV.airs.map(a => a[0]).filter(a => a > 125).join(',')])); await p.waitForTimeout(250); await p.screenshot({ path: C.OUT + `void-${n}-5-wipeout.png` }); }
+    if (n === 'phone') { await p.waitForFunction(() => LV.wipe || !LV.running, null, { timeout: 30000, polling: 20 }); console.log('after 134', await p.evaluate(() => [levelTime(), LV.lives, LV.flown, window.__lands.map(x => x.join(':')).join(' '), LV.airs.map(a => a[0]).filter(a => a > 125).join(',')])); await p.waitForTimeout(250); await p.screenshot({ path: C.OUT + `void-${n}-5-wipeout.png` }); global.__wipeMix = await p.evaluate(() => Math.round(LV.mix.lp.frequency.value)); }
+    const groundMix = await p.evaluate(() => [Math.round(LV.mix.bHP.frequency.value), +LV.mix.dG.gain.value.toFixed(2), LV.combo]);
     const air = await p.evaluate(() => ({ flown: LV.flown, flips: LV.flips, lives: LV.lives, lands: window.__lands.map(x => x.join(':')).join(' ') }));
     await p.waitForFunction(() => !document.getElementById('results').hidden, null, { timeout: 60000 });
     await p.waitForTimeout(1200); await p.screenshot({ path: C.OUT + `void-${n}-results.png` });
@@ -59,6 +61,8 @@ const C = require('./config');
       await p.screenshot({ path: C.OUT + `void-${n}-wiped.png` });
       console.log(n, 'wiped', JSON.stringify(await p.evaluate(() => [document.getElementById('resEyebrow').textContent, document.getElementById('resLine').textContent, document.getElementById('againBtn').textContent, JSON.parse(localStorage.getItem('jv-progress')).stars])));
     }
+    console.log(n, 'mix: air [band highpass Hz, drums]', JSON.stringify(airMix), 'ground', JSON.stringify(groundMix), 'wipeout lowpass Hz', global.__wipeMix);
+    if (!(airMix[0] > 150 && airMix[1] < 0.6)) throw new Error('the mix should lift in the air');
     console.log(n, 'stop', JSON.stringify(stop), 'first 30 s', JSON.stringify(mid), 'air', JSON.stringify(air), 'last stretch', JSON.stringify(tail), 'results', JSON.stringify(res), errs);
     await ctx.close();
   }

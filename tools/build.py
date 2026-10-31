@@ -7,7 +7,7 @@ Writes (all in dist/, which is not committed):
   dist/web/                      index.html + songplay.mp3 + below.mp3 — the browser build (tests run against this)
   dist/Star-Crossed-itch.zip     the web build zipped for itch.io (Kind of project: HTML, "played in the browser")
   dist/Star-Crossed.html         one self-contained file with the audio embedded (works opened straight from disk)
-  dist/artifact/index.html       the page body for the claude.ai artifact (publish it with songplay.mp3 + below.mp3)
+  dist/artifact/index.html       the page body for the claude.ai artifact (publish it with every .mp3 in dist/artifact/)
 """
 import base64, json, os, shutil, zipfile
 
@@ -20,7 +20,10 @@ ALBUM_DIR = os.path.join(ROOT, 'album', 'lost-in-you')
 THREE = os.path.join(ROOT, 'vendor', 'three.module.min.js')
 src = open(os.path.join(ROOT, 'game', 'src.html')).read()
 for inc in ['map.js', 'deflect.js', 'surf.js']: src = src.replace('/*@include ' + inc + '*/', open(os.path.join(ROOT, 'game', inc)).read())
-ALBUM_SONGS = [t['song'] for t in json.load(open(os.path.join(ROOT, 'album', 'lost-in-you', 'album.json')))['tracks'] if t.get('song')]
+_TRACKS = [t for t in json.load(open(os.path.join(ROOT, 'album', 'lost-in-you', 'album.json')))['tracks'] if t.get('song')]
+ALBUM_SONGS = [t['song'] for t in _TRACKS]
+# the audio each album song ships: its mp3, or its layers (Void: drums + everything else, mixed live as you ride)
+ALBUM_FILES = [(t['song'], f) for t in _TRACKS for f in (t.get('layers') or [t['song']])]
 songs = {n: json.load(open(os.path.join(ROOT, 'songs', n, 'chart.json'))) for n in ALBUM_SONGS}   # each album song's chart
 chart = json.load(open(os.path.join(SONG, 'chart.json')))
 album = json.load(open(os.path.join(ALBUM_DIR, 'album.json')))
@@ -57,10 +60,10 @@ for d in ['web', 'artifact']: os.makedirs(os.path.join(DIST, d))
 open(os.path.join(DIST, 'web', 'index.html'), 'w').write(page(body))
 for a in AUDIO:
     for d in ['web', 'artifact']: shutil.copy(os.path.join(SONG, a + '.mp3'), os.path.join(DIST, d, a + '.mp3'))
-for n in ALBUM_SONGS:
-    for d in ['web', 'artifact']: shutil.copy(os.path.join(ROOT, 'songs', n, n + '.mp3'), os.path.join(DIST, d, n + '.mp3'))
+for n, f in ALBUM_FILES:
+    for d in ['web', 'artifact']: shutil.copy(os.path.join(ROOT, 'songs', n, f + '.mp3'), os.path.join(DIST, d, f + '.mp3'))
 with zipfile.ZipFile(os.path.join(DIST, 'Star-Crossed-itch.zip'), 'w', zipfile.ZIP_DEFLATED) as z:
-    for f in ['index.html'] + [a + '.mp3' for a in AUDIO + ALBUM_SONGS]: z.write(os.path.join(DIST, 'web', f), f)
+    for f in ['index.html'] + [a + '.mp3' for a in AUDIO] + [f + '.mp3' for n, f in ALBUM_FILES]: z.write(os.path.join(DIST, 'web', f), f)
 
 # artifact body (the claude.ai publisher wraps it in its own page)
 open(os.path.join(DIST, 'artifact', 'index.html'), 'w').write(body)
@@ -76,7 +79,7 @@ emb = body.replace(old, """async function fetchProg(name){
     loadP[name] = 1; return out.buffer;
   }
   const r = await fetch(name + '.mp3');""")
-embed = '<script>window.EMBED = ' + json.dumps({**{a: base64.b64encode(open(os.path.join(SONG, a + '.mp3'), 'rb').read()).decode() for a in AUDIO}, **{n: base64.b64encode(open(os.path.join(ROOT, 'songs', n, n + '.mp3'), 'rb').read()).decode() for n in ALBUM_SONGS}}) + ';</script>\n'
+embed = '<script>window.EMBED = ' + json.dumps({**{a: base64.b64encode(open(os.path.join(SONG, a + '.mp3'), 'rb').read()).decode() for a in AUDIO}, **{f: base64.b64encode(open(os.path.join(ROOT, 'songs', n, f + '.mp3'), 'rb').read()).decode() for n, f in ALBUM_FILES}}) + ';</script>\n'
 open(os.path.join(DIST, 'Star-Crossed.html'), 'w').write(page(emb, embed))
 
 for f in ['web/index.html', 'Star-Crossed-itch.zip', 'Star-Crossed.html', 'artifact/index.html']:

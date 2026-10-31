@@ -8,7 +8,7 @@ decisions and the person's preferences.
   Jon and publish it on **itch.io** as a browser game. Their one priority: **quality**.
 - Plain HTML5 canvas + Web Audio in one file (`game/src.html`). No framework, no bundler. Built by `tools/build.py`.
 - A claude.ai artifact of the game exists: https://claude.ai/artifact/5uJ4etxKaX4oRgAR5KNujo — publish
-  `dist/artifact/index.html` with `songplay.mp3`, `below.mp3` and each album song's mp3 (`deflect.mp3`, `void.mp3`) as files (read it first from a new conversation).
+  `dist/artifact/index.html` with every mp3 in `dist/artifact/` as files (`songplay`, `below`, `deflect`, `void-drums`, `void-band`) (read it first from a new conversation).
 
 ## Story and look
 - Old-Hollywood romance on an ocean liner ("DiCaprio and Winslet on Titanic, classic"). Sepia verses, colour choruses,
@@ -46,7 +46,10 @@ decisions and the person's preferences.
   tonearm's stand follows the camera round to the back right so it never blocks the view; the tag of the stop Jon is
   on floats over his head.
 - **Stars**: any difficulty; 1★ clear, 2★ ≥ 85 % accuracy, 3★ ≥ 95 % (`starsFor`). Beating a song (1★) reveals the next
-  band; the **Outro** is an escape cutscene, unlocked by 3★ on all 7 songs. Progress in localStorage `jv-progress`.
+  band; the **Outro** (escape cutscene) opens once **every song is beaten (1★)** (`allCleared`); **3★ on all 7 adds the full
+  ending** (`allThreeStars`): planned as them docking and doing the cabin plans (record store, dinner, "the long way
+  home"). Changed from "3★ on all to see the ending" after the owner's engagement research: finishing the album should
+  reach the ending; mastery adds to it. Progress in localStorage `jv-progress`.
 - **Expert+ is locked per song** (owner): it opens when that song gets 3★ on Expert (the prologue: a 3-star-or-better
   review on Expert), saved in `PROG.xplus` (track n or 'prologue'). `lockXplus(key)` greys the button with a lock (still
   clickable: it nudges and says how to open it) and drops a locked Expert+ choice back to Expert; results say
@@ -83,9 +86,17 @@ decisions and the person's preferences.
   Flips score 1000 each × multiplier, not accuracy. Gems ±0.10 PERFECT, ±0.21 GOOD (height). Gems: easy 99, normal 133,
   hard 196, expert 251, expertplus 343; scroll 2.6/2.3/2.0/1.8/1.6 s. Physics runs on the song clock. Intro 0–14.5 s has
   no gems. Ends ~2 s after the last note with a fade. Surf stance: `drawJon(..., {surf:true})`.
+  **The mix follows the ride** (owner said yes to the engagement report's top idea; prototype, judge by ear): Void ships
+  as two layers (`tools/make_layers.py`: drums, and the master minus the drums, so full drums = the real song) listed as
+  `layers` in album.json and played by `layerMix`; `surfMix` sets drums 0.55 → 1.0 as the combo reaches 6 (a miss drops
+  them back), in the air the band is high-passed at 260 Hz and the drums sit at 0.45, slamming back on landing, and a
+  wipeout low-passes everything to 420 Hz until he's back up.
   Owner's files: full song, drumsep stems (kick/snare/hh/crash/toms/ride/residual), Demucs bass/music/vocals.
 - Results (album songs): 3 stars from accuracy (perfect 1, good 0.7), score, high score per track+difficulty; "Back to
-  the record" / "Play again". Songs not added yet don't block the way on the map; ◀ ▶ walk between reached stops.
+  the record" / "Play again". **Coaching** (`coach`/`coachLines` in deflect.js, `tests/coach.test.js`): one ★ strength and
+  one → tip from what happened (Deflect: direction of misses, hearts vs heartbreaks, wrong-way, late; Void: take-offs,
+  riding high/low, which gem colour, landings; both: best/toughest ~20 s stretch), plus a "Ready for Hard?" (≥95 %) /
+  "Try Normal?" (<55 %) button that changes Settings and plays again. Songs not added yet don't block the way on the map; ◀ ▶ walk between reached stops.
 - Pipeline for a guitar song: `find_guitar_hits.py songs/<s> <stems…>` → `make_deflect_chart.py songs/<s>`; set
   `song`, `seconds`, `measured` in album.json; the build ships `songs/<s>/<s>.mp3` (160 kbps) and the chart.
 

@@ -149,10 +149,11 @@ async function buildMap(){
 
 /* progress: how far round the record you are */
 const songTracks = () => ALBUM.tracks.filter(t => !t.outro);
-const allThreeStars = () => songTracks().every(t => (PROG.stars[t.n] || 0) >= 3);
+const allThreeStars = () => songTracks().every(t => (PROG.stars[t.n] || 0) >= 3);   // the full ending, on top
+const allCleared = () => songTracks().every(t => (PROG.stars[t.n] || 0) >= 1);      // the way out: finish the album
 function reachedIndex(){   // the furthest stop you can reach: beat a song (1★+) to go on; songs not added yet don't stand in the way;
-  let i = 0; const tr = ALBUM.tracks;   // the Outro needs 3★ on every song
-  while (i < tr.length - 1 && ((PROG.stars[tr[i].n] || 0) >= 1 || !tr[i].song) && (!tr[i + 1].outro || allThreeStars())) i++;
+  let i = 0; const tr = ALBUM.tracks;   // the Outro opens once every song is beaten (three stars everywhere adds the full ending)
+  while (i < tr.length - 1 && ((PROG.stars[tr[i].n] || 0) >= 1 || !tr[i].song) && (!tr[i + 1].outro || allCleared())) i++;
   return i;
 }
 function homeStop(){   // where Jon waits when you open the record: the furthest song you can actually play
@@ -250,5 +251,6 @@ function showStop(i){
   $('stopPlay').disabled = !ready; $('stopPlay').textContent = ready ? (t.outro ? 'Go home' : 'Play') : 'Coming soon';
   $('stopPrev').disabled = i <= 0; $('stopNext').disabled = i >= r;
   const best = ready ? Math.max(0, ...Object.keys(PROG.best).filter(k => k.startsWith(t.n + '-')).map(k => PROG.best[k])) : 0;
-  $('stopNote').textContent = t.outro ? 'Three stars on every song opens the way out.' : ready ? (best ? `High score ${best.toLocaleString()} · three stars on every song to get back to her` : 'Three stars on every song to get back to her.') : 'This song hasn’t been pressed yet.';
+  $('stopNote').textContent = t.outro ? (allThreeStars() ? 'Three stars on every song. The long way home.' : 'Beat every song to find the way out. Three stars on all of them for the full ending.')
+    : ready ? (best ? `High score ${best.toLocaleString()} · beat every song to get back to her` : 'Beat every song to get back to her.') : 'This song hasn’t been pressed yet.';
 }

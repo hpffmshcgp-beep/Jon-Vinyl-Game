@@ -18,7 +18,8 @@ async function startLevel(track){
   $('mapLoading').hidden = false; $('mapLoading').textContent = 'Dropping the needle…';
   if (!ac) ac = makeCtx(); if (ac.state === 'suspended') await ac.resume();
   if (!nodes) buildGraph();
-  try { if (!SONGBUF[t.song]) SONGBUF[t.song] = await new Promise((res, rej) => { fetchProg(t.song).then(ab => { const p = ac.decodeAudioData(ab, res, rej); if (p && p.then) p.then(res, rej); }, rej); }); }
+  const files = t.layers || [t.song];   // Void comes as layers (drums, everything else) so the mix can follow your riding
+  try { for (const f of files) if (!SONGBUF[f]) SONGBUF[f] = await new Promise((res, rej) => { fetchProg(f).then(ab => { const p = ac.decodeAudioData(ab, res, rej); if (p && p.then) p.then(res, rej); }, rej); }); }
   catch(e) { $('mapLoading').textContent = 'This browser could not play the song.'; return; }
   $('mapLoading').hidden = true; leaveMap(); stopAmbience(); stopSources();
   const notes = chart.mode === 'surf' ? [] : chart.levels[DIFF].map(([tt, dir, kind]) => ({ t: tt, dir, kind, ang: dirAngle(dir), judged: false, hit: false, k: '', jt: 0, out: 0 }));
@@ -27,7 +28,8 @@ async function startLevel(track){
     score: 0, combo: 0, maxCombo: 0, counts: { perfect: 0, good: 0, miss: 0 }, aim: -Math.PI/2, flash: -9, shake: -9, popups: [], parts: [], trail: [], comboT: -9, next: 0, lastNow: 0, ended: false };
   if (chart.mode === 'surf') Object.assign(LV, surfInit(t, chart));   // track 4, Void: a different game on the same engine
   setLayer(nodes.songplay, 'open');
-  const src = ac.createBufferSource(); src.buffer = SONGBUF[t.song]; src.connect(nodes.songplay.lp); src.start(LV.startAt); srcs.push(src);
+  if (t.layers) LV.mix = layerMix(t.layers, LV.startAt);
+  else { const src = ac.createBufferSource(); src.buffer = SONGBUF[t.song]; src.connect(nodes.songplay.lp); src.start(LV.startAt); srcs.push(src); }
   mode = 'level'; cv.hidden = false; grabKeys();
   ['title', 'results', 'pause'].forEach(id => $(id).hidden = true);
 }
@@ -56,13 +58,13 @@ function levelJudge(t){
     if (n.judged) { if (i === LV.next) LV.next++; continue; }
     const d = Math.abs(angDiff(LV.aim, n.ang));
     if (d <= DEF.half) {   // the shield is there: deflected
-      n.judged = n.hit = true; n.k = d <= DEF.perfect && t - n.t < 0.03 ? 'perfect' : 'good'; n.jt = t; n.out = LV.aim;
+      n.judged = n.hit = true; n.k = d <= DEF.perfect && t - n.t < 0.03 ? 'perfect' : 'good'; n.jt = t; n.out = LV.aim; n.late = t - n.t;
       LV.counts[n.k]++; LV.combo++; LV.maxCombo = Math.max(LV.maxCombo, LV.combo);
       LV.score += (n.k === 'perfect' ? 300 : 150)*Math.min(4, 1 + Math.floor(LV.combo/10)); LV.flash = t;
       LV.popups.push({ t, ang: n.ang, text: n.k.toUpperCase(), k: n.k }); LV.comboT = t;
       burst(t, n.ang, n.kind ? 'break' : 'heart', n.k === 'perfect' ? 18 : 11);
     } else if (t - n.t > DEF.grace) {   // too late: it gets through
-      n.judged = true; n.k = 'miss'; n.jt = t; LV.counts.miss++;
+      n.judged = true; n.k = 'miss'; n.jt = t; LV.counts.miss++; n.off = Math.abs(angDiff(LV.aim, n.ang));
       if (LV.combo >= 5) scratch();
       LV.combo = 0; LV.shake = t; LV.popups.push({ t, ang: n.ang, text: 'MISS', k: 'miss' }); burst(t, n.ang, 'miss', 8);
     }
@@ -189,9 +191,79 @@ function levelEnd(wiped){   // wiped: Void's last board went (no stars, nothing 
   $('resScore').textContent = LV.score.toLocaleString(); $('resAcc').textContent = (acc*100).toFixed(1) + '%';
   $('resCombo').textContent = LV.maxCombo; $('resPerf').textContent = c.perfect + '/' + n;
   $('resTiming').textContent = ''; $('fixBtn').hidden = true;
+  coach(acc, wiped, tn);
   $('intoBtn').hidden = false; $('intoBtn').className = wiped ? 'ghost' : 'btn'; $('intoBtn').textContent = 'Back to the record'; $('intoBtn').onclick = () => { $('results').hidden = true; enterMap(false); };
   $('againBtn').className = wiped ? 'btn' : 'ghost'; $('againBtn').textContent = wiped ? 'Try again' : 'Play again'; $('againBtn').onclick = () => { $('results').hidden = true; startLevel(tn); };
   $('menuBtn').hidden = true;
   $('resBilling').textContent = `Fan-made and unofficial · music “${LV.track.title}” by Jon Vinyl`;
   $('results').hidden = false; mode = 'results'; startAmbience();
+}
+
+/* ---------- coaching on the results card: one thing that went well, one thing to try, and a level nudge ---------- */
+const mmss = t => `${Math.floor(t/60)}:${String(Math.floor(t % 60)).padStart(2, '0')}`;
+const DIRNAME = ['above', 'the upper right', 'the right', 'the lower right', 'below', 'the lower left', 'the left', 'the upper left'];
+const LEVELS = ['easy', 'normal', 'hard', 'expert', 'expertplus'];
+function stretches(notes){   // accuracy over ~20 s stretches of the song: the best and the toughest
+  const done = notes.filter(n => n.judged); if (done.length < 16) return null;
+  const t0 = done[0].t, t1 = done[done.length - 1].t, k = Math.max(2, Math.round((t1 - t0)/20)), w = (t1 - t0)/k, out = [];
+  for (let i = 0; i < k; i++) { const a = t0 + i*w, b = a + w, ns = done.filter(n => n.t >= a && (i === k - 1 ? n.t <= b : n.t < b)); if (ns.length < 5) continue;
+    out.push({ a, b, acc: ns.reduce((s, n) => s + (n.k === 'perfect' ? 1 : n.k === 'good' ? 0.7 : 0), 0)/ns.length }); }
+  if (out.length < 2) return null;
+  out.sort((x, y) => y.acc - x.acc); return { best: out[0], worst: out[out.length - 1] };
+}
+function coachLines(acc){   // [strength, tip]: worded for the song that was played, from what actually happened
+  const N = LV.notes.filter(n => n.judged), miss = N.filter(n => n.k === 'miss'), good = N.filter(n => n.k === 'good');
+  let up = '', tip = '';
+  const st = stretches(LV.notes);
+  if (LV.mode === 'surf') {
+    const ground = N.filter(n => !n.air), launches = N.filter(n => n.kind === 3), airGems = N.filter(n => n.air && n.kind !== 3);
+    const lost = launches.filter(n => !n.hit).length, off = ground.filter(n => n.k !== 'perfect' && n.err != null);
+    const bias = off.length >= 4 ? off.reduce((s, n) => s + n.err, 0)/off.length : 0;
+    const kinds = [0, 1, 2].map(k => ground.filter(n => n.kind === k && !n.hit).length), worst = kinds.indexOf(Math.max(...kinds));
+    const wipes = SURF.lives - LV.lives;
+    if (wipes >= 2) tip = 'The board caught on landing. Let go of a flip a little sooner, and it settles flat by itself.';
+    else if (launches.length >= 3 && lost/launches.length > 0.34) tip = `${lost} of ${launches.length} take-offs missed. Start climbing early, so you reach the lip right on the gold star.`;
+    else if (Math.abs(bias) > 0.06) tip = bias > 0 ? 'You ride a little high. Let go a touch sooner to drop onto the gems.' : 'You ride a little low. Hold a touch longer to reach the gems.';
+    else if (kinds[worst] >= 3) tip = ['The teal kick gems down low got away most. Let go early and sit in the trough.', 'The gold snare gems up high got away most. Hold a beat earlier to reach them.', 'The pink hi-hat gems in the middle got away most. Tap and release to hover halfway.'][worst];
+    else if (!LV.flips && !wipes) tip = 'In the air, press and hold to backflip. Let go when he comes round upright.';
+    if (launches.length && !lost) up = `Every take-off right on the beat${LV.flips ? `, and ${LV.flips} backflip${LV.flips > 1 ? 's' : ''} landed` : ''}.`;
+    else if (LV.flips >= 2 && !wipes) up = `${LV.flips} backflips, every one landed.`;
+    else if (airGems.length >= 6 && airGems.filter(n => n.hit).length/airGems.length > 0.9) up = 'Nearly every gem in the air.';
+  } else {
+    const hm = miss.filter(n => !n.kind).length, bm = miss.filter(n => n.kind).length, hearts = N.filter(n => !n.kind).length, breaks = N.filter(n => n.kind).length;
+    const byDir = Array(8).fill(0); miss.forEach(n => byDir[n.dir]++); const wd = byDir.indexOf(Math.max(...byDir));
+    const late = good.filter(n => n.late >= 0.03).length, wrongWay = miss.filter(n => n.off > Math.PI/2).length;
+    if (miss.length >= 4 && byDir[wd] >= miss.length*0.4) tip = `Most of what got through came from ${DIRNAME[wd]}. Glance that way when the guitar moves.`;
+    else if (bm >= 3 && bm/Math.max(1, breaks) > 1.5*hm/Math.max(1, hearts)) tip = 'Heartbreaks, the lead guitar notes, got past you most. Follow the melody: it climbs clockwise.';
+    else if (hm >= 3 && hm/Math.max(1, hearts) > 1.5*bm/Math.max(1, breaks)) tip = 'Hearts, the rhythm-guitar strums, got past you most. They come in runs that spin around him, so keep turning.';
+    else if (wrongWay >= 3) tip = `${wrongWay} hearts hit while the shield faced the other way. Turn as soon as you see one leave the edge.`;
+    else if (good.length >= 6 && late/good.length > 0.5) tip = 'You often meet them at the last moment. Turn a beat earlier for more perfects.';
+    if (!bm && breaks >= 5) up = 'Not one heartbreak got past you.';
+    else if (!hm && hearts >= 5) up = 'Not one heart got past you.';
+  }
+  if (!miss.length && N.length >= 10) up = `A full combo: all ${N.length}, not one missed.`;
+  if (!up && st && st.best.acc >= 0.85) up = `Your best stretch: ${mmss(st.best.a)} to ${mmss(st.best.b)} (${Math.round(st.best.acc*100)}%).`;
+  if (!tip && st && st.best.acc - st.worst.acc > 0.12) tip = `The toughest stretch was ${mmss(st.worst.a)} to ${mmss(st.worst.b)}. That's the part to practise.`;
+  if (!tip && acc < 0.95) tip = 'Aim for the centre of each one: perfects count fully, nice ones 70%.';
+  return [up, tip];
+}
+function coach(acc, wiped, tn){
+  const [up, tip] = coachLines(acc), box = $('resTips');
+  box.innerHTML = ''; [[up, 'up'], [tip, 'tip']].forEach(([txt, cls]) => { if (!txt) return; const p = document.createElement('p'); p.className = cls; p.textContent = txt; box.appendChild(p); });
+  box.hidden = !box.childElementCount;
+  // a level nudge: up after a near-perfect run, down after a hard one (it changes Settings and plays again)
+  const i = LEVELS.indexOf(DIFF); let to = null;
+  if (!wiped && acc >= 0.95 && i < LEVELS.length - 1 && (LEVELS[i + 1] !== 'expertplus' || PROG.xplus[tn])) to = LEVELS[i + 1];
+  else if (acc < 0.55 && i > 0) to = LEVELS[i - 1];
+  const b = $('tryBtn'); b.hidden = !to;
+  if (to) { b.textContent = `${LEVELS.indexOf(to) > i ? 'Ready for' : 'Try'} ${DIFFS[to].name}?`; b.onclick = () => { setDiff(to); $('results').hidden = true; startLevel(tn); }; }
+}
+
+/* ---------- a song in layers: [drums, band], started together, through their own gains and filters ---------- */
+function layerMix(names, at){
+  const f = (type, hz) => { const b = ac.createBiquadFilter(); b.type = type; b.frequency.value = hz; b.Q.value = 0.7; return b; };
+  const dG = ac.createGain(), bG = ac.createGain(), bHP = f('highpass', 10), lp = f('lowpass', 20000);
+  dG.connect(lp); bHP.connect(bG); bG.connect(lp); lp.connect(nodes.songplay.lp);
+  names.forEach((n, i) => { const s = ac.createBufferSource(); s.buffer = SONGBUF[n]; s.connect(i ? bHP : dG); s.start(at); srcs.push(s); });
+  return { dG, bG, bHP, lp };
 }

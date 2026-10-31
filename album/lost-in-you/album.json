@@ -32,7 +32,8 @@
       "song": "void",
       "seconds": 150,
       "measured": true,
-      "mode": "surf"
+      "mode": "surf",
+      "layers": ["void-drums", "void-band"]
     },
     {
       "n": 5,
