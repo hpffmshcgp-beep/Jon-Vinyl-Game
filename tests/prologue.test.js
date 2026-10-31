@@ -44,8 +44,7 @@ const C = require('./config');
     await shot('09-door-open', 1200); await p.waitForFunction(() => S.sc.kind === 'deck', null, { timeout: 10000 });
     // 2. the deck: a cutscene, then the how-to pop-up
     await shot('10-deck', 3200); await shot('11-sky', 2400); await shot('12-stranger', 4300); await shot('13-taken', 2600);
-    await p.waitForFunction(() => !document.getElementById('howPop').hidden, null, { timeout: 15000 }); await shot('14-howto', 600);
-    await p.click('#goBtn'); await p.waitForFunction(() => mode === 'play', null, { timeout: 10000 });
+    await p.waitForFunction(() => mode === 'play', null, { timeout: 20000 }); await shot('14-chase-starts', 1500);   // no pop-up: the deck runs straight into the chase
     await shot('15-titles', 2500);
     // 2. the chase: a glimpse of them, then jump to the end of the song (points don't matter: hit nothing)
     await p.evaluate(() => { S.startAt -= (GLIMPSE[0] + 2.2 - songTime()); }); await shot('9-glimpse', 300);
