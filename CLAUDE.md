@@ -12,7 +12,7 @@ decisions and the person's preferences.
 
 ## Story and look
 - Old-Hollywood romance on an ocean liner ("DiCaprio and Winslet on Titanic, classic"). Sepia verses, colour choruses,
-  film grain, letterbox. Acts: I The Bluff (poker chips), II Act Like It, III Old Soul, IV No Fool, Finale Star-Crossed.
+  film grain, letterbox. Acts: I The Bluff (poker chips), II Act Like It, III Old Soul, Finale Star-Crossed (No Fool cut).
 - **The prologue sets up the story; the score never blocks it.** Score, combo, high score (per difficulty) and a 5-star
   rating are kept; after the pull an end title shows the reviews (stars, line, score, "NEW HIGH SCORE"), tap to go on.
   No pass/fail, no results panel, **nothing is skippable**.
