@@ -24,7 +24,7 @@ async function startLevel(track){
   const notes = chart.levels[DIFF].map(([tt, dir, kind]) => ({ t: tt, dir, kind, ang: dirAngle(dir), judged: false, hit: false, k: '', jt: 0, out: 0 }));
   const endAt = notes.length ? notes[notes.length - 1].t + 2.4 : chart.duration;   // the song fades out a little after the last heart
   LV = S = { kind: 'level', track: t, chart, notes, endAt, approach: chart.approach[DIFF], startAt: ac.currentTime + DEF.preroll, running: true, paused: false,
-    score: 0, combo: 0, maxCombo: 0, counts: { perfect: 0, good: 0, miss: 0 }, aim: -Math.PI/2, flash: -9, shake: -9, popups: [], next: 0, lastNow: 0, ended: false };
+    score: 0, combo: 0, maxCombo: 0, counts: { perfect: 0, good: 0, miss: 0 }, aim: -Math.PI/2, flash: -9, shake: -9, popups: [], parts: [], trail: [], comboT: -9, next: 0, lastNow: 0, ended: false };
   setLayer(nodes.songplay, 'open');
   const src = ac.createBufferSource(); src.buffer = SONGBUF[t.song]; src.connect(nodes.songplay.lp); src.start(LV.startAt); srcs.push(src);
   mode = 'level'; cv.hidden = false; grabKeys();
@@ -56,22 +56,45 @@ function levelJudge(t){
       n.judged = n.hit = true; n.k = d <= DEF.perfect && t - n.t < 0.03 ? 'perfect' : 'good'; n.jt = t; n.out = LV.aim;
       LV.counts[n.k]++; LV.combo++; LV.maxCombo = Math.max(LV.maxCombo, LV.combo);
       LV.score += (n.k === 'perfect' ? 300 : 150)*Math.min(4, 1 + Math.floor(LV.combo/10)); LV.flash = t;
-      LV.popups.push({ t, ang: n.ang, text: n.k.toUpperCase(), k: n.k });
+      LV.popups.push({ t, ang: n.ang, text: n.k.toUpperCase(), k: n.k }); LV.comboT = t;
+      burst(t, n.ang, n.kind ? 'break' : 'heart', n.k === 'perfect' ? 18 : 11);
     } else if (t - n.t > DEF.grace) {   // too late: it gets through
       n.judged = true; n.k = 'miss'; n.jt = t; LV.counts.miss++;
       if (LV.combo >= 5) scratch();
-      LV.combo = 0; LV.shake = t; LV.popups.push({ t, ang: n.ang, text: 'MISS', k: 'miss' });
+      LV.combo = 0; LV.shake = t; LV.popups.push({ t, ang: n.ang, text: 'MISS', k: 'miss' }); burst(t, n.ang, 'miss', 8);
     }
   }
 }
-function heartbreak(x, y, s, rot){   // a heart split by a jagged crack
+// sparks when a note is knocked away (gold for hearts, violet shards for heartbreaks), a dull puff when one gets through
+function burst(t, ang, kind, count){
+  const out = kind === 'miss' ? ang + Math.PI : ang;   // a miss bursts on Jon's side of the shield
+  for (let i = 0; i < count; i++) {
+    const a = out + (Math.random() - 0.5)*(kind === 'miss' ? 2.4 : 1.6), sp = (kind === 'miss' ? 0.5 : 0.9) + Math.random()*1.6;
+    LV.parts.push({ t0: t, ang, a, sp, life: 0.35 + Math.random()*0.35, sz: 0.5 + Math.random(), kind, spin: (Math.random() - 0.5)*12 });
+  }
+}
+function drawParts(t, cx, cy, R){
+  LV.parts = LV.parts.filter(p => t - p.t0 < p.life && t >= p.t0);
+  for (const p of LV.parts) {
+    const e = t - p.t0, k = e/p.life, r0 = R*(p.kind === 'miss' ? 0.85 : 1.05), d = p.sp*R*1.4*(1 - Math.pow(1 - k, 2.2));   // flies out from where it struck, slowing down
+    const x = cx + Math.cos(p.ang)*r0 + Math.cos(p.a)*d, y = cy + Math.sin(p.ang)*r0 + Math.sin(p.a)*d;
+    g.globalAlpha = (1 - k)*(p.kind === 'miss' ? 0.6 : 1);
+    if (p.kind === 'break') { g.save(); g.translate(x, y); g.rotate(p.spin*e); g.fillStyle = k < 0.3 ? '#e9c6ff' : '#9a5fc0'; const s = R*0.05*p.sz; g.beginPath(); g.moveTo(0, -s); g.lineTo(s*0.7, s*0.6); g.lineTo(-s*0.6, s*0.4); g.closePath(); g.fill(); g.restore(); }
+    else { const s = R*(p.kind === 'miss' ? 0.035 : 0.03)*p.sz*(1 - k*0.5); g.fillStyle = p.kind === 'miss' ? '#8c7f73' : k < 0.25 ? '#fff6dc' : '#ffcf7a';
+      g.beginPath(); g.arc(x, y, s, 0, 7); g.fill();
+      if (p.kind === 'heart') { g.strokeStyle = g.fillStyle; g.lineWidth = s*0.8; g.beginPath(); g.moveTo(x, y); g.lineTo(x - Math.cos(p.a)*s*4, y - Math.sin(p.a)*s*4); g.stroke(); } }
+  }
+  g.globalAlpha = 1;
+}
+function heartbreak(x, y, s, rot, split = 0){   // a heart split by a jagged crack; when knocked away the halves come apart
   g.save(); g.translate(x, y); g.rotate(rot);
-  [-1, 1].forEach(side => { g.save(); g.beginPath(); g.rect(side < 0 ? -s : 0, -s, s, s*2); g.clip(); g.translate(side*s*0.06, 0); g.rotate(side*0.08);
+  [-1, 1].forEach(side => { g.save(); g.translate(side*s*split, 0); g.rotate(side*split*0.9); g.beginPath(); g.rect(side < 0 ? -s : 0, -s, s, s*2); g.clip(); g.translate(side*s*0.06, 0); g.rotate(side*0.08);
     heart(0, 0, s*1.9, '#4a1a3a', '#c58ae6'); g.restore(); });
   g.strokeStyle = '#120812'; g.lineWidth = Math.max(1.5, s*0.08); g.lineJoin = 'miter';
-  g.beginPath(); g.moveTo(0, -s*0.62); g.lineTo(s*0.12, -s*0.32); g.lineTo(-s*0.1, -s*0.05); g.lineTo(s*0.1, s*0.22); g.lineTo(0, s*0.62); g.stroke();
+  if (!split) { g.beginPath(); g.moveTo(0, -s*0.62); g.lineTo(s*0.12, -s*0.32); g.lineTo(-s*0.1, -s*0.05); g.lineTo(s*0.1, s*0.22); g.lineTo(0, s*0.62); g.stroke(); }
   g.restore();
 }
+const swingPop = k => k >= 1 ? 1 : 0.7 + 0.3*k + Math.sin(Math.min(1, k)*Math.PI)*0.35;   // grow past full size, then settle
 function levelFrame(now){
   const G = levelGeo(), { L, cx, cy, R } = G, t = LV.running ? levelTime() : LV.lastT || 0; LV.lastT = t;
   const dt = clamp(now - (LV.lastNow || now), 0, 0.1); LV.lastNow = now;
@@ -100,25 +123,29 @@ function levelFrame(now){
   const ns = clamp(R*0.26, 13, 26);
   for (let i = Math.max(0, LV.next - 12); i < LV.notes.length; i++) {
     const n = LV.notes[i]; if (n.t - t > LV.approach) break;
-    let x, y, a = 1, rot = 0;
+    let x, y, a = 1, rot = 0, split = 0;
     if (!n.judged) { const r = R + (n.t - t)/LV.approach*(G.spawn - R); x = cx + Math.cos(n.ang)*r; y = cy + Math.sin(n.ang)*r; rot = Math.sin(now*3 + i)*0.15; }
-    else if (n.hit) { const e = t - n.jt; if (e > 0.6) continue; const out = n.ang + angDiff(n.out, n.ang)*2, r = R + e*R*3.2; x = cx + Math.cos(out)*r; y = cy + Math.sin(out)*r; a = 1 - e/0.6; rot = e*14; }
+    else if (n.hit) { const e = t - n.jt; if (e > 0.6) continue; const out = n.ang + angDiff(n.out, n.ang)*2, r = R + e*R*3.2; x = cx + Math.cos(out)*r; y = cy + Math.sin(out)*r; a = 1 - e/0.6; rot = e*14; split = n.kind ? Math.min(0.9, e*3.2) : 0; }
     else { const e = t - n.jt; if (e > 0.35) continue; const r = R*(1 - e/0.35); x = cx + Math.cos(n.ang)*r; y = cy + Math.sin(n.ang)*r; a = 1 - e/0.35; }
     g.globalAlpha = a;
-    if (n.kind) heartbreak(x, y, ns, rot); else { g.save(); g.translate(x, y); g.rotate(rot); heart(0, 0, ns*1.9, '#e8746a', PAL.gold); g.restore(); }
+    if (n.kind) heartbreak(x, y, ns, rot, split); else { g.save(); g.translate(x, y); g.rotate(rot); heart(0, 0, ns*1.9, '#e8746a', PAL.gold); g.restore(); }
     g.globalAlpha = 1;
   }
-  // the shield: a golden arc of record rim
+  drawParts(t, cx, cy, R);
+  // the shield: a golden arc of record rim, leaving a short fading smear when it turns fast
   const fl = Math.max(0, 1 - (t - LV.flash)/0.18);
+  LV.trail.push({ a: LV.aim, t: now }); LV.trail = LV.trail.filter(p => now - p.t < 0.12);
   g.save(); g.lineCap = 'round';
+  LV.trail.forEach(p => { const k = 1 - (now - p.t)/0.12, mv = Math.abs(angDiff(p.a, LV.aim)); if (mv < 0.04) return;
+    g.strokeStyle = `rgba(255,214,150,${0.22*k})`; g.lineWidth = R*0.1*(0.6 + 0.4*k); g.beginPath(); g.arc(cx, cy, R, p.a - DEF.half*0.9, p.a + DEF.half*0.9); g.stroke(); });
   g.strokeStyle = `rgba(255,214,150,${0.25 + fl*0.4})`; g.lineWidth = R*0.22 + fl*6; g.beginPath(); g.arc(cx, cy, R, LV.aim - DEF.half, LV.aim + DEF.half); g.stroke();
   const sg = g.createLinearGradient(cx + Math.cos(LV.aim - DEF.half)*R, cy + Math.sin(LV.aim - DEF.half)*R, cx + Math.cos(LV.aim + DEF.half)*R, cy + Math.sin(LV.aim + DEF.half)*R);
   sg.addColorStop(0, '#b98a3a'); sg.addColorStop(.5, '#fff2cf'); sg.addColorStop(1, '#b98a3a');
   g.strokeStyle = sg; g.lineWidth = R*0.1; g.beginPath(); g.arc(cx, cy, R, LV.aim - DEF.half, LV.aim + DEF.half); g.stroke();
   g.restore();
   LV.popups = LV.popups.filter(p => t - p.t < .55);
-  LV.popups.forEach(p => { const k = (t - p.t)/.55, r = R*1.55 + k*16; g.globalAlpha = 1 - k; g.textAlign = 'center';
-    g.fillStyle = p.k === 'miss' ? '#9a8f7a' : p.k === 'perfect' ? PAL.gold : PAL.cream; g.font = `400 ${clamp(R*0.16, 14, 22)}px ${FONT.deco}`;
+  LV.popups.forEach(p => { const k = (t - p.t)/.55, r = R*1.55 + k*16, pop = swingPop(k*0.55/0.22); g.globalAlpha = 1 - k*k; g.textAlign = 'center';
+    g.fillStyle = p.k === 'miss' ? '#9a8f7a' : p.k === 'perfect' ? PAL.gold : PAL.cream; g.font = `400 ${clamp(R*0.16, 14, 22)*pop}px ${FONT.deco}`;
     g.fillText(p.text, cx + Math.cos(p.ang)*r, cy + Math.sin(p.ang)*r); g.globalAlpha = 1; });
   g.restore();
   filmPost(0.7); letterbox(L);
@@ -126,7 +153,8 @@ function levelFrame(now){
   const pad = 16, cyTop = SAFE.t + L.barH/2, sz = Math.min(24, L.barH*0.48);
   g.textAlign = 'left'; g.fillStyle = PAL.gold; g.font = `400 ${sz}px ${FONT.deco}`; g.fillText(LV.score.toLocaleString(), pad, cyTop + sz*0.35);
   const sw = g.measureText(LV.score.toLocaleString()).width;
-  g.font = `700 10px ${FONT.type}`; g.fillStyle = PAL.cream; g.fillText(`${LV.combo} COMBO  ·  ${DIFFS[DIFF].name.toUpperCase()}`, pad + sw + 10, cyTop + 4);
+  { const cp = LV.combo >= 2 ? swingPop(clamp((t - LV.comboT)/0.22, 0, 1)) : 1;   // the combo hops each time it grows
+    g.save(); g.translate(pad + sw + 10, cyTop + 4); g.scale(cp, cp); g.font = `700 10px ${FONT.type}`; g.fillStyle = LV.combo >= 10 ? PAL.gold : PAL.cream; g.fillText(`${LV.combo} COMBO  ·  ${DIFFS[DIFF].name.toUpperCase()}`, 0, 0); g.restore(); }
   g.textAlign = 'right'; g.fillStyle = PAL.gold; g.font = `400 ${Math.min(14, L.barH*0.32)}px ${FONT.deco}`; g.fillText(`TRACK ${LV.track.n} · ${LV.track.title.toUpperCase()}`, W - pad, cyTop + 5);
   g.fillStyle = 'rgba(230,184,92,.9)'; g.fillRect(0, L.top - 2, W*clamp(t/LV.endAt, 0, 1), 2);
   // the title card while the needle drops, with how to turn the shield
@@ -148,7 +176,7 @@ function levelEnd(){
   const lines = ['', 'Got through it.', 'Hardly a scratch.', 'Nothing gets past you.'];
   $('resEyebrow').textContent = `Track ${tn} · ${DIFFS[DIFF].name.toLowerCase()}` + (LV.score > prevBest ? ' · new high score' : '');
   $('resTitle').textContent = LV.track.title;
-  $('resStars').innerHTML = '★'.repeat(st) + '<i>' + '★'.repeat(3 - st) + '</i>'; $('resStars').setAttribute('aria-label', st + ' out of 3 stars');
+  $('resStars').innerHTML = [0, 1, 2].map(i => i < st ? `<b class="pop" style="animation-delay:${0.35 + i*0.22}s">★</b>` : '<i>★</i>').join(''); $('resStars').setAttribute('aria-label', st + ' out of 3 stars');
   $('resLine').textContent = st < 3 ? `${lines[st]} ${st === 1 ? '85%' : '95%'} accuracy for the next star.` : lines[3];
   $('resScore').textContent = LV.score.toLocaleString(); $('resAcc').textContent = (acc*100).toFixed(1) + '%';
   $('resCombo').textContent = LV.maxCombo; $('resPerf').textContent = c.perfect + '/' + n;
