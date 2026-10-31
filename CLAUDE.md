@@ -31,7 +31,7 @@ Read README.md for layout, build and test commands. This file holds the decision
 - **The bow**: hold right to walk up; she breaks free and runs to Jon; reunion lines call back the plans; the stranger
   strolls over all smiles ("Alright, you win. Fair and square." / "No hard feelings?") and gives the album **Lost in
   You** (real cover, `album/lost-in-you/cover.jpg`); close-up, hold right to slide the record out, it spins up, a vortex
-  pulls Jon in (her: "Jon—!"), whiteout → straight to the map. **No Sterling and no queen-of-hearts card — both removed.**
+  pulls Jon in  **No Sterling and no queen-of-hearts card — both removed.**
 - **The record map** (`game/map.js`, Three.js): made to match the real pressing — black vinyl, the real orange label
   (`album/lost-in-you/label.jpg`, cut from the owner's photo: "Jon Vinyl" signature, LOST IN YOU, VINYL RECORDINGS, INC.,
   33⅓ RPM, the tracklist, the legal text round the rim) turned to read upright toward the camera, and visible smooth gaps
@@ -51,7 +51,9 @@ Read README.md for layout, build and test commands. This file holds the decision
   8 directions and land on the measured attack. Aim: mouse, drag a finger anywhere (phones), or arrows/WASD (8 dirs).
   Centre of the shield (±14°) = PERFECT, edge (±34°) = GOOD, 70 ms grace. Directions follow the lead melody (up the neck →
   clockwise) and strum runs spin around; each level caps turn size/speed (`tools/make_deflect_chart.py`).
-  Charts: easy 92, normal 135, hard 207, expert 278, expertplus 388. The song is played live (no strict grid).
+  Charts: easy 92, normal 135, hard 207, expert 278, expertplus 388; fly-in 2.3/2.0/1.75/1.5/1.3 s. Small centre
+  (shield radius ~15 % of the screen) so notes travel a long way. The level ends 2.4 s after the last note (guitars stop
+  ~105 s; the rest is vocals) with a music fade, then results. The song is played live (no strict grid).
   Owner's files: full song + lead and rhythm guitar stems (mvsep); background vocals are only in the full song.
 - Results (album songs): 3 stars from accuracy (perfect 1, good 0.7), score, high score per track+difficulty; "Back to
   the record" / "Play again". Songs not added yet don't block the way on the map; ◀ ▶ walk between reached stops.
@@ -85,6 +87,12 @@ Read README.md for layout, build and test commands. This file holds the decision
   label, one song per band, forward only.
 - For each new song we need: the MP3, its drumsep stems (kick/snare/hh/crash/toms/ride/residual), ideally Demucs
   vocals/other, and a line about what the song means.
+
+## The pull-in (end of the prologue)
+- `PULL` timeline (~8.4 s): the record rises behind Jon and sucks in petals and sparks; he leans away and reaches for her;
+  she grabs his hand (a glow where they hold on), it slips ("Jon—!"), he's lifted, spun and shrunk into the label;
+  the stranger: "Enjoy the album."; white flash; a fall through rushing rings of groove with Jon tumbling; then the
+  reviews end title and the map (where he drops onto the record).
 
 ## Gotchas
 - three.js is built INTO every page as a plain script (`window.THREE_MOD`), never a dynamic `import()`: the Claude

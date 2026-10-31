@@ -27,11 +27,11 @@ for n, h in H.items():
         if rise < 6 or lvl < -24 or t < 0.3: continue
         cand.append(dict(t=t, kind=KIND[n], lvl=lvl, midi=midi, pr=2 + lvl/20 + (0.25 if n == 'lead-guitar' else 0)))
 LEVELS = {   # loudness floor, min gap between notes, extra weight on the beat, max turn per note (eighths), max turn speed (deg/s), fly-in time
-  'easy':       dict(floor=-12, gap=.62, beat=1.2, step=1, speed=150, approach=1.9),
-  'normal':     dict(floor=-15, gap=.42, beat=0.8, step=1, speed=260, approach=1.6),
-  'hard':       dict(floor=-18, gap=.30, beat=0.5, step=2, speed=380, approach=1.4),
-  'expert':     dict(floor=-21, gap=.21, beat=0.25, step=2, speed=540, approach=1.2),
-  'expertplus': dict(floor=-24, gap=.15, beat=0.0, step=3, speed=720, approach=1.05),
+  'easy':       dict(floor=-12, gap=.62, beat=1.2, step=1, speed=150, approach=2.3),
+  'normal':     dict(floor=-15, gap=.42, beat=0.8, step=1, speed=260, approach=2.0),
+  'hard':       dict(floor=-18, gap=.30, beat=0.5, step=2, speed=380, approach=1.75),
+  'expert':     dict(floor=-21, gap=.21, beat=0.25, step=2, speed=540, approach=1.5),
+  'expertplus': dict(floor=-24, gap=.15, beat=0.0, step=3, speed=720, approach=1.3),
 }
 levels = {}
 for name, L in LEVELS.items():

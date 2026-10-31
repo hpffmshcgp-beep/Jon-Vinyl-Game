@@ -1834,33 +1834,47 @@ function sceneStep(L, dt, base){
   } else if (sc.ph === 'spinup') {
     if (T - sc.spinT2 > 1.9) { sc.ph = 'pull'; sc.pullT = T; sc.herDir = -1; }
   } else if (sc.ph === 'pull') {
-    if (T - sc.pullT > 4.3 && S.running) { sc.ph = 'rating'; sc.rateT = T; sc.rate = rateRun(); }
+    if (T - sc.pullT > PULL.tunnel1 + 0.1 && S.running) { sc.ph = 'rating'; sc.rateT = T; sc.rate = rateRun(); }
   } else if (sc.ph === 'rating') {
     if (T - sc.rateT > 9 && S.running) finishPrologue();
   }
 }
+// the pull: the record rises behind him and drags him in; she grabs his hand; it slips; he falls through the grooves
+const PULL = { grow: 1.0, resist: 0.6, grab: 0.9, slip: 2.6, lift: 2.8, inEnd: 4.6, shut0: 4.6, shut1: 5.1, flash: 5.2, tunnel0: 5.5, tunnel1: 8.4 };
 function drawScene(L, now, base){
   const sc = S.sc, jh = L.jh, T = sc.T;
   const herX = base + sc.her*jh, jonX = base + sc.jon*jh, figX = base + sc.fig*jh;
   const together = sc.ph === 'end' || sc.ph === 'stranger';
   const pullE = sc.pullT >= 0 ? T - sc.pullT : -1;
-  if (pullE >= 0) {   // the record rises behind him, spinning faster and faster
-    const grow = ease(pullE/0.9), shut = pullE > 3.0 ? 1 - ease((pullE - 3.0)/0.45) : 1, rr = jh*1.55*grow*shut, cy = L.groundY - jh*0.62;
-    vinyl2D(jonX, cy, rr, pullE*pullE*2.6, 1);
+  const vx = jonX - jh*0.75, vy = L.groundY - jh*0.66;   // the record opens up behind him
+  if (pullE >= 0) {
+    const grow = ease(pullE/PULL.grow), shut = pullE > PULL.shut0 ? 1 - ease((pullE - PULL.shut0)/(PULL.shut1 - PULL.shut0)) : 1, rr = jh*1.6*grow*shut;
+    g.fillStyle = `rgba(6,3,10,${0.35*grow*shut})`; g.fillRect(0, L.top, W, L.fh);                                   // the night closes in around it
+    vinyl2D(vx, vy, rr, pullE*pullE*1.6, 1);
     g.save(); g.globalCompositeOperation = 'lighter';
-    for (let i = 0; i < 14; i++) { const a0 = i/14*Math.PI*2 + pullE*3.2, r0 = rr*1.25; g.strokeStyle = `rgba(255,200,140,${0.22*shut})`; g.lineWidth = 2;
-      g.beginPath(); for (let k = 0; k <= 1.001; k += 0.1) { const rk = r0*(1 - k*0.85), ak = a0 + k*2.4; k ? g.lineTo(jonX + Math.cos(ak)*rk, cy + Math.sin(ak)*rk) : g.moveTo(jonX + Math.cos(ak)*rk, cy + Math.sin(ak)*rk); } g.stroke(); }
+    for (let i = 0; i < 16; i++) { const a0 = i/16*Math.PI*2 + pullE*3.2, r0 = rr*1.35; g.strokeStyle = `rgba(255,200,140,${0.22*shut})`; g.lineWidth = 2;
+      g.beginPath(); for (let k = 0; k <= 1.001; k += 0.1) { const rk = r0*(1 - k*0.85), ak = a0 + k*2.4; k ? g.lineTo(vx + Math.cos(ak)*rk, vy + Math.sin(ak)*rk) : g.moveTo(vx + Math.cos(ak)*rk, vy + Math.sin(ak)*rk); } g.stroke(); }
+    for (let i = 0; i < 40; i++) {   // petals and sparks sucked in from all around
+      const f = (pullE*0.5 + i/40) % 1, r = (1 - f)*Math.max(W, H)*0.6*shut + rr*0.08, a = i*2.4 + f*5 + pullE;
+      g.fillStyle = i % 3 ? `rgba(232,116,106,${0.7*f*grow})` : `rgba(255,214,150,${0.8*f*grow})`;
+      g.beginPath(); g.ellipse(vx + Math.cos(a)*r, vy + Math.sin(a)*r*0.8, 3 + f*2, 1.6 + f, a, 0, 7); g.fill(); }
     g.restore();
   }
   const running = sc.ph === 'free' && T - sc.freeT < 0.75;
-  drawHer(herX, L.groundY - jh*0.05 - (running ? Math.abs(Math.sin((T - sc.freeT)*14))*jh*0.03 : 0), jh*0.95, sc.herDir, now, sc.ph !== 'gift' && sc.ph !== 'album' && sc.ph !== 'spinup');
+  const herPull = pullE < 0 ? 0 : -ease(clamp((pullE - PULL.grab)/0.4, 0, 1))*jh*0.14 + ease(clamp((pullE - PULL.slip)/0.5, 0, 1))*jh*0.3;   // she grabs his hand… and it slips
+  drawHer(herX + herPull, L.groundY - jh*0.05 - (running ? Math.abs(Math.sin((T - sc.freeT)*14))*jh*0.03 : 0), jh*0.95, sc.herDir, now, sc.ph !== 'gift' && sc.ph !== 'album' && sc.ph !== 'spinup');
   const offer = sc.ph === 'walk' || sc.ph === 'free' ? sc.grip : sc.offerT < 0 ? 0 : sc.gotT < 0 ? ease((T - sc.offerT)/0.6) : 1 - ease((T - sc.gotT - 0.4)/0.6);
   const figHand = drawFigure(figX, L.groundY, jh*1.02, -1, { walk: sc.ph === 'stranger', ph: sc.fph, now, offer });
-  const pullK = pullE >= 1.0 ? ease((pullE - 1.0)/1.8) : 0;   // and pulls him in
-  if (pullK > 0) { const cy = L.groundY - jh*0.62; g.save(); g.translate(jonX, cy); g.rotate(pullK*9); g.scale(Math.max(0.001, 1 - pullK), Math.max(0.001, 1 - pullK)); g.translate(-jonX, -(L.groundY - jh*0.5)); }
-  const lens = pullK >= 1 ? { lensX: jonX, lensY: L.groundY - jh } : drawJon(jonX, L.groundY, jh, {
-    running: sc.moving && sc.ph === 'walk', amp: 0.45, phase: sc.wph % 1, idle: now*0.8, jumpK: -1, kick: false, stumble: 0, reach: 0, dir: sc.jdir,
-    shades: true, glow: 0, holdHand: together, lookUp: together, smile: together });
+  // he fights it, feet dragging back, reaching for her; then he's lifted off the deck and spun into the middle
+  const resist = pullE < 0 || pullE >= PULL.lift ? 0 : clamp((pullE - PULL.resist)/0.5, 0, 1), slide = pullE < 0 ? 0 : ease(clamp((pullE - PULL.resist)/2.0, 0, 1))*jh*0.2;
+  const pullK = pullE >= PULL.lift ? ease((pullE - PULL.lift)/(PULL.inEnd - PULL.lift)) : 0, jx = jonX - slide, by = L.groundY - jh*0.5;
+  if (resist > 0 && pullE > PULL.grab + 0.3 && pullE < PULL.slip) {   // their hands, holding on
+    const hx = (jx + herX + herPull)/2 + jh*0.04, hy = L.groundY - jh*0.55, hg = g.createRadialGradient(hx, hy, 0, hx, hy, jh*0.2);
+    hg.addColorStop(0, 'rgba(255,220,170,.55)'); hg.addColorStop(1, 'rgba(255,220,170,0)'); g.fillStyle = hg; g.fillRect(hx - jh*0.2, hy - jh*0.2, jh*0.4, jh*0.4); }
+  if (pullK > 0) { g.save(); g.translate(jx + (vx - jx)*pullK, by + (vy - by)*pullK); g.rotate(-pullK*10); g.scale(Math.max(0.001, 1 - pullK), Math.max(0.001, 1 - pullK)); g.translate(-jx, -by); }
+  const lens = pullK >= 1 ? { lensX: jonX, lensY: L.groundY - jh } : drawJon(jx, L.groundY, jh, {
+    running: sc.moving && sc.ph === 'walk', amp: 0.45, phase: sc.wph % 1, idle: now*0.8, jumpK: pullK > 0 ? 0.5 : -1, kick: false, stumble: 0, reach: 0, dir: pullE >= 0 ? 1 : sc.jdir,
+    push: resist, shades: true, glow: 0, holdHand: together, lookUp: together, smile: together });
   if (pullK > 0) g.restore();
   // the album: in the stranger's hand, then in Jon's
   if (sc.offerT >= 0 && sc.ph !== 'album' && sc.ph !== 'spinup' && pullE < 0) {
@@ -2106,6 +2120,21 @@ function finishPrologue(){   // into the record
   stopSources(); S.running = false; HOLD.kl = HOLD.kr = false; HOLD.ptr.clear();
   enterMap(true);
 }
+// falling down through the grooves: rings of record rushing past, the light of the label below, Jon tumbling
+function fallThrough(L, now, k){
+  const d = PULL.tunnel1 - PULL.tunnel0, u = clamp(k/d, 0, 1), cx = W/2, cy = L.top + L.fh*0.5, M = Math.hypot(W, H)*0.62;
+  g.fillStyle = '#030205'; g.fillRect(0, 0, W, H);
+  const glow = g.createRadialGradient(cx, cy, 0, cx, cy, M*0.5); glow.addColorStop(0, `rgba(232,166,78,${0.18 + 0.3*u})`); glow.addColorStop(1, 'rgba(232,166,78,0)');
+  g.fillStyle = glow; g.fillRect(0, 0, W, H);
+  for (let i = 0; i < 26; i++) { const f = (k*0.6 + i/26) % 1, r = Math.pow(f, 2.3)*M, a = f*0.7;
+    g.strokeStyle = i % 9 === 0 ? `rgba(232,166,78,${a})` : `rgba(205,195,220,${a*0.45})`; g.lineWidth = 0.8 + f*(i % 9 === 0 ? 6 : 2.5);
+    g.beginPath(); g.arc(cx, cy, r, 0, 7); g.stroke(); }
+  const s = Math.min(W, L.fh)*(0.22 - 0.12*u);
+  g.save(); g.translate(cx, cy); g.rotate(k*2.4); g.translate(0, s*0.5);
+  drawJon(0, 0, s, { running: false, amp: 0, phase: 0, idle: now, jumpK: 0.5, kick: false, stumble: 0, reach: 0, shades: true, glow: 0, holdHand: false, lookUp: false, smile: false });
+  g.restore();
+  g.fillStyle = `rgba(3,2,5,${Math.max(1 - k/0.4, clamp((k - (d - 0.6))/0.6, 0, 1))})`; g.fillRect(0, 0, W, H);
+}
 function sceneOver(L, now, jonX, herX){
   const sc = S.sc, T = sc.T; if (sc.metT < 0) return;
   const cx = (jonX + herX)/2, cy = L.groundY - L.jh*0.6, hk = clamp((T - sc.metT)/0.8, 0, 1);
@@ -2123,8 +2152,9 @@ function sceneOver(L, now, jonX, herX){
     g.globalAlpha = 1;
   }
   if (sc.pullT >= 0) { const e = T - sc.pullT;
-    if (e > 2.9) { g.fillStyle = `rgba(255,244,226,${clamp(1 - Math.abs(e - 3.25)/0.35, 0, 1)})`; g.fillRect(0, 0, W, H); }
-    if (e > 3.35) { g.fillStyle = `rgba(3,2,5,${clamp((e - 3.35)/0.8, 0, 1)})`; g.fillRect(0, 0, W, H); } }
+    if (e > PULL.shut0) { g.fillStyle = `rgba(255,244,226,${clamp(1 - Math.abs(e - PULL.flash)/0.4, 0, 1)})`; g.fillRect(0, 0, W, H); }
+    if (e > PULL.flash + 0.1) { g.fillStyle = `rgba(3,2,5,${clamp((e - PULL.flash - 0.1)/0.25, 0, 1)})`; g.fillRect(0, 0, W, H); }
+    if (e > PULL.tunnel0) fallThrough(L, now, e - PULL.tunnel0); }
   if (sc.ph === 'rating' && sc.rate) {   // end title: the reviews, over black
     const r = sc.rate, e = T - sc.rateT, a = clamp(e/0.6, 0, 1), cy = L.top + L.fh*0.5;
     g.save(); g.globalAlpha = a; g.textAlign = 'center';
@@ -2162,7 +2192,8 @@ function sceneUI(L, now){
     dlgBox(L, who, line, shown, d.t0 < 0 ? 1 : clamp((sc.T - d.t0 + (d.i ? 1 : 0))*6, 0, 1), true, now);
   }
   const shout = (t0, a, b) => { const e = sc.T - t0; if (t0 >= 0 && e > a && e < b) dlgBox(L, 'HER', 'Jon—!', 5, clamp(Math.min((e - a)*8, (b - e)*8), 0, 1), false); };
-  if (sc.kind === 'bow') shout(sc.pullT, 0.5, 2.6);
+  if (sc.kind === 'bow') { shout(sc.pullT, PULL.slip - 0.3, PULL.slip + 1.3);
+    const e = sc.T - sc.pullT; if (sc.pullT >= 0 && e > 3.4 && e < 4.9) dlgBox(L, '???', 'Enjoy the album.', Math.floor((e - 3.4)*40), clamp(Math.min((e - 3.4)*8, (4.9 - e)*8), 0, 1), false); }
   let p = '';
   if (!d && sc.ph === 'walk') p = TOUCH ? 'HOLD THE RIGHT SIDE TO GO GET HER  ▶' : 'HOLD  →  TO GO GET HER';
   if (!d && sc.ph === 'album' && T_ok(sc)) p = TOUCH ? 'HOLD THE RIGHT SIDE TO SLIDE THE RECORD OUT  ▶' : 'HOLD  →  TO SLIDE THE RECORD OUT';

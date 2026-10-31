@@ -10,8 +10,8 @@ let LV = null;
 const SONGBUF = {};                           // decoded album songs, kept apart from the prologue's buffers
 const AIM = { target: -Math.PI/2, keys: new Set(), mouse: false };
 function levelGeo(){
-  const L = layout(), cx = W/2, cy = L.top + L.fh*0.54, R = clamp(Math.min(W, L.fh)*0.24, 64, 170);
-  return { L, cx, cy, R, spawn: Math.hypot(W, H)*0.62, jh: Math.min(L.jh, R*1.25) };
+  const L = layout(), cx = W/2, cy = L.top + L.fh*0.54, R = clamp(Math.min(W, L.fh)*0.15, 46, 110);   // a small centre leaves a long way in to read the notes
+  return { L, cx, cy, R, spawn: Math.hypot(W, H)*0.62, jh: Math.min(L.jh, R*1.3) };
 }
 async function startLevel(track){
   const t = ALBUM.tracks.find(x => x.n === track), chart = t && SONGS[t.song]; if (!chart) return;
@@ -22,7 +22,8 @@ async function startLevel(track){
   catch(e) { $('mapLoading').textContent = 'This browser could not play the song.'; return; }
   $('mapLoading').hidden = true; leaveMap(); stopAmbience(); stopSources();
   const notes = chart.levels[DIFF].map(([tt, dir, kind]) => ({ t: tt, dir, kind, ang: dirAngle(dir), judged: false, hit: false, k: '', jt: 0, out: 0 }));
-  LV = S = { kind: 'level', track: t, chart, notes, approach: chart.approach[DIFF], startAt: ac.currentTime + DEF.preroll, running: true, paused: false,
+  const endAt = notes.length ? notes[notes.length - 1].t + 2.4 : chart.duration;   // the song fades out a little after the last heart
+  LV = S = { kind: 'level', track: t, chart, notes, endAt, approach: chart.approach[DIFF], startAt: ac.currentTime + DEF.preroll, running: true, paused: false,
     score: 0, combo: 0, maxCombo: 0, counts: { perfect: 0, good: 0, miss: 0 }, aim: -Math.PI/2, flash: -9, shake: -9, popups: [], next: 0, lastNow: 0, ended: false };
   setLayer(nodes.songplay, 'open');
   const src = ac.createBufferSource(); src.buffer = SONGBUF[t.song]; src.connect(nodes.songplay.lp); src.start(LV.startAt); srcs.push(src);
@@ -86,7 +87,7 @@ function levelFrame(now){
   drawJon(cx, cy + G.jh*0.48, G.jh*0.9, { running: false, amp: 0, phase: 0, idle: now*0.8, jumpK: -1, kick: false, stumble: Math.max(0, 1 - (t - LV.shake)/0.3), reach: 0,
     dir: Math.cos(LV.aim) >= 0 ? 1 : -1, shades: true, glow: 0, holdHand: false, lookUp: false, smile: LV.combo >= 10 });
   // the notes: flying in, then either knocked away or getting through
-  const ns = R*0.2;
+  const ns = clamp(R*0.26, 13, 26);
   for (let i = Math.max(0, LV.next - 12); i < LV.notes.length; i++) {
     const n = LV.notes[i]; if (n.t - t > LV.approach) break;
     let x, y, a = 1, rot = 0;
@@ -117,7 +118,7 @@ function levelFrame(now){
   const sw = g.measureText(LV.score.toLocaleString()).width;
   g.font = `700 10px ${FONT.type}`; g.fillStyle = PAL.cream; g.fillText(`${LV.combo} COMBO  ·  ${DIFFS[DIFF].name.toUpperCase()}`, pad + sw + 10, cyTop + 4);
   g.textAlign = 'right'; g.fillStyle = PAL.gold; g.font = `400 ${Math.min(14, L.barH*0.32)}px ${FONT.deco}`; g.fillText(`TRACK ${LV.track.n} · ${LV.track.title.toUpperCase()}`, W - pad, cyTop + 5);
-  g.fillStyle = 'rgba(230,184,92,.9)'; g.fillRect(0, L.top - 2, W*clamp(t/LV.chart.duration, 0, 1), 2);
+  g.fillStyle = 'rgba(230,184,92,.9)'; g.fillRect(0, L.top - 2, W*clamp(t/LV.endAt, 0, 1), 2);
   // the title card while the needle drops, with how to turn the shield
   if (t < 3.2) { const a = clamp(Math.min((t + DEF.preroll)*3, (3.2 - t)*2), 0, 1); g.globalAlpha = a; g.textAlign = 'center';
     g.fillStyle = PAL.cream; g.font = `italic 500 ${clamp(W*0.04, 15, 22)}px ${FONT.serif}`; g.fillText(`Track ${LV.track.n}`, W/2, L.top + L.fh*0.16);
@@ -125,7 +126,9 @@ function levelFrame(now){
     g.fillStyle = PAL.cream; g.font = `700 ${clamp(W*0.026, 10, 13)}px ${FONT.type}`;
     g.fillText(TOUCH ? 'DRAG AROUND JON TO TURN THE SHIELD' : 'AIM THE SHIELD WITH THE MOUSE  ·  OR ARROWS / WASD', W/2, L.bot - L.fh*0.06);
     g.globalAlpha = 1; }
-  if (LV.running && !LV.ended && t > LV.chart.duration + 0.3) levelEnd();
+  if (LV.running && !LV.fading && t > LV.endAt) { LV.fading = true; nodes.songplay.gn.gain.setTargetAtTime(0, ac.currentTime, 0.35); }
+  if (LV.fading) { g.fillStyle = `rgba(3,2,5,${clamp((t - LV.endAt)/1.4, 0, 0.6)})`; g.fillRect(0, 0, W, H); }
+  if (LV.running && !LV.ended && t > LV.endAt + 1.4) levelEnd();
 }
 function levelEnd(){
   LV.ended = true; LV.running = false; stopSources();

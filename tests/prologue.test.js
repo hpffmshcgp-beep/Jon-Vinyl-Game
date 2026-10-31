@@ -47,7 +47,8 @@ const C = require('./config');
     await tapWhile('gift', 20, async i => { if (i === 7) await shot('15-offer'); });
     await shot('16-album', 900);
     await hold(true); await p.waitForFunction(() => S.sc.ph !== 'album', null, { timeout: 8000 }); await hold(false);
-    await p.waitForFunction(() => S.sc.ph === 'pull', null, { timeout: 8000 }); await shot('17-pull', 1400);
+    await p.waitForFunction(() => S.sc.ph === 'pull', null, { timeout: 8000 });
+    await shot('17a-pull-rises', 900); await shot('17b-pull-hands', 900); await shot('17c-pull-slip', 1100); await shot('17d-pull-lifted', 900); await shot('17e-enjoy', 500); await shot('17f-fall', 1700); await shot('17g-fall2', 1000);
     await p.waitForFunction(() => S.sc.ph === 'rating', null, { timeout: 10000 }); await shot('18-reviews', 1600); await tap();
     // 4. straight into the record, no score card
     await p.waitForFunction(() => mode === 'map' && MAP.ready, null, { timeout: 60000 });
