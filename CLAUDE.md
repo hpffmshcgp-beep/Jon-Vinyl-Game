@@ -51,17 +51,15 @@ Read README.md for layout, build and test commands. This file holds the decision
   blobs, pale blue patches), coil-textured hair, shades, jeans, chunky retro sand high-top sneakers. No watch.
 
 ## Album levels
-- **Track 3 · Deflect** (`songs/deflect`, `game/deflect.js`): owner's idea — "deflect" means **avoiding**, undecided
-  between love and not-love. Jon is down in a record groove (a stereo groove's two walls = left/right channels): the
-  **left wall is love (hearts), the right wall heartbreak**. What falls down the wall he's on lands on the beat; he dodges
-  by jumping across right as it lands (inspired by the old Android game "Beatblock" by paulorenanmelo: wall-to-wall
-  jumps). Hearts and heartbreaks alternate (`side = i % 2`), so he keeps bouncing between them. Controls: tap the side to
-  jump to (phones/mouse), left-hand keys A S D F ← / right-hand J K L ; →, Space = across. Timing: ±55 ms PERFECT,
-  −130/+80 ms GOOD, earlier = EARLY (miss); if it lands while he's there it hits him and knocks him across (miss). A jump
-  with nothing falling on his wall yet is free and the coming notes follow him. Dodged ones smash on the empty ledge
-  (sparks / violet shards). Notes on the measured guitar attacks (rhythm + lead, `tools/make_deflect_chart.py`), min gap
-  per level keeps jumps playable. Jumps: easy 92, normal 135, hard 207, expert 278, expertplus 388; fall time
-  1.9/1.6/1.4/1.2/1.05 s. Ends 2.4 s after the last note (guitars stop ~105 s) with a music fade, then results.
+- **Track 3 · Deflect** (`songs/deflect`, `game/deflect.js`): Beatblock-style. Jon stands on the record's label; a golden
+  shield circles him; **hearts = rhythm guitar strums, heartbreaks = lead guitar notes**, both deflected; they fly in from
+  8 directions and land on the measured attack. Aim: mouse (points), arrows/WASD (8 dirs), or on phones **slide left/right
+  anywhere like a dial** (relative; right = clockwise; one sweep of 0.8 × screen width = a full turn, `levelTouch`).
+  Centre of the shield (±14°) = PERFECT, edge (±34°) = GOOD, 70 ms grace. Directions follow the lead melody (up the neck →
+  clockwise) and strum runs spin around; each level caps turn size/speed (`tools/make_deflect_chart.py`).
+  Charts: easy 92, normal 135, hard 207, expert 278, expertplus 388; fly-in 1.9/1.6/1.4/1.2/1.05 s (owner: not slower —
+  the small centre alone gives them more screen time). Small centre (shield radius ~15 % of the screen). The level ends 2.4 s after the last note (guitars stop
+  ~105 s; the rest is vocals) with a music fade, then results. The song is played live (no strict grid).
   Owner's files: full song + lead and rhythm guitar stems (mvsep); background vocals are only in the full song.
 - Results (album songs): 3 stars from accuracy (perfect 1, good 0.7), score, high score per track+difficulty; "Back to
   the record" / "Play again". Songs not added yet don't block the way on the map; ◀ ▶ walk between reached stops.
