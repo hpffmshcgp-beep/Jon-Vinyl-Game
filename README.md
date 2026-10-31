@@ -18,7 +18,7 @@ in. To get home, he has to beat every song on it.
 
 <p align="center">
   <img src="docs/media/cabin.jpg" width="32%" alt="Their cabin: wood panels, brass portholes onto the sunset, Jon and her talking">
-  <img src="docs/media/chase.jpg" width="32%" alt="The chase: a two-lane rhythm run along the deck">
+  <img src="docs/media/chase.jpg" width="32%" alt="The chase: Jon jumps what is on the deck and slides under what hangs overhead while passengers cheer">
   <img src="docs/media/pull.jpg" width="32%" alt="The pull-in: the record spins up behind Jon and draws him into the label">
 </p>
 
@@ -26,7 +26,7 @@ in. To get home, he has to beat every song on it.
 
 | Part | What you do |
 |---|---|
-| **Prologue: Star-Crossed** | A walkable cabin (tap her, the door, the turntable…), a cutscene on deck, then a two-lane rhythm chase: left hand for the snare and hi-hats, right hand for the kick. Five difficulties. The score earns a review, but the story always goes on. |
+| **Prologue: Star-Crossed** | A walkable cabin (tap her, the door, the turntable…), a cutscene on deck, then the chase: jump what's on the deck (left side: the snare and hi-hats) and slide under what hangs overhead (right side: the kick), with passengers cheering him on. No tutorial screen: the first jump and slide stop the song and wait for you. The score earns a review, but the story always goes on. |
 | **The record** | A 3D level map made to match the real vinyl pressing: one band of grooves per song, sized to the song's length, walked from the rim toward the label like a record plays. |
 | **Track 3: Deflect** | Jon stands on the label while hearts (rhythm-guitar strums) and heartbreaks (lead-guitar notes) fly in from eight directions; turn the shield to meet each one. Inspired by *Beatblock*. |
 | **Track 4: Void** | A sunset surf. Hold to climb the wave, let go to carve, and collect gems that sit on the drum hits. Ride off the lip to fly, hold in the air to backflip, and land flat or wipe out (three boards). |
@@ -81,8 +81,8 @@ npm run serve               # then open http://localhost:8765/dist/web/
 npm test                    # play-tests (keep `npm run serve` running); screenshots land in test-output/
 ```
 
-**Controls.** Phone: tap the left or right side (Deflect: tap where a heart is coming from; Void: hold anywhere).
-Computer: `A S D F` / `←` and `J K L ;` / `→` (Deflect: mouse or arrows; Void: hold any key).
+**Controls.** Phone: tap the left side to jump, the right side to slide (Deflect: tap where a heart is coming from;
+Void: hold anywhere). Computer: `F` `←` `↑` to jump, `J` `→` `↓` to slide (Deflect: mouse or arrows; Void: hold any key).
 Level and timing live in **Settings**.
 
 ## Project layout
@@ -90,6 +90,7 @@ Level and timing live in **Settings**.
 | Path | What it is |
 |---|---|
 | `game/src.html` | The game: rendering, audio, story, prologue, menus. |
+| `game/chase.js` | The prologue's chase: obstacles, the slide, passengers cheering, first-time lessons. |
 | `game/map.js` | The 3D record map (Three.js). |
 | `game/deflect.js` | The album-song level engine, results and stars, and the Deflect level. |
 | `game/surf.js` | The Void level: wave physics, launches, flips, wipeouts. |

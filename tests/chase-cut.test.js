@@ -7,7 +7,7 @@ const C = require('./config');
   const b = await chromium.launch({ args: ['--autoplay-policy=no-user-gesture-required'] });
   const devs = process.argv[2] === 'phone' ? [['phone', C.PHONE]] : process.argv[2] === 'desk' ? [['desk', C.DESK]] : [['desk', C.DESK], ['phone', C.PHONE]];
   for (const [n, o] of devs) {
-    const ctx = await b.newContext(o); const p = await ctx.newPage(); const errs = [];
+    const ctx = await b.newContext(o); const p = await ctx.newPage(); await C.skipLessons(p); const errs = [];
     p.on('pageerror', e => errs.push(e.message));
     await p.goto(C.URL); await p.waitForFunction(() => !document.getElementById('startBtn').disabled, null, { timeout: 30000 });
     await p.evaluate(() => goTitle()); await p.click('#nextBtn'); await p.click('#startBtn');

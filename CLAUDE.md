@@ -27,11 +27,23 @@ decisions and the person's preferences.
 - **Opening, part 2 — the deck (cutscene, auto)**: they step out to the rail at sunset ("Look at that sky." / "Worth every
   mile."), then **the stranger** (faceless: long coat, fedora, face a void; speaker "???", purple box) steps out of the
   casino door: "I'm afraid she can't be with you," and drags her away ("Jon—!"); Jon runs after them; fade.
-- **How-to pop-up** (the three bubbles: Catch left / Kick right / Find her) → "Start the chase" → the song starts
-  (title cards over Jon alone, "She's somewhere on this ship."). The lobby panel ("Now showing") just rolls the film
+- **No how-to pop-up** (owner: no instructions you click OK on): the deck fades straight into the chase (title cards over
+  Jon alone, "She's somewhere on this ship."). **Learning by doing** (`game/chase.js`, `lessonCheck`/`drawLesson`):
+  the first time ever each move comes up (localStorage `sc-lessons`), the song dips out and holds still with Jon at the
+  obstacle until you press that side; phones light up that half with a pulsing TAP target (tapping the other side
+  greys it and arrows sweep back), computers get a small card with the keys. That press counts as a perfect.
+  `tests/lesson.test.js`; the other play-tests skip it with `C.skipLessons(p)`. The lobby panel ("Now showing") just rolls the film
   and says the level and timing are in Settings.
-- **The chase** (Star-Crossed): glimpses (`GLIMPSE`) show him dragging her by the wrist while she pulls back toward Jon
-  (Bowser/Peach). At the end he holds her at the bow.
+- **The chase** (Star-Crossed, `game/chase.js`): **obstacles on the beat** (owner's redesign): left side = **JUMP** over
+  what's on the deck (lane 0: snare, hi-hats), right side = **SLIDE** under what hangs overhead (lane 1: kick; sliding
+  sells the speed). One look per act: chip stacks / casino sign (verse), deck chairs / striped canopy (pre-chorus),
+  steamer trunks / lifebuoys (chorus), firework crates / BON VOYAGE banner (outro). An obstacle sits `OB.lead` (0.2 s)
+  ahead of Jon at its note so the move carries him across; a miss trips him and knocks it over. Slide pose in
+  `drawJon` (`st.slide`; leg angles are inside the leaned frame: world = local + 0.95). **Passengers cheer him on**
+  (Mario Wonder flowers): `CHEERS` — sailor, lady with parasol, old gent, bellhop, kid, lady in green — short bubbles
+  as they come on screen, plus Jon's own lines ("I gotta catch her!", "Should've trained at the cruise gym…").
+  Original lines only, nothing from the lyrics. Glimpses (`GLIMPSE`) show the stranger dragging her by the wrist while
+  she pulls back toward Jon (Bowser/Peach). At the end he holds her at the bow.
 - **The prologue song is shortened** (owner: "skip from the chorus to the outro"): chart `meta.cut` = bar 26 → bar 64 of
   the recording (chorus 1 and the final chorus match there, 0.93–0.98, so the last two chorus bars and the move into the
   outro are the record's own). `playSong` plays songplay.mp3 as two segments with a 30 ms crossfade (no re-encode);
@@ -119,9 +131,9 @@ decisions and the person's preferences.
 - No intermission, no 3-2-1 film leader. No "the house wins" ending text. No sunglasses power-up (he still wears shades).
 - Sound effects are tuned to E♭ minor; reuse the existing ones rather than adding new sounds unless asked.
 - Shoes: generic retro high-top — do not copy the Jordan 4 design 1:1 (Nike's design).
-- Title/how-to screens: few words, three bubbles, silent-mode reminder as an icon on phones.
-- Controls: **left side / left hand = stars (lane 0: snare, hi-hats); right side / right hand = kick (lane 1)**.
-  Final heart note (lane 2) takes either side.
+- Title screens: few words, silent-mode reminder as an icon on phones. Teach by doing, never a pop-up to dismiss.
+- Controls: **left side / left hand = JUMP (lane 0: snare, hi-hats; F A S D ← ↑); right side / right hand = SLIDE
+  (lane 1: kick; J K L ; → ↓)**. Final heart note (lane 2) takes either side.
 
 ## Timing and charts (hard-won — don't regress)
 - Tempo 94.5 BPM, phase 0.077 s. The groove is **swung with triplet kicks**: never snap notes to a 16th grid.

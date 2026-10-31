@@ -19,7 +19,7 @@ AUDIO = ['songplay', 'below']
 ALBUM_DIR = os.path.join(ROOT, 'album', 'lost-in-you')
 THREE = os.path.join(ROOT, 'vendor', 'three.module.min.js')
 src = open(os.path.join(ROOT, 'game', 'src.html')).read()
-for inc in ['map.js', 'deflect.js', 'surf.js']: src = src.replace('/*@include ' + inc + '*/', open(os.path.join(ROOT, 'game', inc)).read())
+for inc in ['chase.js', 'map.js', 'deflect.js', 'surf.js']: src = src.replace('/*@include ' + inc + '*/', open(os.path.join(ROOT, 'game', inc)).read())
 _TRACKS = [t for t in json.load(open(os.path.join(ROOT, 'album', 'lost-in-you', 'album.json')))['tracks'] if t.get('song')]
 ALBUM_SONGS = [t['song'] for t in _TRACKS]
 # the audio each album song ships: its mp3, or its layers (Void: drums + everything else, mixed live as you ride)

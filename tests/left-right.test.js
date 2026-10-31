@@ -3,7 +3,7 @@ const C = require('./config');
 (async () => {
   const b = await chromium.launch({ args: ['--autoplay-policy=no-user-gesture-required'] });
   for (const [n, o] of [['desk', { viewport: {width:1280,height:800} }], ['phone', { viewport: {width:390,height:780}, hasTouch: true, isMobile: true, deviceScaleFactor: 2 }], ['land', { viewport: {width:844,height:390}, hasTouch: true, isMobile: true, deviceScaleFactor: 2 }]]) {
-    const ctx = await b.newContext(o); const p = await ctx.newPage(); const errs = []; p.on('pageerror', e => errs.push(e.message));
+    const ctx = await b.newContext(o); const p = await ctx.newPage(); await C.skipLessons(p); const errs = []; p.on('pageerror', e => errs.push(e.message));
     await p.goto(C.URL);
     await p.waitForFunction(() => !document.getElementById('startBtn').disabled, null, { timeout: 30000 });
     await p.evaluate(() => goTitle()); await p.click('#nextBtn'); await p.evaluate(() => setDiff('normal')); await p.click('#startBtn'); await p.waitForFunction(() => mode === 'intro', null, { timeout: 20000 }); await p.evaluate(() => startSong());   // test shortcut past the opening await p.waitForFunction(() => mode === 'play', null, { timeout: 20000 });
