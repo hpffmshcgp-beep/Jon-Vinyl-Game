@@ -647,7 +647,7 @@ addEventListener('keydown', e => {
   if (mode === 'level') { if (/^(Arrow|Key[WASD])/.test(e.code)) { AIM.keys.add(e.code); e.preventDefault(); } return; }
   const L0 = KEYS_L.has(e.code), R0 = KEYS_R.has(e.code);
   if (inScene()) {
-    if (L0 && !['ArrowUp', 'KeyW', 'Space'].includes(e.code)) HOLD.kl = true;   // in the scenes Space / W / ↑ act, they don't walk if (R0 && e.code !== 'ArrowDown') HOLD.kr = true;
+    if (L0 && !['ArrowUp', 'KeyW', 'Space'].includes(e.code)) HOLD.kl = true; if (R0 && e.code !== 'ArrowDown') HOLD.kr = true;   // in the scenes Space / W / ↑ act, they don't walk
     const act = ['Space', 'Enter', 'KeyE', 'ArrowUp', 'KeyW'].includes(e.code), tapKey = act || L0 || R0;
     if (tapKey) e.preventDefault();
     if (!e.repeat && tapKey) { if (S.sc.dlg || S.sc.ph === 'album' || S.sc.ph === 'rating') sceneTap(); else if (act) cabinAct(); }
