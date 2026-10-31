@@ -3,18 +3,18 @@
    what hangs overhead (the kick). Every obstacle sits on a measured drum hit, as the stars and kicks did before.
    The first time each move comes up (ever), the song stops with Jon at the obstacle and waits for the right side. */
 
-// Rhythm-true: every obstacle crosses the take-off mark exactly on its drum hit, and reaches Jon OB.lead later.
-// A hit shapes his jump (or slide) so he's at the top of it (or lowest) right as it passes: on the beat is the cleanest.
-// A miss runs him into it at the moment it reaches him. So what you see always matches what you heard and pressed.
-const OB = { lead: 0.22, lowH: 0.25, lowW: 0.44, highBot: 0.62, highH: 0.24, highW: 0.5 };
-const MOVE = { hop: 0.15, minHalf: 0.1, maxHalf: 0.3, slideHold: 0.16, slam: 0.07 };
+// Rhythm-true: each obstacle reaches Jon right on its drum hit, so you press when it gets to him (no line to watch; the
+// owner timed to Jon, as anyone would). It's centred under / over him OB.lead later. A hit shapes his jump (or slide) so
+// he's at the top of it (or lowest) right then: snappy on the beat, a little floatier if early. A miss runs him into it.
+// A jump while he's still up in the air is a double jump: a touch higher, with a puff under his feet.
+const OB = { lead: 0.08, lowH: 0.25, lowW: 0.44, highBot: 0.62, highH: 0.24, highW: 0.5 };
+const MOVE = { hop: 0.14, minHalf: 0.09, maxHalf: 0.28, land: 0.15, slideHold: 0.16, slam: 0.07 };
 const obX = (L, n, t) => L.jx + (n.t - t + OB.lead)*L.speed;
-const markX = L => L.jx + OB.lead*L.speed;
 function jumpH(t){   // 0 on the deck .. 1 at the top of the jump
   const j = S.jump, sl = S.slam ? Math.max(0, S.slam.h*(1 - (t - S.slam.t)/MOVE.slam)) : 0;
   if (!j || t < j.p) return sl;
-  if (t < j.c) { const k = (t - j.p)/(j.c - j.p); return Math.max(sl, j.h0 + (1 - j.h0)*(1 - (1 - k)*(1 - k))); }
-  if (t < j.land) { const k = (t - j.c)/(j.land - j.c); return Math.max(sl, 1 - k*k); }
+  if (t < j.c) { const k = (t - j.p)/(j.c - j.p); return Math.max(sl, j.h0 + (j.peak - j.h0)*(1 - (1 - k)*(1 - k))); }
+  if (t < j.land) { const k = (t - j.c)/(j.land - j.c); return Math.max(sl, j.peak*(1 - k*k)); }
   return sl;
 }
 function slideAmt(t){   // 0 upright .. 1 flat out
@@ -27,26 +27,21 @@ function slideAmt(t){   // 0 upright .. 1 flat out
 // a press: jump (lane 0) or slide (lane 1), aimed at the obstacle it was judged against (or a little hop / dip on nothing)
 function startMove(lane, t, n){
   if (lane !== 1) {
-    const h0 = jumpH(t), c = n ? Math.max(n.t + OB.lead, t + MOVE.minHalf) : t + MOVE.hop;
-    S.jump = { p: t, c, land: c + (n ? clamp(c - t, MOVE.minHalf, MOVE.maxHalf) : MOVE.hop), h0 }; S.slide = null; S.slam = null;
+    const h0 = jumpH(t), c = n ? Math.max(n.t + OB.lead, t + MOVE.minHalf) : t + MOVE.hop, dbl = h0 > 0.25;
+    S.jump = { p: t, c, land: c + (n ? clamp(c - t, MOVE.land, MOVE.maxHalf) : MOVE.hop), h0, peak: dbl ? 1.22 : 1 }; S.slide = null; S.slam = null;
+    if (dbl) S.puffs.push({ t, h: h0 });
   } else {
     const h = jumpH(t); if (h > 0.02) S.slam = { t, h };   // sliding out of a jump slams him straight down
     const c = n ? Math.max(n.t + OB.lead, t + 0.05) : t + 0.06;
     S.slide = { p: t, c, end: c + (n ? MOVE.slideHold : 0.12) }; S.jump = null;
   }
 }
-// the take-off mark: a soft line on the deck (and its twin overhead) that every obstacle crosses right on its beat
-function drawMark(L, t){
-  const x = markX(L), ph = ((((t - PH)/BEAT) % 1) + 1) % 1, beat = Math.max(0, 1 - ph*3.2);
-  const top = L.groundY - L.jh*(OB.highBot + OB.highH*0.5), fl0 = clamp(1 - (t - S.flash[0])*5, 0, 1), fl1 = clamp(1 - (t - S.flash[1])*5, 0, 1);
-  const lg = g.createLinearGradient(0, L.groundY, 0, top); lg.addColorStop(0, `rgba(255,226,150,${0.4 + beat*0.3 + fl0*0.3})`); lg.addColorStop(1, `rgba(232,116,106,${0.4 + beat*0.3 + fl1*0.3})`);
-  g.fillStyle = lg; g.fillRect(x - 2, top, 4, L.groundY - top);
-  const halo = g.createRadialGradient(x, L.groundY, 0, x, L.groundY, L.jh*0.3); halo.addColorStop(0, `rgba(255,226,150,${0.25 + beat*0.3})`); halo.addColorStop(1, 'rgba(255,226,150,0)');
-  g.save(); g.scale(1, 0.25); g.fillStyle = halo; g.fillRect(x - L.jh*0.3, L.groundY*4 - L.jh*0.3, L.jh*0.6, L.jh*0.6); g.restore();   // a pool of light on the deck at the mark
-  const dia = (y, c, a, r) => { g.save(); g.translate(x, y); g.rotate(Math.PI/4); g.fillStyle = rgba(c, a); g.fillRect(-r, -r, r*2, r*2); g.restore(); };
-  const r = Math.max(4, L.jh*0.03);
-  dia(L.groundY - 2, PAL.gold, 0.8 + beat*0.2, r*(1 + beat*0.3 + fl0*0.6));
-  dia(top, PAL.rose, 0.8 + beat*0.2, r*(1 + beat*0.3 + fl1*0.6));
+// a double jump: a ring of air kicked out under his feet
+function drawPuffs(L, t){
+  S.puffs = S.puffs.filter(q => t - q.t < 0.35 && t >= q.t);
+  S.puffs.forEach(q => { const k = (t - q.t)/0.35, y = L.groundY - q.h*L.jh*0.36 + L.jh*0.02, r = L.jh*(0.12 + k*0.22);
+    g.save(); g.globalAlpha = 0.7*(1 - k); g.strokeStyle = '#fff4dc'; g.lineWidth = Math.max(2, L.jh*0.018)*(1 - k*0.6);
+    g.beginPath(); g.ellipse(L.jx, y, r, r*0.28, 0, 0, 7); g.stroke(); g.restore(); });
 }
 const obKind = n => Math.min(4, Math.max(1, actAt(n.t)));   // one look per act: 1 verse, 2 pre-chorus, 3 chorus, 4 outro
 function inked(path, fill, lw = 2){ path(); g.fillStyle = fill; g.fill(); g.lineJoin = 'round'; g.lineWidth = lw; g.strokeStyle = PAL.out; g.stroke(); }
@@ -128,7 +123,7 @@ function highObstacle(L, kind, x, now, swing){
 }
 // the notes of the chase, as obstacles in the world (the last one, her hand, is still the heart in the middle)
 function drawObstacles(L, t, now){
-  drawMark(L, t);
+  drawPuffs(L, t);
   for (let i = Math.max(0, S.nextIdx - 12); i < S.notes.length; i++) {
     const n = S.notes[i]; if (n.lane === 2) continue;
     const x = obX(L, n, t); if (x > W + L.jh) break; if (x < -L.jh) continue;

@@ -509,7 +509,7 @@ function newState(){
     startAt: 0, running:false, ended:false, paused:false, lastT: -PREROLL, audioStage: 0,
     score:0, combo:0, maxCombo:0, counts:{ perfect:0, great:0, ok:0, miss:0 },
     meter:0, shadesUntil:-99, scene:-1, banner:{ t:-99, i:0 }, nextIdx:0, lastFwBar: -1,
-    jumpAt:-9, kickAt:-9, jump:null, slide:null, slam:null, stumbleAt:-9, crashT:-9, lesson:null, popups:[], beams:[], bursts:[], flyers:[], hearts:[], fw:[], flash:[-9,-9],
+    jumpAt:-9, kickAt:-9, jump:null, slide:null, slam:null, puffs:[], stumbleAt:-9, crashT:-9, lesson:null, popups:[], beams:[], bursts:[], flyers:[], hearts:[], fw:[], flash:[-9,-9],
   };
 }
 function heardCtx(p){
@@ -1675,10 +1675,10 @@ function frame(){
   for (let i = S.nextIdx; i < S.notes.length; i++) {
     const n = S.notes[i]; if (n.t > t) break;
     if (!n.judged && t - n.t > WIN.ok) {
-      n.judged = true; n.miss = true; n.missT = n.t + OB.lead; S.counts.miss++;
+      n.judged = true; n.miss = true; n.missT = t; S.counts.miss++;   // the window has closed: it's still under / over him, so he runs into it now
       if (S.combo >= 5) scratch();
       S.combo = 0; S.popups.push({ t, lane: n.lane, text:'MISS', k:'miss' });
-      if (n.lane !== 2) S.stumbleAt = n.t + OB.lead;   // he runs into it, the moment it reaches him
+      if (n.lane !== 2) S.stumbleAt = t;
     }
     if (n.judged && i === S.nextIdx) S.nextIdx++;
   }

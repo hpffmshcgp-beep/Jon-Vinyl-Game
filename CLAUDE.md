@@ -37,12 +37,13 @@ decisions and the person's preferences.
 - **The chase** (Star-Crossed, `game/chase.js`): **obstacles on the beat** (owner's redesign): left side = **JUMP** over
   what's on the deck (lane 0: snare, hi-hats), right side = **SLIDE** under what hangs overhead (lane 1: kick; sliding
   sells the speed). One look per act: chip stacks / casino sign (verse), deck chairs / striped canopy (pre-chorus),
-  steamer trunks / lifebuoys (chorus), firework crates / BON VOYAGE banner (outro). **Rhythm-true** (owner: "you're not
-  jumping on beat precisely to make the jump"): every obstacle crosses a glowing **take-off mark** (`drawMark`, a line
-  with a diamond on the deck and one overhead, pulsing on the beat) exactly on its drum hit, and reaches Jon `OB.lead`
-  (0.22 s) later. A judged hit shapes the move (`startMove`: `S.jump` {p, c, land, h0} / `S.slide`) so he's at the top
-  of the jump / lowest in the slide right as it passes, early, on the beat or late; a miss crashes him into it at that
-  moment (`stumbleAt = n.t + OB.lead`). Slide mid-air slams down; a jump cancels a slide; a press on nothing is a hop.
+  steamer trunks / lifebuoys (chorus), firework crates / BON VOYAGE banner (outro). **Rhythm-true** (owner: "you're not jumping on beat precisely to make the jump"): **each obstacle reaches Jon's
+  feet exactly on its drum hit** — you press when it gets to him. (A take-off line 0.22 s ahead was tried and removed:
+  the owner didn't know what it was for and timed to Jon, so his presses landed late and "didn't register".) It's
+  centred on him `OB.lead` (0.08 s) after the beat. A judged hit shapes the move (`startMove`: `S.jump` {p, c, land,
+  h0, peak} / `S.slide`) so he's high over it / low under it while it passes; a jump while still in the air is a
+  **double jump** (peak 1.22, a puff ring under his feet). A miss crashes him into it when the timing window closes
+  (it's still overlapping him then). Slide mid-air slams down; a jump cancels a slide; a press on nothing is a hop.
   `tests/chase-feel.test.js` checks every hit clears and every miss crashes. Slide pose in
   `drawJon` (`st.slide`; leg angles are inside the leaned frame: world = local + 0.95). **Passengers cheer him on**
   (Mario Wonder flowers): `CHEERS` — sailor, lady with parasol, old gent, bellhop, kid, lady in green — short bubbles

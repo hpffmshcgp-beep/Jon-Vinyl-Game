@@ -1,5 +1,5 @@
-// Rhythm-true chase: what you see matches what you pressed. On every hit, Jon is high over it (jump) or low under it
-// (slide) the moment it reaches him, early, on the beat or late; on every miss he runs into it right then.
+// Rhythm-true chase: what you see matches what you pressed. Each obstacle reaches Jon on its beat; on every hit he's high
+// over it (jump) or low under it (slide) while it's passing him, early, on the beat or late; on every miss he runs into it right then.
 // Phones: swipe up jumps, swipe down slides, timed from the finger landing.  Usage: node chase-feel.test.js [desk|phone]
 const { chromium } = require('playwright');
 const C = require('./config');
@@ -30,19 +30,21 @@ const C = require('./config');
       const plan = S.notes.map((x, k) => x.lane === 2 ? 0 : k % 7 === 6 ? null : [0, -0.08, 0.08, 0, 0.05][k % 5]);
       setInterval(() => { const t = songTime();
         S.notes.forEach((x, k) => { const d = plan[k]; if (d === null || x.judged || x.pressedByBot) return; if (t >= x.t + d - 0.002) { x.pressedByBot = true; press(x.lane === 2 ? 0 : x.lane, performance.now()); } });
-        S.notes.forEach(x => { if (x.lane === 2 || x.seen) return; const c = x.t + OB.lead; if (t >= c && t < c + 0.04) { x.seen = true;
-          window.__log.push({ lane: x.lane, hit: !!x.hit, k: x.k || '', up: +jumpH(t).toFixed(2), low: +slideAmt(t).toFixed(2), crash: t >= S.stumbleAt && t - S.stumbleAt < 0.1 }); } });
+        S.notes.forEach(x => { if (x.lane === 2 || x.seen) return;   // while it's passing him: how high (or low) does he get?
+          if (t >= x.t + 0.02 && t < x.t + 0.2) { x.mUp = Math.max(x.mUp || 0, jumpH(t)); x.mLow = Math.max(x.mLow || 0, slideAmt(t)); }
+          if (t >= x.t + 0.2) { x.seen = true;
+            window.__log.push({ lane: x.lane, hit: !!x.hit, up: +(x.mUp || 0).toFixed(2), low: +(x.mLow || 0).toFixed(2), crash: t >= S.stumbleAt && t - S.stumbleAt < 0.3 }); } });
       }, 2);
     });
     const at = async (s, name) => { await p.waitForFunction(s => songTime() > s, s, { timeout: 60000, polling: 20 }); if (name) await p.screenshot({ path: C.OUT + `feel-${n}-${name}.png` }); };
     await at(13.3, 'verse'); await at(22.0); 
     const first = await p.evaluate(() => S.notes.find(x => x.lane === 1 && x.t > songTime() + 0.6));
-    await at(first.t + 0.22 + 0.01, 'slide-under');
-    const jn = await p.evaluate(() => S.notes.find(x => x.lane === 0 && x.t > songTime() + 0.6 && !x.k)); await at(jn.t + 0.22 + 0.01, 'jump-over');
+    await at(first.t + 0.09, 'slide-under');
+    const jn = await p.evaluate(() => S.notes.find(x => x.lane === 0 && x.t > songTime() + 0.6 && !x.k)); await at(jn.t + 0.09, 'jump-over');
     await at(34);
     const log = await p.evaluate(() => window.__log);
     const hits = log.filter(x => x.hit), miss = log.filter(x => !x.hit);
-    const badHit = hits.filter(x => x.lane === 0 ? x.up < 0.6 : x.low < 0.6), badMiss = miss.filter(x => !x.crash);
+    const badHit = hits.filter(x => x.lane === 0 ? x.up < 0.8 : x.low < 0.8), badMiss = miss.filter(x => !x.crash);
     console.log(n, `${log.length} obstacles reached Jon: ${hits.length} hits (${badHit.length} not clear), ${miss.length} misses (${badMiss.length} without a crash)`, errs);
     check(log.length > 15 && !badHit.length && !badMiss.length, 'moves match the judgement ' + JSON.stringify({ badHit: badHit.slice(0, 4), badMiss: badMiss.slice(0, 4) }));
     await ctx.close();
