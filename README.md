@@ -17,7 +17,7 @@ pulls him in. *The record:* a 3D map of the vinyl, one ring of grooves per song,
 - Five levels, like Beat Saber: Easy, Normal, Hard, Expert, Expert+.
 - In the cabin, tap (or click) her, the door or anything in the room and Jon walks over.
 - Play the chase on the beat; whatever you score, you reach the bow. Then walk to her and see what the stranger brings.
-- Deflect: on a phone, slide left or right anywhere to turn the shield around Jon.
+- Deflect: hearts fall down the left wall, heartbreaks down the right. Tap the other side (or ← →) to jump across right as one lands.
 
 ## Project layout
 | Path | What it is |
@@ -31,8 +31,8 @@ pulls him in. *The record:* a 3D map of the vinyl, one ring of grooves per song,
 | `songs/star-crossed/stems/` | Separated drums (drumsep: kick, snare, hh, crash, toms, ride, residual), Demucs stems, vocals. |
 | `songs/star-crossed/analysis/` | Every detected drum hit, used to make the charts. |
 | `tools/` | `find_hits.py` → `make_charts.py` → `build.py`. |
-| `songs/deflect/` | Track 3, Deflect: the song, guitar stems, guitar-hit analysis and its Beatblock-style chart. |
-| `game/deflect.js` | The Deflect level: turn the shield around Jon to knock away hearts and heartbreaks. |
+| `songs/deflect/` | Track 3, Deflect: the song, guitar stems, guitar-hit analysis and its chart. |
+| `game/deflect.js` | The Deflect level: Jon jumps between the two walls of a groove, dodging love and heartbreak. |
 | `tests/` | Automated play-tests (Playwright). |
 
 ## Building

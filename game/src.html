@@ -274,7 +274,7 @@ kbd { font-family: var(--type); font-size: 10px; border: 1px solid rgba(243,230,
     <button class="btn" id="intoBtn" hidden>Into the record</button>
     <button class="btn" id="againBtn">Watch it again</button>
     <button class="ghost" id="menuBtn">Back to the lobby</button>
-    <div class="billing">Fan-made and unofficial &middot; music &ldquo;Star-Crossed&rdquo; by Jon Vinyl</div>
+    <div class="billing" id="resBilling">Fan-made and unofficial &middot; music &ldquo;Star-Crossed&rdquo; by Jon Vinyl</div>
   </div>
 </div>
 
@@ -544,6 +544,7 @@ function endGame(){
   $('intoBtn').hidden = !(won && S.into);
   $('againBtn').className = won && S.into ? 'ghost' : 'btn';
   const dl = ' · ' + DIFFS[DIFF].name.toLowerCase();
+  $('resBilling').textContent = 'Fan-made and unofficial · music “Star-Crossed” by Jon Vinyl';
   $('resEyebrow').textContent = (won ? (S.score > best ? 'Reunited, for now · a new box-office record' : 'Reunited, for now') : 'So close · she was just ahead') + dl;
   if (!won) $('resLine').textContent = `Hit ${Math.round(PAR*100)}% of the song on time to find her at the bow.`;
   // how early or late your taps landed, measured over the whole song
@@ -594,7 +595,7 @@ const KEYS_L = new Set(['KeyA','KeyS','KeyD','KeyF','ArrowLeft','ArrowUp']);
 const KEYS_R = new Set(['KeyJ','KeyK','KeyL','Semicolon','ArrowRight','ArrowDown']);
 const inScene = () => S && S.sc && S.running && !S.paused;
 addEventListener('keydown', e => {
-  if (mode === 'level') { if (/^(Arrow|Key[WASD])/.test(e.code)) { AIM.keys.add(e.code); e.preventDefault(); } return; }
+  if (mode === 'level') { const sd = KEYS_L.has(e.code) ? 0 : KEYS_R.has(e.code) ? 1 : e.code === 'Space' ? 'x' : null; if (sd !== null) { e.preventDefault(); if (!e.repeat) levelPress(sd, evTime(e)); } return; }
   const L0 = KEYS_L.has(e.code), R0 = KEYS_R.has(e.code);
   if (inScene()) {
     if (L0 && e.code !== 'ArrowUp') HOLD.kl = true; if (R0 && e.code !== 'ArrowDown') HOLD.kr = true;
@@ -610,7 +611,6 @@ addEventListener('keydown', e => {
   else if (R0) { press(1, evTime(e)); tapFx(1); e.preventDefault(); }
 });
 addEventListener('keydown', e => { if (mode === 'map' && !e.repeat && (e.code === 'ArrowLeft' || e.code === 'ArrowRight')) { mapStep(e.code === 'ArrowLeft' ? -1 : 1); return; } if (!$('howPop').hidden && (e.code === 'Enter' || e.code === 'Space')) { e.preventDefault(); $('goBtn').click(); return; } if (mode === 'map' && (e.code === 'Enter' || e.code === 'Space') && !$('stopPlay').disabled) { e.preventDefault(); $('stopPlay').click(); } });
-addEventListener('keyup', e => { AIM.keys.delete(e.code); });
 addEventListener('keyup', e => { if (KEYS_L.has(e.code)) HOLD.kl = false; if (KEYS_R.has(e.code)) HOLD.kr = false; });
 addEventListener('blur', () => { HOLD.kl = HOLD.kr = false; HOLD.ptr.clear(); });
 let TAPFX = [-9, -9];
@@ -618,7 +618,7 @@ function tapFx(side){ TAPFX[side] = nowS(); }
 cv.addEventListener('pointerdown', e => {
   grabKeys(); if (e.pointerType === 'touch') { e.preventDefault(); if (!TOUCH) { TOUCH = true; document.body.classList.add('touch'); } }
   if (skipIntro()) return;
-  if (mode === 'level') { if (e.pointerType === 'touch') levelTouch(e, 'down'); else { AIM.mouse = true; levelAimFromPoint(e.clientX, e.clientY); } return; }
+  if (mode === 'level') { levelPress(e.clientX < innerWidth/2 ? 0 : 1, evTime(e)); return; }   // tap the side to jump to
   const right = e.clientX >= innerWidth/2;
   if (inScene()) {
     if (mode === 'intro' && cabinTap(e.clientX, e.clientY)) return;   // the cabin: tap what you want to go to
@@ -627,8 +627,7 @@ cv.addEventListener('pointerdown', e => {
   }
   press(right ? 1 : 0, evTime(e)); tapFx(right ? 1 : 0);
 });
-['pointerup', 'pointercancel', 'pointerleave'].forEach(n => cv.addEventListener(n, e => { HOLD.ptr.delete(e.pointerId); levelTouch(e, 'up'); }));
-cv.addEventListener('pointermove', e => { if (mode !== 'level') return; if (e.pointerType === 'touch') { e.preventDefault(); levelTouch(e, 'move'); return; } AIM.mouse = true; levelAimFromPoint(e.clientX, e.clientY); });
+['pointerup', 'pointercancel', 'pointerleave'].forEach(n => cv.addEventListener(n, e => { HOLD.ptr.delete(e.pointerId); }));
 $('startBtn').onclick = startGame; $('againBtn').onclick = startGame; $('menuBtn').onclick = toTitle;
 $('intoBtn').onclick = () => enterMap(true); $('goBtn').onclick = () => startSong(); $('actBtn').onclick = () => cabinAct(); $('recordBtn').onclick = () => enterMap(false);
 $('stopPrologue').onclick = () => { leaveMap(); toTitle(); };

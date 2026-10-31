@@ -1,4 +1,4 @@
-// Deflect: open the record, play track 3 with a bot aiming the shield, check hits, results, stars and the map after.
+// Deflect: open the record, play track 3 with a bot jumping between the walls, check hits, results, stars and the map after.
 // Usage: node deflect.test.js [desk|phone]
 const { chromium } = require('playwright');
 const C = require('./config');
@@ -18,14 +18,13 @@ const C = require('./config');
     await p.waitForTimeout(1500); await p.screenshot({ path: C.OUT + `deflect-${n}-map.png` });
     await p.click('#stopPlay'); await p.waitForFunction(() => mode === 'level', null, { timeout: 30000 });
     await p.waitForTimeout(1200); await p.screenshot({ path: C.OUT + `deflect-${n}-title.png` });
-    if (n === 'phone') {   // slide a finger a fifth of the way across: about a quarter turn, clockwise
-      const turned = await p.evaluate(async () => { const a0 = LV.aim, ev = (t, x) => cv.dispatchEvent(new PointerEvent(t, { pointerId: 3, pointerType: 'touch', clientX: x, clientY: innerHeight*0.7, bubbles: true }));
-        ev('pointerdown', 100); for (let i = 1; i <= 10; i++) { ev('pointermove', 100 + i*0.02*W); await new Promise(r => setTimeout(r, 16)); } await new Promise(r => setTimeout(r, 200)); ev('pointerup', 100 + 0.2*W); return (LV.aim - a0)*180/Math.PI; });
-      await p.screenshot({ path: C.OUT + `deflect-${n}-slide.png` });
-      console.log(n, 'slide across 20% of the screen turns the shield', turned.toFixed(0), 'deg');
+    if (n === 'phone') {   // tap the right side, then the left, before anything is falling: he jumps across and back, no penalty
+      const r = await p.evaluate(async () => { const ev = x => cv.dispatchEvent(new PointerEvent('pointerdown', { pointerId: 3, pointerType: 'touch', clientX: x, clientY: innerHeight*0.6, bubbles: true }));
+        ev(innerWidth*0.8); await new Promise(r => setTimeout(r, 90)); const mid = LV.side; await new Promise(r => setTimeout(r, 300)); ev(innerWidth*0.2); await new Promise(r => setTimeout(r, 300)); return [mid, LV.side, LV.counts.miss, LV.notes[0].side]; });
+      console.log(n, 'tap right -> side', r[0], ', tap left -> side', r[1], ', misses', r[2], ', first note on side', r[3]);
     }
-    // the bot: point the shield at the next note just before it lands
-    await p.evaluate(() => setInterval(() => { if (!LV || !LV.running) return; const t = levelTime(); const nx = LV.notes.find(x => !x.judged && x.t - t < 0.12); if (nx) { AIM.mouse = true; AIM.target = nx.ang; } }, 4));
+    // the bot: jump across right as each one lands
+    await p.evaluate(() => setInterval(() => { if (!LV || !LV.running) return; const t = levelTime(); const nx = LV.notes.find((x, i) => i >= LV.next && !x.judged); if (nx && nx.side === LV.side && t >= nx.t - 0.012) levelPress(1 - LV.side); }, 4));
     await p.waitForFunction(() => levelTime() > 12, null, { timeout: 40000 });
     await p.screenshot({ path: C.OUT + `deflect-${n}-play1.png` });
     await p.waitForTimeout(2200); await p.screenshot({ path: C.OUT + `deflect-${n}-play2.png` });
