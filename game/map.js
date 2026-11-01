@@ -202,7 +202,7 @@ function mapFrame(now){
   // camera: outside Jon, looking in across the record toward the label
   const r = Math.hypot(jx, jz) || 1, ux = jx/r, uz = jz/r;
   // high and well back, so most of the record is in view and you can see where Jon is on it (he stands on the near side)
-  const asp = innerWidth/innerHeight, el = (asp < 1 ? 60 : 52)*Math.PI/180, D = asp < 1 ? 40 : 26.5;
+  const asp = innerWidth/innerHeight, el = (asp < 1 ? 60 : 52)*Math.PI/180, D = asp < 1 ? 40 : asp > 1.75 ? 30 : 26.5;   // short and wide (a phone sideways): a little further back, so the near edge stays in
   const look = new T.Vector3(jx*0.32, 0, jz*0.32), want = new T.Vector3(look.x + ux*Math.cos(el)*D, Math.sin(el)*D, look.z + uz*Math.cos(el)*D);
   const intro = clamp((now - (MAP.enterT || 0))/2.6, 0, 1), k = MAP.first ? easeIO(intro) : 1;
   const from = new T.Vector3(0, 30, 0.1);

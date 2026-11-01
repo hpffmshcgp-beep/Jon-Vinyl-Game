@@ -105,11 +105,14 @@ decisions and the person's preferences.
   was coming from, snapped to the 8 directions; `levelTouch` still does that for a touch on a computer's level.)
   Owner tried and rejected: drag-around-Jon (unsnapped), slide-like-a-dial, and a wall-jumping redesign (reverted).
   **Phones play it facing forward** (owner's idea, `LV.front` when `TOUCH`; computers keep the full circle): Jon low on
-  the screen, **eight unseen straight paths** from the top (`frontPath`: from the lane's strip along the top to its spot on
+  the screen, **full screen** (owner: no letterbox; the HUD floats over a soft shade at the top), **eight unseen
+  straight paths** from the top (`frontPath`: from the lane's strip along the top to its spot on
   the arc, ±70°; owner: 8, invisible straight lines, just variety; ten tinted curved paths were tried first), **heartbreaks
   (lead) down the left four, hearts (rhythm) down the right four**. The **shield follows the
-  thumb**: the screen is eight even strips, the shield snaps to the path of the strip under the finger, a tap jumps there
-  (`frontLane`/`frontAim`; ← → step a lane). Right lane = PERFECT, the next one over = GOOD (20° apart; shield ±1.25 lanes).
+  thumb smoothly** (owner: "a fluid motion… not locked into certain places"; it snapped to the 8 paths before): the
+  screen is eight even strips and the thumb's position across them sets the angle continuously, the middle of a strip
+  pointing straight down its path; a tap jumps there (`frontAim`; ← → step a lane). Within 10° of a heart's path =
+  PERFECT, within 25° = GOOD (paths 20° apart).
   Lanes are the chart's 4th value (`make_deflect_chart.py` `front_lanes`): the lead sits by its pitch within ±6 s (higher
   = nearer the middle), strum runs sweep and bounce, and a backward pass makes every note reachable by a sliding thumb
   (`FRONT` caps: lanes per note / lanes per second by level). The 360° charts are unchanged.
@@ -151,13 +154,16 @@ decisions and the person's preferences.
 ## Things the owner asked for / against (keep honouring these)
 - **Phones play sideways** (owner: "maybe this should be a landscape game… it's supposed to be an experience"; the
   chase felt choppy upright because obstacles crossed Jon in 0.33 s there vs 0.21 s on a computer, so each move ran
-  long and the next note cut it off; sideways it's 0.16 s, like a computer). Held upright, a touch device gets the
-  `#rotate` card (a phone turning, "Turn your phone sideways"), and `resize` pauses a running song; the first touch asks
-  for full screen + `screen.orientation.lock('landscape')` where allowed (`holdLandscape`, Android). Computers are never
-  asked, however narrow the window. `SAFE` now reads all four insets from `#safeProbe` (notch at the side): HUDs pad by
-  `SAFE.x`. Short-and-wide screens split the title and results cards into two columns (`.pcol`, display: contents
-  elsewhere). Deflect's front layout sideways: Jon at the foot of the frame (`cy = L.bot - R*0.55`). Tests: `C.PHONE` is
-  844×390, `C.PHONE_UPRIGHT` 390×780, `tests/rotate.test.js`.
+  long and the next note cut it off; sideways it's 0.16 s, like a computer). **No "turn your phone" card** (owner: a
+  sideways game makes it obvious; a card and a pause on turning upright were tried and removed); held upright it still
+  plays. The first touch asks for full screen + `screen.orientation.lock('landscape')` where allowed (`holdLandscape`,
+  Android). **Sideways it should look like the computer version** (owner: the bars were huge, the cabin too spread out):
+  `layout()` `short` (landscape, H < 500) uses slim bars (6.5 % of H, 22–28 px; the home-indicator inset overlaps the
+  bottom bar); the **cabin sits on a stage 2.05 × the frame's height wide** (`cabStage`: the computer's proportions),
+  centred, walls and floor running on to the edges (taps convert through it). `SAFE` reads all four insets from
+  `#safeProbe` (notch at the side): HUDs pad by `SAFE.x`. Short-and-wide screens split the title and results cards into
+  two columns (`.pcol`, display: contents elsewhere); the record map puts the song card at the side, compact, and the
+  camera steps back (D 30 when wider than 1.75:1) so the whole record shows. Tests: `C.PHONE` is 844×390.
 - **Level and timing live in Settings** (owner): default level **Normal**; Settings (`#settings`, `openSettings(from)`)
   opens from the title, the lobby and the level chip on the record's stop card; it holds the five levels (Expert+ lock),
   timing ± and the sound check (which comes back to Settings). The lobby says "Playing on Normal. Change the level or

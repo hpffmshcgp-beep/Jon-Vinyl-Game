@@ -24,7 +24,7 @@ const C = require('./config');
     await shot('01-cabin', 800);
     // on a phone you tap the things themselves: Jon walks over and talks or looks
     const tapObj = async id => { const [x, y] = await p.evaluate(id => { const L = layout(), f = { her: S.sc.herX ?? ROOM.her, tt: ROOM.tt, door: ROOM.door, port2: ROOM.port2 }[id];
-      const y = id === 'port2' ? L.top + (L.groundY - L.top)*0.36 : L.groundY - L.jh*(id === 'tt' ? 0.3 : 0.6); return [W*f, y]; }, id); await p.touchscreen.tap(x, y); };
+      const y = id === 'port2' ? L.top + (L.groundY - L.top)*0.36 : L.groundY - L.jh*(id === 'tt' ? 0.3 : 0.6); const [SW, ox] = cabStage(L); return [ox + SW*f, y]; }, id); await p.touchscreen.tap(x, y); };
     const waitDlg = () => p.waitForFunction(() => !!S.sc.dlg, null, { timeout: 15000 });
     const closeDlg = async () => { for (let i = 0; i < 30 && await p.evaluate(() => !!S.sc.dlg); i++) { await tap(); await p.waitForTimeout(240); } };
     if (n === 'desk') {

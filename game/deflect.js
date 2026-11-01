@@ -3,7 +3,7 @@
    guitar) fly in from eight directions and land on the beat. Point the shield at each one as it arrives:
    mouse or the arrow keys / WASD. Dead centre is PERFECT, the edge is GOOD.
    Phones play it facing forward (LV.front): eight unseen straight paths come in from ahead of him, heartbreaks down the
-   left four and hearts down the right four, and the shield follows your thumb across them (snapped to the path under it; a tap jumps there). */
+   left four and hearts down the right four, and the shield follows your thumb across them smoothly (a tap jumps there). */
 const SONGS = __SONGS__;                       // charts for the album songs that have been added (tools/make_deflect_chart.py)
 const DEF = { half: 34*Math.PI/180, perfect: 14*Math.PI/180, grace: 0.07, preroll: 2.6 };
 const dirAngle = d => -Math.PI/2 + d*Math.PI/4;   // 0 = top, clockwise
@@ -15,11 +15,13 @@ let LV = null;
 const SONGBUF = {};                           // decoded album songs, kept apart from the prologue's buffers
 const AIM = { target: -Math.PI/2, keys: new Set(), mouse: false };
 function levelGeo(){
-  const L = layout();
+  let L = layout();
   if (LV && LV.front) {   // Jon low and the arc in front of him, with the whole top of the screen to read what's coming
+    // full screen (owner): no letterbox, the HUD floats over the top; L is the whole screen inside the notch insets
+    const F = Object.assign({}, L, { top: SAFE.t, bot: H - SAFE.b, fh: H - SAFE.t - SAFE.b }); L = F;
     const land = W > H, R = land ? clamp(Math.min(L.fh*0.34, W*0.16), 64, 150) : clamp(Math.min(W*0.34, L.fh*0.26), 64, 150);
     const cy = land ? L.bot - R*0.55 : L.top + L.fh*0.64;   // sideways: he stands at the foot of the frame, the record sinking below it
-    return { L, cx: W/2, cy, R, front: true, spawn: cy - L.top, jh: Math.min(L.jh, R*0.95), x0: W*0.05, x1: W*0.95 };
+    return { L: F, cx: W/2, cy, R, front: true, spawn: cy - F.top, jh: Math.min(L.jh, R*0.95), x0: W*0.05, x1: W*0.95 };
   }
   const cx = W/2, cy = L.top + L.fh*0.54, R = clamp(Math.min(W, L.fh)*0.15, 46, 110);   // a small centre leaves a long way in to read the notes
   return { L, cx, cy, R, spawn: Math.hypot(W, H)*0.62, jh: Math.min(L.jh, R*1.3) };
@@ -49,9 +51,10 @@ async function startLevel(track){
 }
 const levelTime = (p = performance.now()) => heardCtx(p) - LV.startAt - userDelay/1000;
 function levelAimFromPoint(x, y){ const G = levelGeo(); if (G.front) return frontAim(x); AIM.target = Math.atan2(y - G.cy, x - G.cx); }
-// front: the lane is wherever the thumb is across the screen (eight even strips), so sliding left and right is all it takes
-function frontLane(x){ const G = levelGeo(); return clamp(Math.floor((x - G.x0)/(G.x1 - G.x0)*FRONT.n), 0, FRONT.n - 1); }
-function frontAim(x){ const i = frontLane(x); LV.lane = i; AIM.target = laneAng(i); AIM.mouse = true; return i; }
+// front: the shield follows the thumb across the screen, smoothly (owner: a fluid motion, not locked to places); the
+// screen is eight even strips, and the middle of a strip points the shield straight down that strip's path
+function frontAim(x){ const G = levelGeo(), u = clamp((x - G.x0)/(G.x1 - G.x0)*FRONT.n - 0.5, -0.5, FRONT.n - 0.5);
+  LV.lane = clamp(Math.round(u), 0, FRONT.n - 1); AIM.target = laneAng(u); AIM.mouse = true; return LV.lane; }
 // phones: tap where it's coming from. The shield snaps to the nearest of the eight directions, so a tap anywhere in
 // roughly the right area aims it dead centre; keep a finger down and slide to follow. Taps right on Jon are ignored.
 const TOUCHES = new Set();
@@ -192,7 +195,8 @@ function levelFrame(now){
     g.fillStyle = p.k === 'miss' ? '#9a8f7a' : p.k === 'perfect' ? PAL.gold : PAL.cream; g.font = `400 ${clamp(R*0.16, 14, 22)*pop}px ${FONT.deco}`;
     const hw = g.measureText(p.text).width/2 + 8; g.fillText(p.text, clamp(cx + Math.cos(p.ang)*r, hw, W - hw), cy + Math.sin(p.ang)*r); g.globalAlpha = 1; });
   g.restore();
-  filmPost(0.7); letterbox(L);
+  filmPost(0.7); if (!G.front) letterbox(L);
+  else { const hb = SAFE.t + L.barH*1.5, sh = g.createLinearGradient(0, 0, 0, hb); sh.addColorStop(0, 'rgba(5,4,7,.75)'); sh.addColorStop(1, 'rgba(5,4,7,0)'); g.fillStyle = sh; g.fillRect(0, 0, W, hb); }
   // HUD: score, combo, the song, and how far through it you are
   const pad = 16 + SAFE.x, cyTop = SAFE.t + L.barH/2, sz = Math.min(24, L.barH*0.48);
   g.textAlign = 'left'; g.fillStyle = PAL.gold; g.font = `400 ${sz}px ${FONT.deco}`; g.fillText(LV.score.toLocaleString(), pad, cyTop + sz*0.35);
@@ -200,7 +204,7 @@ function levelFrame(now){
   { const cp = LV.combo >= 2 ? swingPop(clamp((t - LV.comboT)/0.22, 0, 1)) : 1;   // the combo hops each time it grows
     g.save(); g.translate(pad + sw + 10, cyTop + 4); g.scale(cp, cp); g.font = `700 10px ${FONT.type}`; g.fillStyle = LV.combo >= 10 ? PAL.gold : PAL.cream; g.fillText(`${LV.combo} COMBO  ·  ${DIFFS[DIFF].name.toUpperCase()}`, 0, 0); g.restore(); }
   g.textAlign = 'right'; g.fillStyle = PAL.gold; g.font = `400 ${Math.min(14, L.barH*0.32)}px ${FONT.deco}`; g.fillText(`TRACK ${LV.track.n} · ${LV.track.title.toUpperCase()}`, W - pad, cyTop + 5);
-  g.fillStyle = 'rgba(230,184,92,.9)'; g.fillRect(0, L.top - 2, W*clamp(t/LV.endAt, 0, 1), 2);
+  g.fillStyle = 'rgba(230,184,92,.9)'; g.fillRect(0, G.front ? 0 : L.top - 2, W*clamp(t/LV.endAt, 0, 1), 2);
   // the title card while the needle drops, with how to turn the shield
   if (t < 3.2) { const a = clamp(Math.min((t + DEF.preroll)*3, (3.2 - t)*2), 0, 1); g.globalAlpha = a; g.textAlign = 'center';
     g.fillStyle = PAL.cream; g.font = `italic 500 ${clamp(W*0.04, 15, 22)}px ${FONT.serif}`; g.fillText(`Track ${LV.track.n}`, W/2, L.top + L.fh*0.16);

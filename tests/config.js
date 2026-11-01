@@ -10,7 +10,6 @@ module.exports = {
   FILE_URL: 'file://' + path.join(ROOT, 'dist', 'Star-Crossed.html'),
   OUT: OUT + '/',
   DESK: { viewport: { width: 1280, height: 800 } },
-  // phones play sideways (a phone held upright gets the "turn your phone" card: tests/rotate.test.js)
+  // phones play sideways
   PHONE: { viewport: { width: 844, height: 390 }, hasTouch: true, isMobile: true, deviceScaleFactor: 2 },
-  PHONE_UPRIGHT: { viewport: { width: 390, height: 780 }, hasTouch: true, isMobile: true, deviceScaleFactor: 2 },
 };
