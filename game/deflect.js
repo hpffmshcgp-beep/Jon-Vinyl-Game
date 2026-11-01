@@ -1,16 +1,26 @@
 /* ---------- album levels: Deflect (Beatblock-style) ----------
    Jon stands on the record's label. A golden shield circles him; hearts (the rhythm guitar) and heartbreaks (the lead
    guitar) fly in from eight directions and land on the beat. Point the shield at each one as it arrives:
-   mouse, or on a phone tap where it's coming from (snaps to the 8 directions), or the arrow keys / WASD. Dead centre is PERFECT, the edge is GOOD. */
+   mouse or the arrow keys / WASD. Dead centre is PERFECT, the edge is GOOD.
+   Phones play it facing forward (LV.front): ten paths fan in from ahead of him, heartbreaks down the left five and hearts
+   down the right five, and the shield follows your thumb across them (snapped to the path under it; a tap jumps there). */
 const SONGS = __SONGS__;                       // charts for the album songs that have been added (tools/make_deflect_chart.py)
 const DEF = { half: 34*Math.PI/180, perfect: 14*Math.PI/180, grace: 0.07, preroll: 2.6 };
 const dirAngle = d => -Math.PI/2 + d*Math.PI/4;   // 0 = top, clockwise
 const angDiff = (a, b) => Math.atan2(Math.sin(a - b), Math.cos(a - b));
+const FRONT = { n: 10, spread: 70*Math.PI/180 };   // phones: ten lanes over ±70° in front of him (the chart's 4th value)
+FRONT.sp = 2*FRONT.spread/(FRONT.n - 1);           // ≈15.6° between lanes: the right lane is PERFECT, the next one over GOOD
+const laneAng = i => -Math.PI/2 + (i - (FRONT.n - 1)/2)*FRONT.sp;
 let LV = null;
 const SONGBUF = {};                           // decoded album songs, kept apart from the prologue's buffers
 const AIM = { target: -Math.PI/2, keys: new Set(), mouse: false };
 function levelGeo(){
-  const L = layout(), cx = W/2, cy = L.top + L.fh*0.54, R = clamp(Math.min(W, L.fh)*0.15, 46, 110);   // a small centre leaves a long way in to read the notes
+  const L = layout();
+  if (LV && LV.front) {   // Jon low and the arc in front of him, with the whole top of the screen to read what's coming
+    const R = clamp(Math.min(W*0.34, L.fh*0.26), 64, 150), cy = L.top + L.fh*0.64;
+    return { L, cx: W/2, cy, R, front: true, spawn: cy - L.top, jh: Math.min(L.jh, R*0.95), x0: W*0.05, x1: W*0.95 };
+  }
+  const cx = W/2, cy = L.top + L.fh*0.54, R = clamp(Math.min(W, L.fh)*0.15, 46, 110);   // a small centre leaves a long way in to read the notes
   return { L, cx, cy, R, spawn: Math.hypot(W, H)*0.62, jh: Math.min(L.jh, R*1.3) };
 }
 async function startLevel(track){
@@ -22,10 +32,13 @@ async function startLevel(track){
   try { for (const f of files) if (!SONGBUF[f]) SONGBUF[f] = await new Promise((res, rej) => { fetchProg(f).then(ab => { const p = ac.decodeAudioData(ab, res, rej); if (p && p.then) p.then(res, rej); }, rej); }); }
   catch(e) { $('mapLoading').textContent = 'This browser could not play the song.'; return; }
   $('mapLoading').hidden = true; leaveMap(); stopAmbience(); stopSources();
-  const notes = chart.mode === 'surf' ? [] : chart.levels[DIFF].map(([tt, dir, kind]) => ({ t: tt, dir, kind, ang: dirAngle(dir), judged: false, hit: false, k: '', jt: 0, out: 0 }));
+  const front = TOUCH && chart.mode !== 'surf';   // phones face forward; computers keep the full circle
+  const notes = chart.mode === 'surf' ? [] : chart.levels[DIFF].map(([tt, dir, kind, lane]) => ({ t: tt, dir, kind, lane, ang: front ? laneAng(lane) : dirAngle(dir), judged: false, hit: false, k: '', jt: 0, out: 0 }));
   const endAt = notes.length ? notes[notes.length - 1].t + 2.4 : chart.duration;   // the song fades out a little after the last heart
   LV = S = { kind: 'level', track: t, chart, notes, endAt, approach: chart.approach[DIFF], startAt: ac.currentTime + DEF.preroll, running: true, paused: false,
+    front, half: front ? FRONT.sp*1.25 : DEF.half, perf: front ? FRONT.sp*0.5 : DEF.perfect, lane: null, kd: 0, kt: 0,
     score: 0, combo: 0, maxCombo: 0, counts: { perfect: 0, good: 0, miss: 0 }, aim: -Math.PI/2, flash: -9, shake: -9, popups: [], parts: [], trail: [], comboT: -9, next: 0, lastNow: 0, ended: false };
+  AIM.target = -Math.PI/2; AIM.mouse = false;
   if (chart.mode === 'surf') Object.assign(LV, surfInit(t, chart));   // track 4, Void: a different game on the same engine
   setLayer(nodes.songplay, 'open');
   if (t.layers) LV.mix = layerMix(t.layers, LV.startAt);
@@ -34,22 +47,32 @@ async function startLevel(track){
   ['title', 'results', 'pause'].forEach(id => $(id).hidden = true);
 }
 const levelTime = (p = performance.now()) => heardCtx(p) - LV.startAt - userDelay/1000;
-function levelAimFromPoint(x, y){ const G = levelGeo(); AIM.target = Math.atan2(y - G.cy, x - G.cx); }
+function levelAimFromPoint(x, y){ const G = levelGeo(); if (G.front) return frontAim(x); AIM.target = Math.atan2(y - G.cy, x - G.cx); }
+// front: the lane is wherever the thumb is across the screen (ten even strips), so sliding left and right is all it takes
+function frontLane(x){ const G = levelGeo(); return clamp(Math.floor((x - G.x0)/(G.x1 - G.x0)*FRONT.n), 0, FRONT.n - 1); }
+function frontAim(x){ const i = frontLane(x); LV.lane = i; AIM.target = laneAng(i); AIM.mouse = true; return i; }
 // phones: tap where it's coming from. The shield snaps to the nearest of the eight directions, so a tap anywhere in
 // roughly the right area aims it dead centre; keep a finger down and slide to follow. Taps right on Jon are ignored.
 const TOUCHES = new Set();
 function levelTouch(e, ph){
   if (ph === 'up') { TOUCHES.delete(e.pointerId); return; }
   if (ph === 'down') TOUCHES.add(e.pointerId); else if (!TOUCHES.has(e.pointerId)) return;
+  if (LV && LV.front) { const i = frontAim(e.clientX); if (ph === 'down') LV.tapFx = { x: e.clientX, y: e.clientY, t: performance.now()/1000, d: i }; return; }
   const G = levelGeo(), dx = e.clientX - G.cx, dy = e.clientY - G.cy;
   if (Math.hypot(dx, dy) < G.R*0.45) return;
   const d = ((Math.round((Math.atan2(dy, dx) + Math.PI/2)/(Math.PI/4)) % 8) + 8) % 8;
   AIM.target = dirAngle(d); AIM.mouse = true;
   if (ph === 'down' && LV) LV.tapFx = { x: e.clientX, y: e.clientY, t: performance.now()/1000, d };
 }
-function levelKeys(){   // arrows / WASD give eight directions
+function levelKeys(){   // arrows / WASD give eight directions (front: ← → step a lane, repeating while held)
   const k = AIM.keys, dx = (k.has('ArrowRight') || k.has('KeyD') ? 1 : 0) - (k.has('ArrowLeft') || k.has('KeyA') ? 1 : 0),
         dy = (k.has('ArrowDown') || k.has('KeyS') ? 1 : 0) - (k.has('ArrowUp') || k.has('KeyW') ? 1 : 0);
+  if (LV && LV.front) {
+    if (!dx) { LV.kd = 0; return; }
+    const now = performance.now(); if (dx === LV.kd && now < LV.kt) return;
+    LV.kt = now + (dx === LV.kd ? 70 : 170); LV.kd = dx;
+    LV.lane = clamp((LV.lane ?? (dx > 0 ? 4 : 5)) + dx, 0, FRONT.n - 1); AIM.target = laneAng(LV.lane); AIM.mouse = true; return;
+  }
   if (dx || dy) { AIM.target = Math.atan2(dy, dx); AIM.mouse = false; }
 }
 function levelJudge(t){
@@ -57,8 +80,8 @@ function levelJudge(t){
     const n = LV.notes[i]; if (n.t > t) break;
     if (n.judged) { if (i === LV.next) LV.next++; continue; }
     const d = Math.abs(angDiff(LV.aim, n.ang));
-    if (d <= DEF.half) {   // the shield is there: deflected
-      n.judged = n.hit = true; n.k = d <= DEF.perfect && t - n.t < 0.03 ? 'perfect' : 'good'; n.jt = t; n.out = LV.aim; n.late = t - n.t;
+    if (d <= LV.half) {   // the shield is there: deflected
+      n.judged = n.hit = true; n.k = d <= LV.perf && t - n.t < 0.03 ? 'perfect' : 'good'; n.jt = t; n.out = LV.aim; n.late = t - n.t;
       LV.counts[n.k]++; LV.combo++; LV.maxCombo = Math.max(LV.maxCombo, LV.combo);
       LV.score += (n.k === 'perfect' ? 300 : 150)*Math.min(4, 1 + Math.floor(LV.combo/10)); LV.flash = t;
       LV.popups.push({ t, ang: n.ang, text: n.k.toUpperCase(), k: n.k }); LV.comboT = t;
@@ -99,6 +122,14 @@ function heartbreak(x, y, s, rot, split = 0){   // a heart split by a jagged cra
   if (!split) { g.beginPath(); g.moveTo(0, -s*0.62); g.lineTo(s*0.12, -s*0.32); g.lineTo(-s*0.1, -s*0.05); g.lineTo(s*0.1, s*0.22); g.lineTo(0, s*0.62); g.stroke(); }
   g.restore();
 }
+// front paths: each lane starts at its own strip along the top and curves in to meet the arc head-on
+function frontPath(G, i){
+  const a = laneAng(i), ca = Math.cos(a), sa = Math.sin(a), E = [G.cx + ca*G.R, G.cy + sa*G.R];
+  const room = Math.abs(ca) > 0.05 ? ((ca > 0 ? W*0.97 : W*0.03) - E[0])/ca : 1e9, D = Math.min((G.cy - G.L.top)*0.5, room);
+  return { S: [G.x0 + (i + 0.5)/FRONT.n*(G.x1 - G.x0), G.L.top - 24], C: [E[0] + ca*D, E[1] + sa*D], E };
+}
+const bez = (P, u) => { const v = 1 - u; return [v*v*P.S[0] + 2*u*v*P.C[0] + u*u*P.E[0], v*v*P.S[1] + 2*u*v*P.C[1] + u*u*P.E[1]]; };
+function strokePath(P, u0 = 0){ g.beginPath(); const p0 = bez(P, u0); g.moveTo(p0[0], p0[1]); for (let k = 1; k <= 16; k++) { const q = bez(P, u0 + (1 - u0)*k/16); g.lineTo(q[0], q[1]); } g.stroke(); }
 const swingPop = k => k >= 1 ? 1 : 0.7 + 0.3*k + Math.sin(Math.min(1, k)*Math.PI)*0.35;   // grow past full size, then settle
 function levelFrame(now){
   if (LV.mode === 'surf') return surfFrame(now);
@@ -114,14 +145,21 @@ function levelFrame(now){
   g.fillStyle = bg; g.fillRect(0, 0, W, H);
   const shake = Math.max(0, 1 - (t - LV.shake)/0.25), sx = shake ? (Math.random() - 0.5)*10*shake : 0, sy = shake ? (Math.random() - 0.5)*10*shake : 0;
   g.save(); g.translate(sx, sy);
-  vinyl2D(cx, cy, R*1.95, t*0.35, 0.18 + pulse*0.22);   // the label (about R*0.64) is the little stage he stands on
-  g.strokeStyle = 'rgba(0,0,0,.4)'; g.lineWidth = R*0.26; g.beginPath(); g.arc(cx, cy, R, 0, 7); g.stroke();          // the shield's track
-  g.strokeStyle = 'rgba(230,184,92,.18)'; g.lineWidth = 1; [R*0.87, R*1.13].forEach(rr => { g.beginPath(); g.arc(cx, cy, rr, 0, 7); g.stroke(); });
-  // eight spokes; the slots where the next notes land light up
-  for (let d = 0; d < 8; d++) { const a = dirAngle(d); g.strokeStyle = 'rgba(243,230,200,.06)'; g.lineWidth = 1; g.beginPath(); g.moveTo(cx + Math.cos(a)*R*1.15, cy + Math.sin(a)*R*1.15); g.lineTo(cx + Math.cos(a)*G.spawn, cy + Math.sin(a)*G.spawn); g.stroke(); }
-  g.strokeStyle = `rgba(243,230,200,${alphaF(0.12 + pulse*0.12)})`; g.lineWidth = 1.5; g.beginPath(); g.arc(cx, cy, R, 0, 7); g.stroke();
+  const FP = G.front ? Array.from({ length: FRONT.n }, (_, i) => frontPath(G, i)) : null;
+  const a0 = G.front ? laneAng(0) - FRONT.sp : 0, a1 = G.front ? laneAng(FRONT.n - 1) + FRONT.sp : 7;   // front: only the arc ahead of him
+  vinyl2D(cx, cy, R*(G.front ? 1.25 : 1.95), t*0.35, 0.18 + pulse*0.22);   // the label (about R*0.64) is the little stage he stands on
+  g.strokeStyle = 'rgba(0,0,0,.4)'; g.lineWidth = R*(G.front ? 0.2 : 0.26); g.beginPath(); g.arc(cx, cy, R, a0, a1); g.stroke();          // the shield's track
+  g.strokeStyle = 'rgba(230,184,92,.18)'; g.lineWidth = 1; [R*0.87, R*1.13].forEach(rr => { g.beginPath(); g.arc(cx, cy, rr, a0, a1); g.stroke(); });
+  // eight spokes (front: ten paths, violet down the lead's side, rose down the rhythm's); the slots where the next notes land light up
+  if (G.front) { g.lineCap = 'round';
+    FP.forEach((P, i) => { const on = LV.lane === i, lead = i < FRONT.n/2;
+      g.strokeStyle = lead ? `rgba(197,138,230,${on ? 0.4 : 0.17})` : `rgba(240,163,160,${on ? 0.4 : 0.17})`; g.lineWidth = on ? 3.5 : 2; strokePath(P); });
+    g.lineCap = 'butt'; }
+  else for (let d = 0; d < 8; d++) { const a = dirAngle(d); g.strokeStyle = 'rgba(243,230,200,.06)'; g.lineWidth = 1; g.beginPath(); g.moveTo(cx + Math.cos(a)*R*1.15, cy + Math.sin(a)*R*1.15); g.lineTo(cx + Math.cos(a)*G.spawn, cy + Math.sin(a)*G.spawn); g.stroke(); }
+  g.strokeStyle = `rgba(243,230,200,${alphaF(0.12 + pulse*0.12)})`; g.lineWidth = 1.5; g.beginPath(); g.arc(cx, cy, R, a0, a1); g.stroke();
   for (let i = LV.next, shown = 0; i < LV.notes.length && shown < 3; i++) { const n = LV.notes[i]; if (n.judged) continue; const k = 1 - clamp((n.t - t)/LV.approach, 0, 1); if (k <= 0) break; shown++;
-    g.strokeStyle = n.kind ? `rgba(197,138,230,${alphaF(0.25 + 0.5*k)})` : `rgba(240,163,160,${alphaF(0.25 + 0.5*k)})`; g.lineWidth = 4; g.beginPath(); g.arc(cx, cy, R, n.ang - 0.18, n.ang + 0.18); g.stroke(); }
+    g.strokeStyle = n.kind ? `rgba(197,138,230,${alphaF(0.25 + 0.5*k)})` : `rgba(240,163,160,${alphaF(0.25 + 0.5*k)})`; g.lineWidth = 4; const w = G.front ? FRONT.sp*0.42 : 0.18; g.beginPath(); g.arc(cx, cy, R, n.ang - w, n.ang + w); g.stroke();
+    if (G.front) { g.lineWidth = 2; g.globalAlpha = 0.5*k; strokePath(FP[n.lane], 1 - clamp((n.t - t)/LV.approach, 0, 1)); g.globalAlpha = 1; } }
   // Jon, on the label, facing the way the shield points
   drawJon(cx, cy + G.jh*0.48, G.jh*0.9, { running: false, amp: 0, phase: 0, idle: now*0.8, jumpK: -1, kick: false, stumble: Math.max(0, 1 - (t - LV.shake)/0.3), reach: 0,
     dir: Math.cos(LV.aim) >= 0 ? 1 : -1, shades: true, glow: 0, holdHand: false, lookUp: false, smile: LV.combo >= 10 });
@@ -130,32 +168,35 @@ function levelFrame(now){
   for (let i = Math.max(0, LV.next - 12); i < LV.notes.length; i++) {
     const n = LV.notes[i]; if (n.t - t > LV.approach) break;
     let x, y, a = 1, rot = 0, split = 0;
-    if (!n.judged) { const r = R + (n.t - t)/LV.approach*(G.spawn - R); x = cx + Math.cos(n.ang)*r; y = cy + Math.sin(n.ang)*r; rot = Math.sin(now*3 + i)*0.15; }
+    if (!n.judged) { rot = Math.sin(now*3 + i)*0.15;
+      if (G.front) [x, y] = bez(FP[n.lane], 1 - clamp((n.t - t)/LV.approach, 0, 1));
+      else { const r = R + (n.t - t)/LV.approach*(G.spawn - R); x = cx + Math.cos(n.ang)*r; y = cy + Math.sin(n.ang)*r; } }
     else if (n.hit) { const e = t - n.jt; if (e > 0.6) continue; const out = n.ang + angDiff(n.out, n.ang)*2, r = R + e*R*3.2; x = cx + Math.cos(out)*r; y = cy + Math.sin(out)*r; a = 1 - e/0.6; rot = e*14; split = n.kind ? Math.min(0.9, e*3.2) : 0; }
     else { const e = t - n.jt; if (e > 0.35) continue; const r = R*(1 - e/0.35); x = cx + Math.cos(n.ang)*r; y = cy + Math.sin(n.ang)*r; a = 1 - e/0.35; }
     g.globalAlpha = a;
     if (n.kind) heartbreak(x, y, ns, rot, split); else { g.save(); g.translate(x, y); g.rotate(rot); heart(0, 0, ns*1.9, '#e8746a', PAL.gold); g.restore(); }
     g.globalAlpha = 1;
   }
-  if (LV.tapFx) { const e = now - LV.tapFx.t; if (e < 0.3) { const k = e/0.3, a = dirAngle(LV.tapFx.d);
+  if (LV.tapFx) { const e = now - LV.tapFx.t; if (e < 0.3) { const k = e/0.3, a = G.front ? laneAng(LV.tapFx.d) : dirAngle(LV.tapFx.d);
     g.strokeStyle = `rgba(255,214,150,${alphaF((1 - k)*0.7)})`; g.lineWidth = 2; g.beginPath(); g.arc(LV.tapFx.x - sx, LV.tapFx.y - sy, 10 + k*22, 0, 7); g.stroke();
-    g.strokeStyle = `rgba(255,214,150,${alphaF((1 - k)*0.18)})`; g.lineWidth = R*0.5; g.beginPath(); g.moveTo(cx + Math.cos(a)*R*1.3, cy + Math.sin(a)*R*1.3); g.lineTo(cx + Math.cos(a)*G.spawn*0.7, cy + Math.sin(a)*G.spawn*0.7); g.stroke(); } }
+    if (G.front) { g.strokeStyle = `rgba(255,214,150,${alphaF((1 - k)*0.3)})`; g.lineWidth = 6; g.lineCap = 'round'; strokePath(FP[LV.tapFx.d], 0.35); g.lineCap = 'butt'; }
+    else { g.strokeStyle = `rgba(255,214,150,${alphaF((1 - k)*0.18)})`; g.lineWidth = R*0.5; g.beginPath(); g.moveTo(cx + Math.cos(a)*R*1.3, cy + Math.sin(a)*R*1.3); g.lineTo(cx + Math.cos(a)*G.spawn*0.7, cy + Math.sin(a)*G.spawn*0.7); g.stroke(); } } }
   drawParts(t, cx, cy, R);
   // the shield: a golden arc of record rim, leaving a short fading smear when it turns fast
   const fl = Math.max(0, 1 - (t - LV.flash)/0.18);
   LV.trail.push({ a: LV.aim, t: now }); LV.trail = LV.trail.filter(p => now - p.t < 0.12);
   g.save(); g.lineCap = 'round';
   LV.trail.forEach(p => { const k = 1 - (now - p.t)/0.12, mv = Math.abs(angDiff(p.a, LV.aim)); if (mv < 0.04) return;
-    g.strokeStyle = `rgba(255,214,150,${alphaF(0.22*k)})`; g.lineWidth = R*0.1*(0.6 + 0.4*k); g.beginPath(); g.arc(cx, cy, R, p.a - DEF.half*0.9, p.a + DEF.half*0.9); g.stroke(); });
-  g.strokeStyle = `rgba(255,214,150,${alphaF(0.25 + fl*0.4)})`; g.lineWidth = R*0.22 + fl*6; g.beginPath(); g.arc(cx, cy, R, LV.aim - DEF.half, LV.aim + DEF.half); g.stroke();
-  const sg = g.createLinearGradient(cx + Math.cos(LV.aim - DEF.half)*R, cy + Math.sin(LV.aim - DEF.half)*R, cx + Math.cos(LV.aim + DEF.half)*R, cy + Math.sin(LV.aim + DEF.half)*R);
+    g.strokeStyle = `rgba(255,214,150,${alphaF(0.22*k)})`; g.lineWidth = R*0.1*(0.6 + 0.4*k); g.beginPath(); g.arc(cx, cy, R, p.a - LV.half*0.9, p.a + LV.half*0.9); g.stroke(); });
+  g.strokeStyle = `rgba(255,214,150,${alphaF(0.25 + fl*0.4)})`; g.lineWidth = R*0.22 + fl*6; g.beginPath(); g.arc(cx, cy, R, LV.aim - LV.half, LV.aim + LV.half); g.stroke();
+  const sg = g.createLinearGradient(cx + Math.cos(LV.aim - LV.half)*R, cy + Math.sin(LV.aim - LV.half)*R, cx + Math.cos(LV.aim + LV.half)*R, cy + Math.sin(LV.aim + LV.half)*R);
   sg.addColorStop(0, '#b98a3a'); sg.addColorStop(.5, '#fff2cf'); sg.addColorStop(1, '#b98a3a');
-  g.strokeStyle = sg; g.lineWidth = R*0.1; g.beginPath(); g.arc(cx, cy, R, LV.aim - DEF.half, LV.aim + DEF.half); g.stroke();
+  g.strokeStyle = sg; g.lineWidth = R*0.1; g.beginPath(); g.arc(cx, cy, R, LV.aim - LV.half, LV.aim + LV.half); g.stroke();
   g.restore();
   LV.popups = LV.popups.filter(p => t - p.t < .55);
-  LV.popups.forEach(p => { const k = (t - p.t)/.55, r = R*1.55 + k*16, pop = swingPop(k*0.55/0.22); g.globalAlpha = 1 - k*k; g.textAlign = 'center';
+  LV.popups.forEach(p => { const k = (t - p.t)/.55, r = R*(G.front ? 1.38 : 1.55) + k*16, pop = swingPop(k*0.55/0.22); g.globalAlpha = 1 - k*k; g.textAlign = 'center';
     g.fillStyle = p.k === 'miss' ? '#9a8f7a' : p.k === 'perfect' ? PAL.gold : PAL.cream; g.font = `400 ${clamp(R*0.16, 14, 22)*pop}px ${FONT.deco}`;
-    g.fillText(p.text, cx + Math.cos(p.ang)*r, cy + Math.sin(p.ang)*r); g.globalAlpha = 1; });
+    const hw = g.measureText(p.text).width/2 + 8; g.fillText(p.text, clamp(cx + Math.cos(p.ang)*r, hw, W - hw), cy + Math.sin(p.ang)*r); g.globalAlpha = 1; });
   g.restore();
   filmPost(0.7); letterbox(L);
   // HUD: score, combo, the song, and how far through it you are
@@ -171,7 +212,7 @@ function levelFrame(now){
     g.fillStyle = PAL.cream; g.font = `italic 500 ${clamp(W*0.04, 15, 22)}px ${FONT.serif}`; g.fillText(`Track ${LV.track.n}`, W/2, L.top + L.fh*0.16);
     g.fillStyle = PAL.gold; g.font = `400 ${clamp(W*0.09, 34, 64)}px ${FONT.deco}`; g.fillText(LV.track.title, W/2, L.top + L.fh*0.16 + clamp(W*0.08, 34, 58));
     g.fillStyle = PAL.cream; g.font = `700 ${clamp(W*0.026, 10, 13)}px ${FONT.type}`;
-    g.fillText(TOUCH ? 'TAP WHERE IT’S COMING FROM' : 'AIM THE SHIELD WITH THE MOUSE  ·  OR ARROWS / WASD', W/2, L.bot - L.fh*0.06);
+    g.fillText(LV.front ? 'SLIDE YOUR THUMB TO MOVE THE SHIELD' : TOUCH ? 'TAP WHERE IT’S COMING FROM' : 'AIM THE SHIELD WITH THE MOUSE  ·  OR ARROWS / WASD', W/2, L.bot - L.fh*0.06);
     g.globalAlpha = 1; }
   if (LV.running && !LV.fading && t > LV.endAt) { LV.fading = true; nodes.songplay.gn.gain.setTargetAtTime(0, ac.currentTime, 0.35); }
   if (LV.fading) { g.fillStyle = `rgba(3,2,5,${alphaF(clamp((t - LV.endAt)/1.4, 0, 0.6))})`; g.fillRect(0, 0, W, H); }
@@ -203,6 +244,7 @@ function levelEnd(wiped){   // wiped: Void's last board went (no stars, nothing 
 /* ---------- coaching on the results card: one thing that went well, one thing to try, and a level nudge ---------- */
 const mmss = t => `${Math.floor(t/60)}:${String(Math.floor(t % 60)).padStart(2, '0')}`;
 const DIRNAME = ['above', 'the upper right', 'the right', 'the lower right', 'below', 'the lower left', 'the left', 'the upper left'];
+const FRONTNAME = ['the far left', 'the left', 'the middle', 'the right', 'the far right'];   // lanes in pairs
 const LEVELS = ['easy', 'normal', 'hard', 'expert', 'expertplus'];
 function stretches(notes){   // accuracy over ~20 s stretches of the song: the best and the toughest
   const done = notes.filter(n => n.judged); if (done.length < 16) return null;
@@ -232,13 +274,14 @@ function coachLines(acc){   // [strength, tip]: worded for the song that was pla
     else if (airGems.length >= 6 && airGems.filter(n => n.hit).length/airGems.length > 0.9) up = 'Nearly every gem in the air.';
   } else {
     const hm = miss.filter(n => !n.kind).length, bm = miss.filter(n => n.kind).length, hearts = N.filter(n => !n.kind).length, breaks = N.filter(n => n.kind).length;
-    const byDir = Array(8).fill(0); miss.forEach(n => byDir[n.dir]++); const wd = byDir.indexOf(Math.max(...byDir));
-    const late = good.filter(n => n.late >= 0.03).length, wrongWay = miss.filter(n => n.off > Math.PI/2).length;
-    if (miss.length >= 4 && byDir[wd] >= miss.length*0.4) tip = `Most of what got through came from ${DIRNAME[wd]}. Glance that way when the guitar moves.`;
-    else if (bm >= 3 && bm/Math.max(1, breaks) > 1.5*hm/Math.max(1, hearts)) tip = 'Heartbreaks, the lead guitar notes, got past you most. Follow the melody: it climbs clockwise.';
-    else if (hm >= 3 && hm/Math.max(1, hearts) > 1.5*bm/Math.max(1, breaks)) tip = 'Hearts, the rhythm-guitar strums, got past you most. They come in runs that spin around him, so keep turning.';
-    else if (wrongWay >= 3) tip = `${wrongWay} hearts hit while the shield faced the other way. Turn as soon as you see one leave the edge.`;
-    else if (good.length >= 6 && late/good.length > 0.5) tip = 'You often meet them at the last moment. Turn a beat earlier for more perfects.';
+    const F = LV.front, names = F ? FRONTNAME : DIRNAME, byDir = Array(names.length).fill(0);
+    miss.forEach(n => byDir[F ? Math.floor(n.lane/2) : n.dir]++); const wd = byDir.indexOf(Math.max(...byDir));
+    const late = good.filter(n => n.late >= 0.03).length, wrongWay = miss.filter(n => n.off > (F ? FRONT.sp*3.5 : Math.PI/2)).length;
+    if (miss.length >= 4 && byDir[wd] >= miss.length*0.4) tip = `Most of what got through came from ${names[wd]}. ${F ? 'Keep your thumb ready to slide that way.' : 'Glance that way when the guitar moves.'}`;
+    else if (bm >= 3 && bm/Math.max(1, breaks) > 1.5*hm/Math.max(1, hearts)) tip = F ? 'Heartbreaks, the lead guitar notes, got past you most. They come down the left: the higher the melody, the nearer the middle.' : 'Heartbreaks, the lead guitar notes, got past you most. Follow the melody: it climbs clockwise.';
+    else if (hm >= 3 && hm/Math.max(1, hearts) > 1.5*bm/Math.max(1, breaks)) tip = F ? 'Hearts, the rhythm-guitar strums, got past you most. They sweep across the right in runs, so keep sliding with them.' : 'Hearts, the rhythm-guitar strums, got past you most. They come in runs that spin around him, so keep turning.';
+    else if (wrongWay >= 3) tip = F ? `${wrongWay} got through while the shield was on the other side. Violet comes down the left, pink down the right.` : `${wrongWay} hearts hit while the shield faced the other way. Turn as soon as you see one leave the edge.`;
+    else if (good.length >= 6 && late/good.length > 0.5) tip = F ? 'You often slide over at the last moment. Move a beat earlier for more perfects.' : 'You often meet them at the last moment. Turn a beat earlier for more perfects.';
     if (!bm && breaks >= 5) up = 'Not one heartbreak got past you.';
     else if (!hm && hearts >= 5) up = 'Not one heart got past you.';
   }

@@ -28,7 +28,7 @@ in. To get home, he has to beat every song on it.
 |---|---|
 | **Prologue: Star-Crossed** | A walkable cabin (tap her, the door, the turntable…), a cutscene on deck, then the chase: jump what's on the deck (the snare and hi-hats) and slide under what hangs overhead (the kick), with passengers cheering him on. Every obstacle reaches Jon exactly on its drum hit, and what he does always matches the judgement: a hit clears it, a miss crashes into it. No tutorial screen: the first jump and slide stop the song and wait for you. The score earns a review, but the story always goes on. |
 | **The record** | A 3D level map made to match the real vinyl pressing: one band of grooves per song, sized to the song's length, walked from the rim toward the label like a record plays. |
-| **Track 3: Deflect** | Jon stands on the label while hearts (rhythm-guitar strums) and heartbreaks (lead-guitar notes) fly in from eight directions; turn the shield to meet each one. Inspired by *Beatblock*. |
+| **Track 3: Deflect** | Jon stands on the label while hearts (rhythm-guitar strums) and heartbreaks (lead-guitar notes) fly in; turn the shield to meet each one. On a computer they come from all eight directions (inspired by *Beatblock*). On a phone they fan in from ahead along ten paths, lead down the left and rhythm down the right, and the shield follows your thumb. |
 | **Track 4: Void** | A sunset surf. Hold to climb the wave, let go to carve, and collect gems that sit on the drum hits. Ride off the lip to fly, hold in the air to backflip, and land flat or wipe out (three boards). |
 
 Each album song scores up to three stars. Beating every song opens the Outro, the way home; three stars on all of them
@@ -81,8 +81,8 @@ npm run serve               # then open http://localhost:8765/dist/web/
 npm test                    # play-tests (keep `npm run serve` running); screenshots land in test-output/
 ```
 
-**Controls.** Phone: swipe up (or tap left) to jump, swipe down (or tap right) to slide (Deflect: tap where a heart is
-coming from; Void: hold anywhere). Computer: `↑` `Space` `F` to jump, `↓` `J` to slide (Deflect: mouse or arrows; Void:
+**Controls.** Phone: swipe up (or tap left) to jump, swipe down (or tap right) to slide (Deflect: slide your thumb
+across to move the shield; Void: hold anywhere). Computer: `↑` `Space` `F` to jump, `↓` `J` to slide (Deflect: mouse or arrows; Void:
 hold any key).
 Level and timing live in **Settings**.
 

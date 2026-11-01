@@ -101,9 +101,17 @@ decisions and the person's preferences.
 ## Album levels
 - **Track 3 · Deflect** (`songs/deflect`, `game/deflect.js`): Beatblock-style. Jon stands on the record's label; a golden
   shield circles him; **hearts = rhythm guitar strums, heartbreaks = lead guitar notes**, both deflected; they fly in from
-  8 directions and land on the measured attack. Aim: mouse (points), arrows/WASD (8 dirs), or on phones **tap where it's
-  coming from** — snaps to the nearest of the 8 directions; hold and slide to follow; taps on Jon ignored (`levelTouch`).
+  8 directions and land on the measured attack. Aim: mouse (points), arrows/WASD (8 dirs). (Phones used to tap where it
+  was coming from, snapped to the 8 directions; `levelTouch` still does that for a touch on a computer's level.)
   Owner tried and rejected: drag-around-Jon (unsnapped), slide-like-a-dial, and a wall-jumping redesign (reverted).
+  **Phones play it facing forward** (owner's idea, `LV.front` when `TOUCH`; computers keep the full circle): Jon low on
+  the screen, ten paths fanning in from the top (`frontPath`, Béziers that meet the arc head-on over ±70°), **heartbreaks
+  (lead) down the left five, hearts (rhythm) down the right five** (paths tinted violet / rose). The **shield follows the
+  thumb**: the screen is ten even strips, the shield snaps to the path of the strip under the finger, a tap jumps there
+  (`frontLane`/`frontAim`; ← → step a lane). Right lane = PERFECT, the next one over = GOOD (shield ±1.25 lanes).
+  Lanes are the chart's 4th value (`make_deflect_chart.py` `front_lanes`): the lead sits by its pitch within ±6 s (higher
+  = nearer the middle), strum runs sweep and bounce, and a backward pass makes every note reachable by a sliding thumb
+  (`FRONT` caps: lanes per note / lanes per second by level). The 360° charts are unchanged.
   Centre of the shield (±14°) = PERFECT, edge (±34°) = GOOD, 70 ms grace. Directions follow the lead melody (up the neck →
   clockwise) and strum runs spin around; each level caps turn size/speed (`tools/make_deflect_chart.py`).
   Charts: easy 92, normal 135, hard 207, expert 278, expertplus 388; fly-in 1.9/1.6/1.4/1.2/1.05 s (owner: not slower —

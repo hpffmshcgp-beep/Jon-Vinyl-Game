@@ -18,18 +18,20 @@ const C = require('./config');
     await p.waitForTimeout(1500); await p.screenshot({ path: C.OUT + `deflect-${n}-map.png` });
     await p.click('#stopPlay'); await p.waitForFunction(() => mode === 'level', null, { timeout: 30000 });
     await p.waitForTimeout(1200); await p.screenshot({ path: C.OUT + `deflect-${n}-title.png` });
-    if (n === 'phone') {   // tap up-and-right of Jon, then far down-left: the shield snaps to those directions (1 and 5)
-      const r = await p.evaluate(async () => { const G = levelGeo(), ev = (t, x, y) => cv.dispatchEvent(new PointerEvent(t, { pointerId: 3, pointerType: 'touch', clientX: x, clientY: y, bubbles: true }));
-        const deg = () => Math.round(((LV.aim + Math.PI/2)*180/Math.PI % 360 + 360) % 360);
-        ev('pointerdown', G.cx + 90, G.cy - 70); await new Promise(r => setTimeout(r, 80)); const a1 = deg(); ev('pointerup', G.cx + 90, G.cy - 70);
-        ev('pointerdown', 20, H - 140); await new Promise(r => setTimeout(r, 80)); const a2 = deg(); ev('pointerup', 20, H - 140); return [a1, a2]; });
+    if (n === 'phone') {   // phones face forward: tap the strip of lane 1, then slide the same finger over to lane 8's strip
+      const r = await p.evaluate(async () => { const G = levelGeo(), xs = i => G.x0 + (i + 0.5)/FRONT.n*(G.x1 - G.x0), ev = (t, x, y) => cv.dispatchEvent(new PointerEvent(t, { pointerId: 3, pointerType: 'touch', clientX: x, clientY: y, bubbles: true }));
+        const lane = () => Math.round((LV.aim + Math.PI/2)/FRONT.sp + (FRONT.n - 1)/2), wait = () => new Promise(r => setTimeout(r, 80));
+        ev('pointerdown', xs(1), H*0.85); await wait(); const a1 = lane();
+        for (let k = 1; k <= 8; k++) { ev('pointermove', xs(1) + (xs(8) - xs(1))*k/8, H*0.85 - k*4); await new Promise(r => setTimeout(r, 16)); }
+        await wait(); const a2 = lane(); ev('pointerup', xs(8), H*0.8); return [G.front, a1, a2, LV.notes.every(x => x.lane >= 0 && x.lane < 10 && (x.kind ? x.lane < 5 : x.lane >= 5))]; });
       await p.screenshot({ path: C.OUT + `deflect-${n}-tap.png` });
-      console.log(n, 'tap up-right ->', r[0], 'deg, tap bottom-left ->', r[1], 'deg (want 45 and 225)');
+      console.log(n, 'front', r[0], 'tap lane 1 ->', r[1], 'slide to lane 8 ->', r[2], 'lead left / rhythm right:', r[3]);
+      if (!r[0] || r[1] !== 1 || r[2] !== 8 || !r[3]) throw new Error('front controls ' + JSON.stringify(r));
     }
     // the bot: point the shield at the next note just before it lands
-    if (n === 'phone')   // on the phone the bot taps, like a thumb would: somewhere out along the direction it's coming from, a little off-line
+    if (n === 'phone')   // on the phone the bot taps like a thumb would: in the strip of the note's path, a little off-centre, low on the screen
       await p.evaluate(() => setInterval(() => { if (!LV || !LV.running) return; const t = levelTime(), G = levelGeo(); const nx = LV.notes.find(x => !x.judged && x.t - t < 0.12);
-        if (nx && nx !== window.__last) { window.__last = nx; const a = nx.ang + (Math.random() - 0.5)*0.6, r = G.R*(1.6 + Math.random()*1.5), x = G.cx + Math.cos(a)*r, y = G.cy + Math.sin(a)*r;
+        if (nx && nx !== window.__last) { window.__last = nx; const x = G.x0 + (nx.lane + 0.5 + (Math.random() - 0.5)*0.6)/FRONT.n*(G.x1 - G.x0), y = H*(0.7 + Math.random()*0.25);
           cv.dispatchEvent(new PointerEvent('pointerdown', { pointerId: 9, pointerType: 'touch', clientX: x, clientY: y, bubbles: true })); cv.dispatchEvent(new PointerEvent('pointerup', { pointerId: 9, pointerType: 'touch', clientX: x, clientY: y, bubbles: true })); } }, 4));
     else
     await p.evaluate(() => setInterval(() => { if (!LV || !LV.running) return; const t = levelTime(); const nx = LV.notes.find(x => !x.judged && x.t - t < 0.12); if (nx) { AIM.mouse = true; AIM.target = nx.ang; } }, 4));
