@@ -63,10 +63,18 @@ decisions and the person's preferences.
   game time the bars keep their numbers up to the outro at bar 28. One act per section: I The Bluff (verse, chips),
   II Act Like It (pre-chorus), III Old Soul (chorus, phones), Finale (outro); "No Fool" was dropped with the cut.
   `tests/chase-cut.test.js`.
-- **The bow**: hold right to walk up; she breaks free and runs to Jon; reunion lines call back the plans; the stranger
-  strolls over all smiles ("Alright, you win. Fair and square." / "No hard feelings?") and gives the album **Lost in
-  You** (real cover, `album/lost-in-you/cover.jpg`); close-up, hold right to slide the record out, it spins up, a vortex
-  pulls Jon in  **No Sterling and no queen-of-hearts card — both removed.**
+- **The bow** (owner's rewrite: "the guy should resist, and then Jon wins… says sorry, gives gift… Jon surprised and
+  happy and suspicious… opens it… gets sucked into it trying to get out"): hold right / tap to walk up; Jon takes her
+  free hand and it's a **tug of war** (`ph 'tug'`): tap fast (or Space) to pull, the stranger drags her back if you stop
+  (meter in the bottom bar; bubbles "Not so fast." / "Let her go!"); Jon always wins. She breaks free into his arms,
+  the stranger stumbles back; reunion lines; the stranger walks over and **apologises** ("Alright, alright. You win." /
+  "I'm sorry. I got carried away." / "…A little gift."); **Jon reacts** with emotes over his head: ! "Oh! For us?",
+  ♪ "'Lost in You'… I love this record.", ? "…Wait. Why are you being so nice?"; "No reason. Go on. Give it a spin."
+  Close-up: hold to slide the record out (real cover); back on deck with **the record in his hands** (`ph 'inhands'`);
+  `PULL`: it spins up in his hands ("Wait— what's it doing?"), tears loose and grows into a vortex, he leans back with
+  his heels in (`drawJon` `st.tug`), wins half a step, is dragged in, lifted, spun into the label; she backs away crying
+  "Jon—!"; "Enjoy the album."; flash; the fall. Characters ease left (`sc.camX`) so nobody is cut off on a phone.
+  **No Sterling and no queen-of-hearts card — both removed.**
 - **The record map** (`game/map.js`, Three.js): made to match the real pressing — black vinyl, the real orange label
   (`album/lost-in-you/label.jpg`, cut from the owner's photo: "Jon Vinyl" signature, LOST IN YOU, VINYL RECORDINGS, INC.,
   33⅓ RPM, the tracklist, the legal text round the rim) turned to read upright toward the camera, and visible smooth gaps
@@ -171,10 +179,9 @@ decisions and the person's preferences.
   vocals/other, and a line about what the song means.
 
 ## The pull-in (end of the prologue)
-- `PULL` timeline (~8.4 s): the record rises behind Jon and sucks in petals and sparks; he leans away and reaches for her;
-  she grabs his hand (a glow where they hold on), it slips ("Jon—!"), he's lifted, spun and shrunk into the label;
-  the stranger: "Enjoy the album."; white flash; a fall through rushing rings of groove with Jon tumbling; then the
-  reviews end title and the map (where he drops onto the record).
+- `PULL` timeline (~8.9 s): spin 1.0 → it tears out of his hands and grows (1.0 s) → he resists from 1.3, half a step back
+  at 2.1, dragged → lifted 3.6, spun into the label by 5.1 → white flash 5.7 → the fall through rushing rings of groove
+  (6.0–8.9) → the reviews end title and the map (where he drops onto the record).
 
 ## Gotchas
 - **Canvas colours: always `rgba()` / `alphaF()` for computed alpha.** A fading alpha can hit values like 2e-16, which

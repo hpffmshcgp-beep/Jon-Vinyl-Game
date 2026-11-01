@@ -653,7 +653,7 @@ addEventListener('keydown', e => {
     if (L0 && !['ArrowUp', 'KeyW', 'Space'].includes(e.code)) HOLD.kl = true; if (R0 && e.code !== 'ArrowDown') HOLD.kr = true;   // in the scenes Space / W / ↑ act, they don't walk
     const act = ['Space', 'Enter', 'KeyE', 'ArrowUp', 'KeyW'].includes(e.code), tapKey = act || L0 || R0;
     if (tapKey) e.preventDefault();
-    if (!e.repeat && tapKey) { if (S.sc.dlg || S.sc.ph === 'album' || S.sc.ph === 'rating') sceneTap(); else if (act) cabinAct(); }
+    if (!e.repeat && tapKey) { if (S.sc.dlg || S.sc.ph === 'album' || S.sc.ph === 'rating' || S.sc.ph === 'tug') sceneTap(); else if (act) cabinAct(); }
     return;
   }
   if (e.repeat) return;
@@ -894,7 +894,8 @@ function drawJon(x, gy, h, st){
   const shR = 22 - (jump ? jy0*9 : 0);
   const shg = g.createRadialGradient(2, 0, 0, 2, 0, shR); shg.addColorStop(0, 'rgba(0,0,0,.45)'); shg.addColorStop(1, 'rgba(0,0,0,0)');
   g.save(); g.scale(1, 0.16); g.fillStyle = shg; g.beginPath(); g.arc(2, 0, shR, 0, 7); g.fill(); g.restore();
-  const lean = (run ? 0.11*amp : 0)*(1 - sl) - sl*0.95 - (st.stumble > 0 ? 0.35*st.stumble : 0) - (st.lookUp ? 0.05 : 0) + (st.reach || 0)*0.4 + (st.push ? 0.22 : 0);
+  const tg = st.tug || 0;
+  const lean = (run ? 0.11*amp : 0)*(1 - sl) - sl*0.95 - tg*0.34 - (st.stumble > 0 ? 0.35*st.stumble : 0) - (st.lookUp ? 0.05 : 0) + (st.reach || 0)*0.4 + (st.push ? 0.22 : 0);
   const hip = [0, -49];
   const legPose = (off, far) => {
     const q = ((p + off) % 1 + 1) % 1;
@@ -904,7 +905,8 @@ function drawJon(x, gy, h, st){
     if (jump) { th = far ? 0.25 : 0.95; kn = far ? 1.5 : 1.25; }
     if (kick && !far) { th = 1.45; kn = 0.12; }
     if (st.surf) { th = far ? -0.5 : 0.62; kn = far ? 0.75 : 1.05; }   // on a board: feet wide apart, knees bent
-    if (sl) { th += ((far ? 0.3 : 0.55) - th)*sl; kn += ((far ? 2.7 : 0.05) - kn)*sl; }   // sliding (in the leaned frame): near leg straight out along the deck, far leg folded back under
+    if (sl) { th += ((far ? 0.3 : 0.55) - th)*sl; kn += ((far ? 2.7 : 0.05) - kn)*sl; }
+    if (tg) { th += ((far ? -0.62 : 0.3) - th)*tg; kn += ((far ? 0.22 : 0.08) - kn)*tg; }   // heels dug in: front leg braced ahead, back leg pushing   // sliding (in the leaned frame): near leg straight out along the deck, far leg folded back under
     const kx = hip[0] + Math.sin(th)*23.5, ky = hip[1] + Math.cos(th)*23.5, ph2 = th - kn;
     return { kx, ky, fx: kx + Math.sin(ph2)*23, fy: ky + Math.cos(ph2)*23, ph2 };
   };
@@ -919,7 +921,8 @@ function drawJon(x, gy, h, st){
     if (st.push) { ua = far ? 1.3 : 1.45; fa = ua + 0.18; }
     if (st.surf && !jump) { ua = far ? -1.25 : 1.35; fa = far ? -1.0 : 1.75; }   // arms out for balance
     if (st.stumble > 0) { ua = -1.2; fa = -0.6; }
-    if (sl) { ua += ((far ? -1.45 : 1.45) - ua)*sl; fa += ((far ? -1.2 : 1.9) - fa)*sl; }   // a hand trailing back along the deck, the other up for balance
+    if (sl) { ua += ((far ? -1.45 : 1.45) - ua)*sl; fa += ((far ? -1.2 : 1.9) - fa)*sl; }
+    if (tg) { ua += ((far ? 1.05 : 1.2) - ua)*tg; fa += ((far ? 1.2 : 1.25) - fa)*tg; }   // both hands out ahead, holding on   // a hand trailing back along the deck, the other up for balance
     const sx = far ? -0.6 : 1.6, sy = -81, ex = sx + Math.sin(ua)*15.5, ey = sy + Math.cos(ua)*15.5;
     return { sx, sy, ex, ey, hx: ex + Math.sin(fa)*13.5, hy: ey + Math.cos(fa)*13.5, fa };
   };
@@ -1830,15 +1833,16 @@ const LINES = {
           ['JON', 'First thing. Then dinner. Then the long way home.'], ['HER', 'It’s a plan.']],
   taken: [['???', 'I’m afraid she can’t be with you.']],
   end:   [['HER', 'Jon! I knew you’d come for me.'], ['JON', 'We’ve still got a record store to get to.'], ['HER', 'And dinner. And the long way home.']],
-  gift:  [['???', 'Well, well. You actually caught up.'], ['???', 'Alright, you win. Fair and square.'], ['???', 'No hard feelings? Let me make it up to you both. A little gift.'],
-          ['JON', '“Lost in You”…?'], ['???', 'Go on. Give it a spin.']],
+  gift:  [['???', 'Alright, alright. You win.'], ['???', 'I’m sorry. I got carried away.'], ['???', 'Let me make it up to you both. A little gift.'],
+          ['JON', 'Oh! For us?'], ['JON', '“Lost in You”… I love this record.'], ['JON', '…Wait. Why are you being so nice?'], ['???', 'No reason. Go on. Give it a spin.']],
 };
-const SC_REACH = -0.42;                       // where Jon stands next to her, in figure heights
+const SC_REACH = -0.42;
+const GIFT_EMOTE = { 3: '!', 4: '♪', 5: '?' };   // Jon, taking the gift: surprised, pleased, then not so sure                       // where Jon stands next to her, in figure heights
 const HOLD = { kl:false, kr:false, ptr: new Map() };
 const holdSide = side => (side ? HOLD.kr : HOLD.kl) || [...HOLD.ptr.values()].includes(side);
 const walkInput = () => (holdSide(true) ? 1 : 0) - (holdSide(false) ? 1 : 0);
 const scBase = () => ({ T:0, jdir:1, wph:0, moving:false, her:0, dlg:null, metT:-1, endT:-1, amb:false, fph:0, figT:-1, offerT:-1, gotT:-1,
-                        slide:0, albumT:-1, spinT2:-1, pullT:-1 });
+                        slide:0, albumT:-1, handsT:-1, pullT:-1, tug:0, tugT:-9, tugT0:-9, emoteT:-9 });
 function sceneStart(L, base){   // the bow: he's holding her by the wrist at the rail
   S.sc = Object.assign(scBase(), { kind:'bow', ph:'walk', jon:(L.jx - base)/L.jh, herDir:-1, fig:0.45, grip:1, freeT:-1 });
 }
@@ -1853,6 +1857,7 @@ function sceneTap(){
     else { d.i++; d.t0 = sc.T; if (d.i >= d.lines.length) { sc.dlg = null; if (d.then) d.then(); } else if (d.on) d.on(d.i); }
     if (ac) uiClick(); return true;
   }
+  if (sc.ph === 'tug') { sc.tug = Math.min(1, sc.tug + 0.1); sc.tugT = sc.T; return true; }   // every tap is a pull
   if (sc.ph === 'album') { sc.slide = Math.min(1, sc.slide + 0.2); return true; }
   if (sc.ph === 'rating' && sc.T - sc.rateT > 1.2) { finishPrologue(); return true; }
   return false;
@@ -1865,71 +1870,106 @@ function sceneStep(L, dt, base){
   if (sc.ph === 'walk') {
     const v = sc.dlg ? 0 : (walkInput() || (sc.autoWalk ? 1 : 0));
     if (v) { sc.jon = clamp(sc.jon + v*1.25*dt, leftU, 9); sc.jdir = v; sc.moving = true; sc.wph += dt*1.5; }
-    if (sc.jon >= sc.her - 1.25) { sc.jon = sc.her - 1.25; sc.jdir = 1; sc.moving = false; sc.ph = 'free'; sc.freeT = T; }
-  } else if (sc.ph === 'free') {   // she pulls her hand out of his grip and runs to Jon
+    if (sc.jon >= sc.her - 0.6) {   // he catches her free hand: the stranger won't let go
+      sc.jon = sc.her - 0.6; sc.jdir = 1; sc.moving = false; sc.ph = 'tug'; sc.tugT0 = T; sc.tugT = -9; sc.tug = 0.3;
+      sc.tugBase = { jon: sc.jon, her: sc.her, fig: sc.her + 0.62 }; }
+  } else if (sc.ph === 'tug') {   // a tug of war: every tap pulls her toward Jon; stop and the stranger drags her back
+    const won = sc.tug >= 0.999;   // check before he pulls back this frame
+    sc.tug = won ? 1 : Math.max(0.1, sc.tug - dt*0.09); sc.fph += dt*1.6;
+    const off = (0.42 - sc.tug)*0.42 + Math.sin(T*11)*0.012, B = sc.tugBase;
+    sc.jon = B.jon + off; sc.her = B.her + off; sc.fig = B.fig + off;
+    if (won) { sc.ph = 'free'; sc.freeT = T; sc.herFrom = sc.her; sc.figFrom = sc.fig; sc.grip = 0; }
+  } else if (sc.ph === 'free') {   // she breaks free and runs into Jon's arms; the stranger stumbles back
     const k = clamp((T - sc.freeT)/0.75, 0, 1);
-    sc.her = (sc.jon - SC_REACH)*ease(k); sc.grip = 1 - clamp((T - sc.freeT)/0.25, 0, 1); sc.fig = 0.45 + 0.14*ease(clamp((T - sc.freeT)/0.5, 0, 1));
+    sc.her = sc.herFrom + (sc.jon - SC_REACH - sc.herFrom)*ease(k); sc.fig = sc.figFrom + 0.3*ease(clamp((T - sc.freeT)/0.5, 0, 1));
     if (k >= 1) { sc.ph = 'end'; sc.metT = T; say(LINES.end, () => { sc.ph = 'stranger'; sc.figT = sc.T; }); }
   } else if (sc.ph === 'stranger') {   // and he strolls over, all smiles
     sc.herDir = 1; sc.fph += dt*1.1; sc.moving = true;
     if (walkTo(sc, 'fig', sc.her + 1.0, 0.7, dt)) {
       sc.ph = 'gift';
-      say(LINES.gift, () => { sc.ph = 'album'; sc.slide = 0; sc.albumT = sc.T; }, i => { if (i === 2) sc.offerT = sc.T; if (i === 3) sc.gotT = sc.T; });
+      say(LINES.gift, () => { sc.ph = 'album'; sc.slide = 0; sc.albumT = sc.T; }, i => { if (i === 2) sc.offerT = sc.T; if (i === 3) sc.gotT = sc.T; sc.emoteT = sc.T; });
     }
   } else if (sc.ph === 'album') {
     if (walkInput() > 0 || (TOUCH && HOLD.ptr.size)) sc.slide = Math.min(1, sc.slide + dt*0.8);   // slide the record out of its sleeve
-    if (sc.slide >= 1) { sc.ph = 'spinup'; sc.spinT2 = T; }
-  } else if (sc.ph === 'spinup') {
-    if (T - sc.spinT2 > 1.9) { sc.ph = 'pull'; sc.pullT = T; sc.herDir = -1; }
+    if (sc.slide >= 1) { sc.ph = 'inhands'; sc.handsT = T; }
+  } else if (sc.ph === 'inhands') {   // back on deck: the record out of its sleeve, in his hands
+    if (T - sc.handsT > 1.1) { sc.ph = 'pull'; sc.pullT = T; sc.herDir = -1; }
   } else if (sc.ph === 'pull') {
     if (T - sc.pullT > PULL.tunnel1 + 0.1 && S.running) { sc.ph = 'rating'; sc.rateT = T; sc.rate = rateRun(); }
   } else if (sc.ph === 'rating') {
     if (T - sc.rateT > 9 && S.running) finishPrologue();
   }
 }
-// the pull: the record rises behind him and drags him in; she grabs his hand; it slips; he falls through the grooves
-const PULL = { grow: 1.0, resist: 0.6, grab: 0.9, slip: 2.6, lift: 2.8, inEnd: 4.6, shut0: 4.6, shut1: 5.1, flash: 5.2, tunnel0: 5.5, tunnel1: 8.4 };
+// the pull: the record spins up in his hands, tears loose and grows; he digs his heels in, even wins a step back, but it
+// drags him in, lifts him and spins him down into the label; then the flash and the fall through the grooves
+const PULL = { spin: 1.0, grow: 1.0, resist: 1.3, back: 2.1, slip: 2.6, lift: 3.6, inEnd: 5.1, shut0: 5.1, shut1: 5.6, flash: 5.7, tunnel0: 6.0, tunnel1: 8.9 };
 function drawScene(L, now, base){
   const sc = S.sc, jh = L.jh, T = sc.T;
-  const herX = base + sc.her*jh, jonX = base + sc.jon*jh, figX = base + sc.fig*jh;
+  // keep everyone in frame (a phone held upright is narrow): ease them left if the one furthest right would be cut off
+  const far = base + Math.max(sc.her, sc.fig ?? -9)*jh, want = Math.min(0, W - jh*0.32 - far);
+  sc.camX = (sc.camX || 0) + (want - (sc.camX || 0))*0.08;
+  const herX = base + sc.her*jh + sc.camX, jonX = base + sc.jon*jh + sc.camX, figX = base + sc.fig*jh + sc.camX;
   const together = sc.ph === 'end' || sc.ph === 'stranger';
   const pullE = sc.pullT >= 0 ? T - sc.pullT : -1;
-  const vx = jonX - jh*0.75, vy = L.groundY - jh*0.66;   // the record opens up behind him
-  if (pullE >= 0) {
-    const grow = ease(pullE/PULL.grow), shut = pullE > PULL.shut0 ? 1 - ease((pullE - PULL.shut0)/(PULL.shut1 - PULL.shut0)) : 1, rr = jh*1.6*grow*shut;
-    g.fillStyle = `rgba(6,3,10,${alphaF(0.35*grow*shut)})`; g.fillRect(0, L.top, W, L.fh);                                   // the night closes in around it
-    vinyl2D(vx, vy, rr, pullE*pullE*1.6, 1);
-    g.save(); g.globalCompositeOperation = 'lighter';
-    for (let i = 0; i < 16; i++) { const a0 = i/16*Math.PI*2 + pullE*3.2, r0 = rr*1.35; g.strokeStyle = `rgba(255,200,140,${alphaF(0.22*shut)})`; g.lineWidth = 2;
-      g.beginPath(); for (let k = 0; k <= 1.001; k += 0.1) { const rk = r0*(1 - k*0.85), ak = a0 + k*2.4; k ? g.lineTo(vx + Math.cos(ak)*rk, vy + Math.sin(ak)*rk) : g.moveTo(vx + Math.cos(ak)*rk, vy + Math.sin(ak)*rk); } g.stroke(); }
-    for (let i = 0; i < 40; i++) {   // petals and sparks sucked in from all around
-      const f = (pullE*0.5 + i/40) % 1, r = (1 - f)*Math.max(W, H)*0.6*shut + rr*0.08, a = i*2.4 + f*5 + pullE;
-      g.fillStyle = i % 3 ? `rgba(232,116,106,${alphaF(0.7*f*grow)})` : `rgba(255,214,150,${alphaF(0.8*f*grow)})`;
-      g.beginPath(); g.ellipse(vx + Math.cos(a)*r, vy + Math.sin(a)*r*0.8, 3 + f*2, 1.6 + f, a, 0, 7); g.fill(); }
-    g.restore();
+  // he fights it: heels in, half a step back, then dragged toward it; then lifted and spun into the middle
+  const resist = pullE < 0 || pullE >= PULL.lift ? 0 : clamp((pullE - PULL.resist)/0.4, 0, 1);
+  const drag = pullE < 0 ? 0 : -ease(clamp((pullE - PULL.resist)/0.7, 0, 1))*jh*0.12 + ease(clamp((pullE - PULL.back)/1.4, 0, 1))*jh*0.42;
+  const jx = jonX + drag, hands = [jx + jh*0.3, L.groundY - jh*0.55];
+  let vx = hands[0], vy = hands[1], rr = jh*0.17, spinA = 0, glow = 0;
+  if (sc.ph === 'inhands' || pullE >= 0) {   // the record: in his hands, then torn loose, hanging in the air and growing
+    const lift = pullE < 0 ? 0 : ease(clamp((pullE - PULL.spin)/PULL.grow, 0, 1));
+    const shut = pullE > PULL.shut0 ? 1 - ease((pullE - PULL.shut0)/(PULL.shut1 - PULL.shut0)) : 1;
+    vx = hands[0] + (jonX + jh*0.78 - hands[0])*lift; vy = hands[1] + (L.groundY - jh*0.8 - hands[1])*lift;
+    rr = (jh*0.17 + jh*1.0*lift)*shut; spinA = pullE < 0 ? 0 : pullE*pullE*1.8; glow = pullE < 0 ? 0 : clamp(pullE/PULL.spin, 0, 1);
+    if (lift > 0) {
+      g.fillStyle = `rgba(6,3,10,${alphaF(0.35*lift*shut)})`; g.fillRect(0, L.top, W, L.fh);   // the night closes in around it
+    }
   }
   const running = sc.ph === 'free' && T - sc.freeT < 0.75;
-  const herPull = pullE < 0 ? 0 : -ease(clamp((pullE - PULL.grab)/0.4, 0, 1))*jh*0.14 + ease(clamp((pullE - PULL.slip)/0.5, 0, 1))*jh*0.3;   // she grabs his hand… and it slips
-  drawHer(herX + herPull, L.groundY - jh*0.05 - (running ? Math.abs(Math.sin((T - sc.freeT)*14))*jh*0.03 : 0), jh*0.95, sc.herDir, now, sc.ph !== 'gift' && sc.ph !== 'album' && sc.ph !== 'spinup');
-  const offer = sc.ph === 'walk' || sc.ph === 'free' ? sc.grip : sc.offerT < 0 ? 0 : sc.gotT < 0 ? ease((T - sc.offerT)/0.6) : 1 - ease((T - sc.gotT - 0.4)/0.6);
-  const figHand = drawFigure(figX, L.groundY, jh*1.02, -1, { walk: sc.ph === 'stranger', ph: sc.fph, now, offer });
-  // he fights it, feet dragging back, reaching for her; then he's lifted off the deck and spun into the middle
-  const resist = pullE < 0 || pullE >= PULL.lift ? 0 : clamp((pullE - PULL.resist)/0.5, 0, 1), slide = pullE < 0 ? 0 : ease(clamp((pullE - PULL.resist)/2.0, 0, 1))*jh*0.2;
-  const pullK = pullE >= PULL.lift ? ease((pullE - PULL.lift)/(PULL.inEnd - PULL.lift)) : 0, jx = jonX - slide, by = L.groundY - jh*0.5;
-  if (resist > 0 && pullE > PULL.grab + 0.3 && pullE < PULL.slip) {   // their hands, holding on
-    const hx = (jx + herX + herPull)/2 + jh*0.04, hy = L.groundY - jh*0.55, hg = g.createRadialGradient(hx, hy, 0, hx, hy, jh*0.2);
-    hg.addColorStop(0, 'rgba(255,220,170,.55)'); hg.addColorStop(1, 'rgba(255,220,170,0)'); g.fillStyle = hg; g.fillRect(hx - jh*0.2, hy - jh*0.2, jh*0.4, jh*0.4); }
+  const herBack = pullE < 0 ? 0 : ease(clamp((pullE - PULL.spin)/1.2, 0, 1))*jh*0.3;   // she backs away from it, reaching for him
+  drawHer(herX + herBack, L.groundY - jh*0.05 - (running ? Math.abs(Math.sin((T - sc.freeT)*14))*jh*0.03 : 0), jh*0.95, sc.herDir, now,
+    sc.ph === 'tug' || (sc.ph !== 'gift' && sc.ph !== 'album' && sc.ph !== 'inhands'));
+  if (sc.ph === 'tug') {   // the stranger, turned away, hauling her by the wrist
+    const f = drawFigure(figX, L.groundY, jh*1.02, 1, { walk: true, ph: sc.fph, now, drag: true });
+    g.save(); g.strokeStyle = '#120d16'; g.lineCap = 'round'; g.lineWidth = Math.max(2, jh*0.03); g.beginPath(); g.moveTo(f.fx, f.fy); g.lineTo(herX + jh*0.09, L.groundY - jh*0.5); g.stroke(); g.restore();
+  }
+  const offer = sc.ph === 'walk' ? sc.grip : sc.ph === 'free' || sc.ph === 'tug' ? 0 : sc.offerT < 0 ? 0 : sc.gotT < 0 ? ease((T - sc.offerT)/0.6) : 1 - ease((T - sc.gotT - 0.4)/0.6);
+  const stumbling = sc.ph === 'free' ? clamp(1 - (T - sc.freeT)/0.6, 0, 1) : 0;
+  const figHand = sc.ph === 'tug' ? { hx: figX, hy: L.groundY - jh*0.5 } : drawFigure(figX + Math.sin(stumbling*9)*jh*0.02, L.groundY, jh*1.02, -1, { walk: sc.ph === 'stranger', ph: sc.fph, now, offer });
+  if (sc.ph === 'inhands' || pullE >= 0) {
+    if (pullE >= 0 && rr > jh*0.25) {   // wind and petals sucked in toward it
+      g.save(); g.globalCompositeOperation = 'lighter'; const shut = rr/(jh*1.17);
+      for (let i = 0; i < 16; i++) { const a0 = i/16*Math.PI*2 + pullE*3.2, r0 = rr*1.35; g.strokeStyle = `rgba(255,200,140,${alphaF(0.22*Math.min(1, shut))})`; g.lineWidth = 2;
+        g.beginPath(); for (let k = 0; k <= 1.001; k += 0.1) { const rk = r0*(1 - k*0.85), ak = a0 + k*2.4; k ? g.lineTo(vx + Math.cos(ak)*rk, vy + Math.sin(ak)*rk) : g.moveTo(vx + Math.cos(ak)*rk, vy + Math.sin(ak)*rk); } g.stroke(); }
+      for (let i = 0; i < 40; i++) { const f = (pullE*0.5 + i/40) % 1, r = (1 - f)*Math.max(W, H)*0.6*Math.min(1, shut) + rr*0.08, a = i*2.4 + f*5 + pullE;
+        g.fillStyle = i % 3 ? `rgba(232,116,106,${alphaF(0.7*f)})` : `rgba(255,214,150,${alphaF(0.8*f)})`;
+        g.beginPath(); g.ellipse(vx + Math.cos(a)*r, vy + Math.sin(a)*r*0.8, 3 + f*2, 1.6 + f, a, 0, 7); g.fill(); }
+      g.restore(); }
+    if (rr > 1) vinyl2D(vx, vy, rr, spinA, glow);
+  }
+  const pullK = pullE >= PULL.lift ? ease((pullE - PULL.lift)/(PULL.inEnd - PULL.lift)) : 0, by = L.groundY - jh*0.5;
   if (pullK > 0) { g.save(); g.translate(jx + (vx - jx)*pullK, by + (vy - by)*pullK); g.rotate(-pullK*10); g.scale(Math.max(0.001, 1 - pullK), Math.max(0.001, 1 - pullK)); g.translate(-jx, -by); }
+  const jolt = sc.ph === 'tug' ? Math.max(0, 1 - (T - sc.tugT)/0.25) : 0;
   const lens = pullK >= 1 ? { lensX: jonX, lensY: L.groundY - jh } : drawJon(jx, L.groundY, jh, {
-    running: sc.moving && sc.ph === 'walk', amp: 0.45, phase: sc.wph % 1, idle: now*0.8, jumpK: pullK > 0 ? 0.5 : -1, kick: false, stumble: 0, reach: 0, dir: pullE >= 0 ? 1 : sc.jdir,
-    push: resist, shades: true, glow: 0, holdHand: together, lookUp: together, smile: together });
+    running: sc.moving && sc.ph === 'walk', amp: 0.45, phase: sc.wph % 1, idle: now*0.8, jumpK: pullK > 0 ? 0.5 : -1, kick: false, stumble: 0, reach: 0, dir: pullE >= 0 || sc.ph === 'tug' ? 1 : sc.jdir,
+    tug: sc.ph === 'tug' ? 0.65 + 0.35*jolt : resist, shades: true, glow: 0, holdHand: together, lookUp: together, smile: together || (sc.ph === 'gift' && sc.dlg && sc.dlg.i === 4) });
   if (pullK > 0) g.restore();
   // the album: in the stranger's hand, then in Jon's
-  if (sc.offerT >= 0 && sc.ph !== 'album' && sc.ph !== 'spinup' && pullE < 0) {
+  if (sc.offerT >= 0 && sc.ph !== 'album' && sc.ph !== 'inhands' && pullE < 0) {
     const jh2 = [jonX + jh*0.26, L.groundY - jh*0.5], k = sc.gotT < 0 ? 0 : ease((T - sc.gotT)/0.6);
     const ax = figHand.hx + (jh2[0] - figHand.hx)*k, ay = figHand.hy + jh*0.02 + (jh2[1] - figHand.hy)*k - Math.sin(k*Math.PI)*jh*0.25;
     g.globalAlpha = sc.gotT < 0 ? clamp((T - sc.offerT)/0.4, 0, 1) : 1; sleeve2D(ax, ay, jh*0.2, -0.12 + k*0.1); g.globalAlpha = 1;
   }
+  // how Jon takes it: a little ! then ♪ then ? over his head
+  const em = sc.ph === 'gift' && sc.dlg ? GIFT_EMOTE[sc.dlg.i] : null;
+  if (em) { const k = clamp((T - sc.emoteT)/0.25, 0, 1), ex = lens.lensX + jh*0.05, ey = lens.lensY - jh*0.38 - Math.sin(k*Math.PI)*jh*0.06;
+    g.save(); g.globalAlpha = k; g.textAlign = 'center'; g.font = `700 ${jh*0.22}px ${FONT.serif}`; g.lineWidth = Math.max(3, jh*0.03); g.strokeStyle = PAL.out; g.strokeText(em, ex, ey);
+    g.fillStyle = em === '♪' ? '#f0a3a0' : em === '!' ? PAL.gold : PAL.cream; g.fillText(em, ex, ey); g.restore(); }
+  // what they shout in the struggle, and as it spins up
+  if (sc.ph === 'tug') { const e = T - sc.tugT0;
+    speech('Not so fast.', figX, L.groundY - jh*1.22, figX, L.groundY - jh*1.04, clamp(Math.min((e - 0.2)*6, (2.4 - e)*5), 0, 1), false);
+    speech('Let her go!', jonX, L.groundY - jh*1.22, jonX + jh*0.05, L.groundY - jh*1.04, clamp(Math.min((e - 1.5)*6, (3.6 - e)*5), 0, 1), true); }
+  if (pullE >= 0) speech('Wait— what’s it doing?', jx, L.groundY - jh*1.22, jx + jh*0.05, L.groundY - jh*1.04, clamp(Math.min((pullE - 0.2)*6, (1.9 - pullE)*5), 0, 1), true);
   return { lens, jonX, herX };
 }
 // at the end of the song, before you reach them: he has her at the rail; she's reaching back for Jon
@@ -2225,8 +2265,8 @@ function sceneOver(L, now, jonX, herX){
   const cx = (jonX + herX)/2, cy = L.groundY - L.jh*0.6, hk = clamp((T - sc.metT)/0.8, 0, 1);
   const hf = sc.figT < 0 ? 1 : 1 - clamp((T - sc.figT)/0.6, 0, 1);
   if (hf > 0) { g.globalAlpha = hf; heart(cx, cy - L.jh*0.75 - hk*L.jh*0.25, L.jh*0.35*ease(hk)*(1 + 0.06*Math.sin(now*6)), PAL.wine, PAL.gold); g.globalAlpha = 1; }
-  if (sc.ph === 'album' || sc.ph === 'spinup') {   // close-up: the sleeve in the light, the record sliding out
-    const a = clamp((T - sc.albumT)/0.5, 0, 1), sp = sc.ph === 'spinup' ? clamp((T - sc.spinT2)/1.9, 0, 1) : 0;
+  if (sc.ph === 'album' || (sc.ph === 'inhands' && T - sc.handsT < 0.5)) {   // close-up: the sleeve in the light, the record sliding out
+    const a = sc.ph === 'inhands' ? 1 - clamp((T - sc.handsT)/0.5, 0, 1) : clamp((T - sc.albumT)/0.5, 0, 1), sp = 0;
     g.fillStyle = `rgba(6,4,10,${alphaF(0.95*a)})`; g.fillRect(0, L.top, W, L.fh);
     const sz = Math.min(L.fh*0.6, W*(L.portrait ? 0.62 : 0.4)), cx0 = W/2 - sz*0.22, cyy = L.top + L.fh*0.5;
     const spot = g.createRadialGradient(W/2, cyy, 0, W/2, cyy, sz*1.3); spot.addColorStop(0, `rgba(255,190,120,${alphaF(0.22*a)})`); spot.addColorStop(1, 'rgba(255,190,120,0)'); g.fillStyle = spot; g.fillRect(0, L.top, W, L.fh);
@@ -2278,10 +2318,14 @@ function sceneUI(L, now){
     dlgBox(L, who, line, shown, d.t0 < 0 ? 1 : clamp((sc.T - d.t0 + (d.i ? 1 : 0))*6, 0, 1), true, now);
   }
   const shout = (t0, a, b) => { const e = sc.T - t0; if (t0 >= 0 && e > a && e < b) dlgBox(L, 'HER', 'Jon—!', 5, clamp(Math.min((e - a)*8, (b - e)*8), 0, 1), false); };
-  if (sc.kind === 'bow') { shout(sc.pullT, PULL.slip - 0.3, PULL.slip + 1.3);
-    const e = sc.T - sc.pullT; if (sc.pullT >= 0 && e > 3.4 && e < 4.9) dlgBox(L, '???', 'Enjoy the album.', Math.floor((e - 3.4)*40), clamp(Math.min((e - 3.4)*8, (4.9 - e)*8), 0, 1), false); }
+  if (sc.kind === 'bow') { shout(sc.pullT, PULL.slip - 0.3, PULL.slip + 1.2);
+    const e = sc.T - sc.pullT, e0 = PULL.lift + 0.2, e1 = PULL.inEnd + 0.2; if (sc.pullT >= 0 && e > e0 && e < e1) dlgBox(L, '???', 'Enjoy the album.', Math.floor((e - e0)*40), clamp(Math.min((e - e0)*8, (e1 - e)*8), 0, 1), false); }
   let p = '';
   if (!d && sc.ph === 'walk' && !sc.autoWalk) p = TOUCH ? 'TAP TO GO GET HER  ▶' : 'HOLD  →  TO GO GET HER';
+  if (sc.ph === 'tug') { p = TOUCH ? 'TAP FAST TO PULL HER FREE' : 'PRESS SPACE FAST TO PULL HER FREE';   // and how close he is
+    const mw = Math.min(220, W*0.5), mx = W/2 - mw/2, my = L.bot + L.barH*0.22;
+    g.fillStyle = 'rgba(243,230,200,.18)'; g.fillRect(mx, my - 2, mw, 4); g.fillStyle = PAL.gold; g.fillRect(mx, my - 2, mw*sc.tug, 4);
+    heart(mx + mw + 10, my, 14, PAL.wine, PAL.gold); }
   if (!d && sc.ph === 'album' && T_ok(sc)) p = TOUCH ? 'HOLD TO SLIDE THE RECORD OUT  ▶' : 'HOLD  →  TO SLIDE THE RECORD OUT';
   if (!d && sc.kind === 'cabin' && sc.ph === 'free' && !sc.tapAt && !sc.talked && sc.T > 1.5) p = TOUCH ? 'TAP HER, OR ANYTHING IN THE ROOM' : '←  →  WALK   ·   E  TALK   ·   OR CLICK';
   if (p) {

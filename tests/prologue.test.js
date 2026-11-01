@@ -53,14 +53,18 @@ const C = require('./config');
     // 3. the bow
     await p.waitForFunction(() => S.sc && S.sc.ph === 'walk', null, { timeout: 15000 });
     await hold(true); await p.waitForFunction(() => S.sc.ph !== 'walk', null, { timeout: 10000 }); await hold(false);
+    // the stranger won't let go: tap fast to pull her free
+    await p.waitForFunction(() => S.sc.ph === 'tug', null, { timeout: 5000 }); await shot('11a-tug', 700);
+    for (let i = 0; i < 160 && await p.evaluate(() => S.sc.ph === 'tug'); i++) { await tap(); await p.waitForTimeout(40); if (i === 5) await shot('11b-tug-pulling'); }
     await shot('11-free', 350); await p.waitForFunction(() => S.sc.ph === 'end', null, { timeout: 8000 }); await shot('12-reunion', 1200);
     await tapWhile('end', 12);
     await shot('13-strolls-over', 900); await p.waitForFunction(() => S.sc.ph === 'gift', null, { timeout: 12000 }); await shot('14-gift', 1200);
-    await tapWhile('gift', 20, async i => { if (i === 7) await shot('15-offer'); });
+    await tapWhile('gift', 24, async i => { if (i === 6) await shot('15-offer'); if (i === 9) await shot('15b-pleased'); if (i === 13) await shot('15c-suspicious'); });
     await shot('16-album', 900);
     await hold(true); await p.waitForFunction(() => S.sc.ph !== 'album', null, { timeout: 8000 }); await hold(false);
+    await p.waitForFunction(() => S.sc.ph === 'inhands', null, { timeout: 8000 }); await shot('17-in-hands', 700);
     await p.waitForFunction(() => S.sc.ph === 'pull', null, { timeout: 8000 });
-    await shot('17a-pull-rises', 900); await shot('17b-pull-hands', 900); await shot('17c-pull-slip', 1100); await shot('17d-pull-lifted', 900); await shot('17e-enjoy', 500); await shot('17f-fall', 1700); await shot('17g-fall2', 1000);
+    await shot('17a-spins-up', 700); await shot('17b-tears-loose', 1000); await shot('17c-heels-in', 800); await shot('17d-dragged', 1000); await shot('17e-lifted', 900); await shot('17f-enjoy', 700); await shot('17g-fall', 1700);
     await p.waitForFunction(() => S.sc.ph === 'rating', null, { timeout: 10000 }); await shot('18-reviews', 1600); await tap();
     // 4. straight into the record, no score card
     await p.waitForFunction(() => mode === 'map' && MAP.ready, null, { timeout: 60000 });
