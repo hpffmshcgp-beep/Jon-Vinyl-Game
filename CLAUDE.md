@@ -12,7 +12,10 @@ decisions and the person's preferences.
 
 ## Story and look
 - Old-Hollywood romance on an ocean liner ("DiCaprio and Winslet on Titanic, classic"). Sepia verses, colour choruses,
-  film grain, letterbox. Acts: I The Bluff (poker chips), II Act Like It, III Old Soul, Finale Star-Crossed (No Fool cut).
+  film grain, letterbox. Acts (I The Bluff, II Act Like It, III Old Soul, Finale) still set each section's obstacles and
+  colour, but **no act cards or act names are shown** (owner: "no longer relevant"); the HUD corner says STAR-CROSSED.
+- **Title screen** (owner: it's a title screen, nothing behind it): `idleScene` is a dark picture house with a warm
+  spotlight, a projector beam and drifting dust, film grain and letterbox; no ship, no Jon running.
 - **The prologue sets up the story; the score never blocks it.** Score, combo, high score (per difficulty) and a 5-star
   rating are kept; after the pull an end title shows the reviews (stars, line, score, "NEW HIGH SCORE"), tap to go on.
   No pass/fail, no results panel, **nothing is skippable**.
@@ -40,7 +43,10 @@ decisions and the person's preferences.
   steamer trunks / lifebuoys (chorus), firework crates / BON VOYAGE banner (outro). **Rhythm-true** (owner: "you're not jumping on beat precisely to make the jump"): **each obstacle reaches Jon's
   feet exactly on its drum hit** — you press when it gets to him. (A take-off line 0.22 s ahead was tried and removed:
   the owner didn't know what it was for and timed to Jon, so his presses landed late and "didn't register".) It's
-  centred on him `OB.lead` (0.08 s) after the beat. A judged hit shapes the move (`startMove`: `S.jump` {p, c, land,
+  centred on him `obGeo(L).lead` after the beat. **Sizes and timings follow the screen** (owner, on a phone: the moves
+  were too short for the obstacles): the world scrolls ~half as fast for Jon's size on a phone, so `obGeo` makes obstacles
+  narrower there (≈0.15 s of travel, 0.26–0.44 of his height) and the moves last as long as one takes to pass him
+  (`cross`; phone ≈0.33 s, desktop ≈0.21 s; lead = cross/2). A judged hit shapes the move (`startMove`: `S.jump` {p, c, land,
   h0, peak} / `S.slide`) so he's high over it / low under it while it passes; a jump while still in the air is a
   **double jump** (peak 1.22, a puff ring under his feet). A miss crashes him into it when the timing window closes
   (it's still overlapping him then). Slide mid-air slams down; a jump cancels a slide; a press on nothing is a hop.

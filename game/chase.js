@@ -4,12 +4,21 @@
    The first time each move comes up (ever), the song stops with Jon at the obstacle and waits for the right side. */
 
 // Rhythm-true: each obstacle reaches Jon right on its drum hit, so you press when it gets to him (no line to watch; the
-// owner timed to Jon, as anyone would). It's centred under / over him OB.lead later. A hit shapes his jump (or slide) so
+// owner timed to Jon, as anyone would). It's centred under / over him obGeo(L).lead later. A hit shapes his jump (or slide) so
 // he's at the top of it (or lowest) right then: snappy on the beat, a little floatier if early. A miss runs him into it.
 // A jump while he's still up in the air is a double jump: a touch higher, with a puff under his feet.
-const OB = { lead: 0.08, lowH: 0.25, lowW: 0.44, highBot: 0.62, highH: 0.24, highW: 0.5 };
+const OB = { lowH: 0.25, lowW: 0.44, highBot: 0.62, highH: 0.24, highW: 0.5 };
 const MOVE = { hop: 0.14, minHalf: 0.09, maxHalf: 0.28, land: 0.15, slideHold: 0.16, slam: 0.07 };
-const obX = (L, n, t) => L.jx + (n.t - t + OB.lead)*L.speed;
+// Sizes and timings follow how fast the world moves past Jon on this screen. On a phone it scrolls about half as fast
+// for his size, so things take twice as long to pass him: obstacles are narrower there and the moves last longer.
+//  w = obstacle width (px, roughly 0.15 s of travel, kept between 0.26 and 0.44 of his height)
+//  cross = how long one overlaps his body; lead = from its front reaching him (the beat) to it being centred on him
+function obGeo(L){
+  if (L._ob) return L._ob;
+  const k = clamp(L.speed*0.15/(L.jh*OB.lowW), 0.6, 1), w = L.jh*OB.lowW*k, cross = (w + L.jh*0.24)/L.speed;
+  return L._ob = { k, w, wh: L.jh*OB.highW*clamp(k*1.05, 0.62, 1), cross, lead: clamp(cross*0.5, 0.08, 0.2) };
+}
+const obX = (L, n, t) => L.jx + (n.t - t + obGeo(L).lead)*L.speed;
 function jumpH(t){   // 0 on the deck .. 1 at the top of the jump
   const j = S.jump, sl = S.slam ? Math.max(0, S.slam.h*(1 - (t - S.slam.t)/MOVE.slam)) : 0;
   if (!j || t < j.p) return sl;
@@ -26,14 +35,15 @@ function slideAmt(t){   // 0 upright .. 1 flat out
 }
 // a press: jump (lane 0) or slide (lane 1), aimed at the obstacle it was judged against (or a little hop / dip on nothing)
 function startMove(lane, t, n){
+  const O = obGeo(layout()), down = Math.max(MOVE.land, O.cross*0.62);   // stay up (or down) until it has passed
   if (lane !== 1) {
-    const h0 = jumpH(t), c = n ? Math.max(n.t + OB.lead, t + MOVE.minHalf) : t + MOVE.hop, dbl = h0 > 0.25;
-    S.jump = { p: t, c, land: c + (n ? clamp(c - t, MOVE.land, MOVE.maxHalf) : MOVE.hop), h0, peak: dbl ? 1.22 : 1 }; S.slide = null; S.slam = null;
+    const h0 = jumpH(t), c = n ? Math.max(n.t + O.lead, t + MOVE.minHalf) : t + MOVE.hop, dbl = h0 > 0.25;
+    S.jump = { p: t, c, land: c + (n ? clamp(c - t, down, Math.max(MOVE.maxHalf, down)) : MOVE.hop), h0, peak: dbl ? 1.22 : 1 }; S.slide = null; S.slam = null;
     if (dbl) S.puffs.push({ t, h: h0 });
   } else {
     const h = jumpH(t); if (h > 0.02) S.slam = { t, h };   // sliding out of a jump slams him straight down
-    const c = n ? Math.max(n.t + OB.lead, t + 0.05) : t + 0.06;
-    S.slide = { p: t, c, end: c + (n ? MOVE.slideHold : 0.12) }; S.jump = null;
+    const c = n ? Math.max(n.t + O.lead, t + 0.05) : t + 0.06;
+    S.slide = { p: t, c, end: c + (n ? Math.max(MOVE.slideHold, O.cross*0.6) : 0.12) }; S.jump = null;
   }
 }
 // a double jump: a ring of air kicked out under his feet
@@ -48,7 +58,7 @@ function inked(path, fill, lw = 2){ path(); g.fillStyle = fill; g.fill(); g.line
 
 // what's on the deck to jump: a stack of chips, a deck chair, a steamer trunk, a crate of fireworks
 function lowObstacle(L, kind, x, now, fall){
-  const h = L.jh*OB.lowH, w = L.jh*OB.lowW, gy = L.groundY, lw = Math.max(1.5, L.jh*0.012);
+  const h = L.jh*OB.lowH, w = obGeo(L).w, gy = L.groundY, lw = Math.max(1.5, L.jh*0.012);
   g.save(); g.translate(x, gy);
   if (fall) { g.translate(w*0.5, 0); g.rotate(fall*1.35); g.translate(-w*0.5, 0); }   // knocked over when he trips on it
   const sh = g.createRadialGradient(0, 0, 0, 0, 0, w*0.7); sh.addColorStop(0, 'rgba(0,0,0,.4)'); sh.addColorStop(1, 'rgba(0,0,0,0)');
@@ -84,7 +94,7 @@ function lowObstacle(L, kind, x, now, fall){
 }
 // what hangs overhead to slide under: a casino sign, an awning, a lifebuoy, a banner
 function highObstacle(L, kind, x, now, swing){
-  const bot = L.groundY - L.jh*OB.highBot, h = L.jh*OB.highH, w = L.jh*OB.highW, lw = Math.max(1.5, L.jh*0.012), top = L.top - 4;
+  const bot = L.groundY - L.jh*OB.highBot, h = L.jh*OB.highH, w = obGeo(L).wh, lw = Math.max(1.5, L.jh*0.012), top = L.top - 4;
   g.save(); g.translate(x, top);
   const sw = swing ? Math.sin(swing*14)*0.5*(1 - swing) : Math.sin(now*1.6 + x*0.01)*0.03;   // knocked swinging if he runs into it
   g.rotate(sw); const len = bot - top;

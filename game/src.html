@@ -1774,7 +1774,6 @@ function frame(){
   letterbox(L);
   if (hudA > 0) { g.globalAlpha = hudA; hud(L, t); hints(L, t); g.globalAlpha = 1; }
   if (playing || (t > OPEN.start - 3 && t < OPEN.start)) sideCues(L, t, now);
-  banner(L, t);
   if (S.sc) sceneUI(L, now);
   drawLesson(L, now);
 }
@@ -2298,8 +2297,7 @@ function hud(L, t){
   g.textAlign = 'left'; g.fillStyle = PAL.gold; g.font = `400 ${sz}px ${FONT.deco}`; g.fillText(S.score.toLocaleString(), pad, cyTop + sz*0.35);
   const sw = g.measureText(S.score.toLocaleString()).width;
   g.font = `700 10px ${FONT.type}`; g.fillStyle = PAL.cream; g.fillText(`${S.combo} COMBO  ·  ${DIFFS[DIFF].name.toUpperCase()}`, pad + sw + 10, cyTop + 4);
-  const a = ACTS[actAt(t)];
-  if (a.name) { g.textAlign = 'right'; g.fillStyle = PAL.gold; g.font = `400 ${Math.min(14, L.barH*0.32)}px ${FONT.deco}`; g.fillText(`${a.tag.toUpperCase()} · ${a.name.toUpperCase()}`, W - pad, cyTop + 5); }
+  g.textAlign = 'right'; g.fillStyle = PAL.gold; g.font = `400 ${Math.min(14, L.barH*0.32)}px ${FONT.deco}`; g.fillText('STAR-CROSSED', W - pad, cyTop + 5);
   g.fillStyle = 'rgba(230,184,92,.9)'; g.fillRect(0, L.top - 2, W*clamp(t/LAST_NOTE, 0, 1), 2);
   // the chase: Jon's marker moves down the ship toward her as the song plays
   const cyB = L.bot + L.barH/2 - 4, [x0, x1] = progX(L), jx = x0 + (x1 - x0)*clamp((t - OPEN.start)/(LAST_NOTE - OPEN.start), 0, 1);
@@ -2358,11 +2356,21 @@ function banner(L, t){
   g.fillStyle = PAL.cream; g.font = `400 18px ${FONT.deco}`; g.fillText(st.name, W/2, by + 35);
   g.restore();
 }
+// the title: nothing behind the poster but a dark picture house, a warm spotlight, and dust drifting in the projector beam
+const DUST = Array.from({ length: 46 }, (_, i) => ({ x: Math.random(), y: Math.random(), s: 0.6 + Math.random()*1.6, v: 0.008 + Math.random()*0.02, p: Math.random()*7 }));
 function idleScene(L, now){
-  const tt = now - titleT0, sT = tt;
-  drawWorld(L, sT, 16 + Math.sin(tt*0.05)*6, now, 0.5 + 0.5*Math.sin(tt*Math.PI*2/BEAT));
-  drawJon(L.jx, L.groundY, L.jh, { running: true, phase: ((tt / BEAT) % 1), idle: 0, jumpK: -1, kick: false, stumble: 0, shades: true, glow: 0 });
-  grade(0.55); filmPost(1); letterbox(L);
+  const tt = now - titleT0, cx = W/2, cy = L.top + L.fh*0.46, R = Math.hypot(W, H)*0.62;
+  g.fillStyle = '#07050b'; g.fillRect(0, 0, W, H);
+  const breathe = 0.92 + 0.08*Math.sin(tt*0.7);
+  const spot = g.createRadialGradient(cx, cy, 0, cx, cy, R*0.75); spot.addColorStop(0, `rgba(120,78,44,${alphaF(0.55*breathe)})`); spot.addColorStop(0.45, 'rgba(58,32,30,0.35)'); spot.addColorStop(1, 'rgba(7,5,11,0)');
+  g.fillStyle = spot; g.fillRect(0, 0, W, H);
+  // the projector beam from the back of the house, top centre, and dust turning slowly in it
+  g.save(); g.beginPath(); g.moveTo(cx - W*0.04, L.top - 2); g.lineTo(cx + W*0.04, L.top - 2); g.lineTo(cx + W*0.55, L.bot); g.lineTo(cx - W*0.55, L.bot); g.closePath();
+  const beam = g.createLinearGradient(0, L.top, 0, L.bot); beam.addColorStop(0, 'rgba(255,226,170,0.10)'); beam.addColorStop(1, 'rgba(255,226,170,0)'); g.fillStyle = beam; g.fill(); g.clip();
+  DUST.forEach(d => { const x = (((d.x + Math.sin(tt*0.2 + d.p)*0.03) % 1) + 1) % 1*W, y = L.top + ((((d.y - tt*d.v) % 1) + 1) % 1)*L.fh;
+    g.fillStyle = `rgba(255,236,200,${alphaF(0.25 + 0.25*Math.sin(tt*1.3 + d.p))})`; g.beginPath(); g.arc(x, y, d.s, 0, 7); g.fill(); });
+  g.restore();
+  filmPost(1); letterbox(L);
 }
 
 /*@include chase.js*/
