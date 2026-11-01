@@ -78,7 +78,7 @@ function lowObstacle(L, kind, x, now, fall){
       g.restore(); });
     inked(() => rrect(-w/2, -h*0.82, w, h*0.82, h*0.05), '#b98a4f', lw);
     g.strokeStyle = 'rgba(70,40,20,.65)'; g.lineWidth = lw; for (let k = 1; k < 3; k++) { g.beginPath(); g.moveTo(-w/2, -h*0.82*k/3); g.lineTo(w/2, -h*0.82*k/3); g.stroke(); }
-    const sp = 0.5 + 0.5*Math.sin(now*30); g.fillStyle = `rgba(255,220,140,${0.6 + sp*0.4})`; g.beginPath(); g.arc(w*0.2 + Math.sin(0.15)*h*0.98, -h*1.72, lw*1.6*(1 + sp), 0, 7); g.fill();
+    const sp = 0.5 + 0.5*Math.sin(now*30); g.fillStyle = `rgba(255,220,140,${alphaF(0.6 + sp*0.4)})`; g.beginPath(); g.arc(w*0.2 + Math.sin(0.15)*h*0.98, -h*1.72, lw*1.6*(1 + sp), 0, 7); g.fill();
   }
   g.restore();
 }
@@ -116,7 +116,7 @@ function highObstacle(L, kind, x, now, swing){
     inked(() => { g.beginPath(); g.moveTo(-w/2, len - h); g.lineTo(w/2, len - h); g.lineTo(w/2, len - h*0.15); g.lineTo(w*0.3, len); g.lineTo(-w*0.3, len); g.lineTo(-w/2, len - h*0.15); g.closePath(); }, '#8e2335', lw);
     g.fillStyle = '#f3e6c8'; g.textAlign = 'center'; g.font = `400 ${h*0.36}px ${FONT.deco}`; g.fillText('BON VOYAGE', 0, len - h*0.38, w*0.88);
     for (let k = -2; k <= 2; k++) { const lx = k*w*0.24, ly = len - h - h*0.25 + Math.abs(k)*h*0.06, gl = 0.6 + 0.4*Math.sin(now*3 + k);
-      const lg = g.createRadialGradient(lx, ly, 0, lx, ly, h*0.35); lg.addColorStop(0, `rgba(255,214,140,${0.55*gl})`); lg.addColorStop(1, 'rgba(255,214,140,0)'); g.fillStyle = lg; g.fillRect(lx - h*0.35, ly - h*0.35, h*0.7, h*0.7);
+      const lg = g.createRadialGradient(lx, ly, 0, lx, ly, h*0.35); lg.addColorStop(0, `rgba(255,214,140,${alphaF(0.55*gl)})`); lg.addColorStop(1, 'rgba(255,214,140,0)'); g.fillStyle = lg; g.fillRect(lx - h*0.35, ly - h*0.35, h*0.7, h*0.7);
       inked(() => { g.beginPath(); g.ellipse(lx, ly, h*0.1, h*0.13, 0, 0, 7); }, k % 2 ? '#f0b44c' : '#e8746a', lw*0.8); }
   }
   g.restore();
@@ -278,7 +278,7 @@ function drawLesson(L, now){
     for (let k = 0; k < 3; k++) { const p = ((now*1.2 + k/3) % 1); g.beginPath(); g.arc(hx, hy, L.jh*(0.12 + p*0.32), 0, 7); g.strokeStyle = rgba(col, 0.8*(1 - p)); g.lineWidth = 3; g.stroke(); }
     tapTarget(hx, hy, L.jh*0.2, now, col);
     if (wrong) {   // the other side lit up for a moment, and arrows sweeping back to the right one
-      const wx0 = left ? W/2 : 0; g.fillStyle = `rgba(150,140,160,${0.25*(1 - (now - ls.wrong)/0.7)})`; g.fillRect(wx0, L.top, W/2, L.fh);
+      const wx0 = left ? W/2 : 0; g.fillStyle = `rgba(150,140,160,${alphaF(0.25*(1 - (now - ls.wrong)/0.7))})`; g.fillRect(wx0, L.top, W/2, L.fh);
       const dir = left ? -1 : 1, sx = W/2 + dir*(-W*0.1) + dir*((now*2) % 1)*W*0.08; g.fillStyle = rgba(col, 0.95); g.font = `700 ${clamp(W*0.07, 26, 44)}px ${FONT.type}`; g.textAlign = 'center';
       g.fillText(left ? '◀ ◀' : '▶ ▶', sx, hy + 10);
     }

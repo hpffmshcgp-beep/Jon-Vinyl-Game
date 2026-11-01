@@ -119,9 +119,9 @@ function levelFrame(now){
   g.strokeStyle = 'rgba(230,184,92,.18)'; g.lineWidth = 1; [R*0.87, R*1.13].forEach(rr => { g.beginPath(); g.arc(cx, cy, rr, 0, 7); g.stroke(); });
   // eight spokes; the slots where the next notes land light up
   for (let d = 0; d < 8; d++) { const a = dirAngle(d); g.strokeStyle = 'rgba(243,230,200,.06)'; g.lineWidth = 1; g.beginPath(); g.moveTo(cx + Math.cos(a)*R*1.15, cy + Math.sin(a)*R*1.15); g.lineTo(cx + Math.cos(a)*G.spawn, cy + Math.sin(a)*G.spawn); g.stroke(); }
-  g.strokeStyle = `rgba(243,230,200,${0.12 + pulse*0.12})`; g.lineWidth = 1.5; g.beginPath(); g.arc(cx, cy, R, 0, 7); g.stroke();
+  g.strokeStyle = `rgba(243,230,200,${alphaF(0.12 + pulse*0.12)})`; g.lineWidth = 1.5; g.beginPath(); g.arc(cx, cy, R, 0, 7); g.stroke();
   for (let i = LV.next, shown = 0; i < LV.notes.length && shown < 3; i++) { const n = LV.notes[i]; if (n.judged) continue; const k = 1 - clamp((n.t - t)/LV.approach, 0, 1); if (k <= 0) break; shown++;
-    g.strokeStyle = n.kind ? `rgba(197,138,230,${0.25 + 0.5*k})` : `rgba(240,163,160,${0.25 + 0.5*k})`; g.lineWidth = 4; g.beginPath(); g.arc(cx, cy, R, n.ang - 0.18, n.ang + 0.18); g.stroke(); }
+    g.strokeStyle = n.kind ? `rgba(197,138,230,${alphaF(0.25 + 0.5*k)})` : `rgba(240,163,160,${alphaF(0.25 + 0.5*k)})`; g.lineWidth = 4; g.beginPath(); g.arc(cx, cy, R, n.ang - 0.18, n.ang + 0.18); g.stroke(); }
   // Jon, on the label, facing the way the shield points
   drawJon(cx, cy + G.jh*0.48, G.jh*0.9, { running: false, amp: 0, phase: 0, idle: now*0.8, jumpK: -1, kick: false, stumble: Math.max(0, 1 - (t - LV.shake)/0.3), reach: 0,
     dir: Math.cos(LV.aim) >= 0 ? 1 : -1, shades: true, glow: 0, holdHand: false, lookUp: false, smile: LV.combo >= 10 });
@@ -138,16 +138,16 @@ function levelFrame(now){
     g.globalAlpha = 1;
   }
   if (LV.tapFx) { const e = now - LV.tapFx.t; if (e < 0.3) { const k = e/0.3, a = dirAngle(LV.tapFx.d);
-    g.strokeStyle = `rgba(255,214,150,${(1 - k)*0.7})`; g.lineWidth = 2; g.beginPath(); g.arc(LV.tapFx.x - sx, LV.tapFx.y - sy, 10 + k*22, 0, 7); g.stroke();
-    g.strokeStyle = `rgba(255,214,150,${(1 - k)*0.18})`; g.lineWidth = R*0.5; g.beginPath(); g.moveTo(cx + Math.cos(a)*R*1.3, cy + Math.sin(a)*R*1.3); g.lineTo(cx + Math.cos(a)*G.spawn*0.7, cy + Math.sin(a)*G.spawn*0.7); g.stroke(); } }
+    g.strokeStyle = `rgba(255,214,150,${alphaF((1 - k)*0.7)})`; g.lineWidth = 2; g.beginPath(); g.arc(LV.tapFx.x - sx, LV.tapFx.y - sy, 10 + k*22, 0, 7); g.stroke();
+    g.strokeStyle = `rgba(255,214,150,${alphaF((1 - k)*0.18)})`; g.lineWidth = R*0.5; g.beginPath(); g.moveTo(cx + Math.cos(a)*R*1.3, cy + Math.sin(a)*R*1.3); g.lineTo(cx + Math.cos(a)*G.spawn*0.7, cy + Math.sin(a)*G.spawn*0.7); g.stroke(); } }
   drawParts(t, cx, cy, R);
   // the shield: a golden arc of record rim, leaving a short fading smear when it turns fast
   const fl = Math.max(0, 1 - (t - LV.flash)/0.18);
   LV.trail.push({ a: LV.aim, t: now }); LV.trail = LV.trail.filter(p => now - p.t < 0.12);
   g.save(); g.lineCap = 'round';
   LV.trail.forEach(p => { const k = 1 - (now - p.t)/0.12, mv = Math.abs(angDiff(p.a, LV.aim)); if (mv < 0.04) return;
-    g.strokeStyle = `rgba(255,214,150,${0.22*k})`; g.lineWidth = R*0.1*(0.6 + 0.4*k); g.beginPath(); g.arc(cx, cy, R, p.a - DEF.half*0.9, p.a + DEF.half*0.9); g.stroke(); });
-  g.strokeStyle = `rgba(255,214,150,${0.25 + fl*0.4})`; g.lineWidth = R*0.22 + fl*6; g.beginPath(); g.arc(cx, cy, R, LV.aim - DEF.half, LV.aim + DEF.half); g.stroke();
+    g.strokeStyle = `rgba(255,214,150,${alphaF(0.22*k)})`; g.lineWidth = R*0.1*(0.6 + 0.4*k); g.beginPath(); g.arc(cx, cy, R, p.a - DEF.half*0.9, p.a + DEF.half*0.9); g.stroke(); });
+  g.strokeStyle = `rgba(255,214,150,${alphaF(0.25 + fl*0.4)})`; g.lineWidth = R*0.22 + fl*6; g.beginPath(); g.arc(cx, cy, R, LV.aim - DEF.half, LV.aim + DEF.half); g.stroke();
   const sg = g.createLinearGradient(cx + Math.cos(LV.aim - DEF.half)*R, cy + Math.sin(LV.aim - DEF.half)*R, cx + Math.cos(LV.aim + DEF.half)*R, cy + Math.sin(LV.aim + DEF.half)*R);
   sg.addColorStop(0, '#b98a3a'); sg.addColorStop(.5, '#fff2cf'); sg.addColorStop(1, '#b98a3a');
   g.strokeStyle = sg; g.lineWidth = R*0.1; g.beginPath(); g.arc(cx, cy, R, LV.aim - DEF.half, LV.aim + DEF.half); g.stroke();
@@ -174,7 +174,7 @@ function levelFrame(now){
     g.fillText(TOUCH ? 'TAP WHERE IT’S COMING FROM' : 'AIM THE SHIELD WITH THE MOUSE  ·  OR ARROWS / WASD', W/2, L.bot - L.fh*0.06);
     g.globalAlpha = 1; }
   if (LV.running && !LV.fading && t > LV.endAt) { LV.fading = true; nodes.songplay.gn.gain.setTargetAtTime(0, ac.currentTime, 0.35); }
-  if (LV.fading) { g.fillStyle = `rgba(3,2,5,${clamp((t - LV.endAt)/1.4, 0, 0.6)})`; g.fillRect(0, 0, W, H); }
+  if (LV.fading) { g.fillStyle = `rgba(3,2,5,${alphaF(clamp((t - LV.endAt)/1.4, 0, 0.6))})`; g.fillRect(0, 0, W, H); }
   if (LV.running && !LV.ended && t > LV.endAt + 1.4) levelEnd();
 }
 function levelEnd(wiped){   // wiped: Void's last board went (no stars, nothing saved; try again)

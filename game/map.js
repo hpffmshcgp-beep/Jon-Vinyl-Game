@@ -53,7 +53,7 @@ async function buildMap(){
       const gap = gaps.some(g0 => Math.abs(r - g0) < 0.05);
       if (gap) continue;                                                                     // the smooth gap between two songs
       const v = 0.5 + 0.5*Math.sin(rr*2.1) + (Math.random() - 0.5)*0.25;
-      x.strokeStyle = bump ? `rgba(255,255,255,${0.35 + v*0.4})` : `rgba(60,58,66,${0.25 + v*0.35})`;
+      x.strokeStyle = bump ? `rgba(255,255,255,${alphaF(0.35 + v*0.4)})` : `rgba(60,58,66,${alphaF(0.25 + v*0.35)})`;
       x.lineWidth = 0.8; x.beginPath(); x.arc(cx, cy, rr, 0, Math.PI*2); x.stroke();
     }
     // lead-in rim and the run-out area

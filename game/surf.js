@@ -112,7 +112,7 @@ function surfSky(G, p, now){   // sunset into moonrise over the song
   const sky = g.createLinearGradient(0, L.top, 0, horizon); sky.addColorStop(0, rgb(c[0])); sky.addColorStop(0.65, rgb(c[1])); sky.addColorStop(1, rgb(c[2]));
   g.fillStyle = sky; g.fillRect(0, L.top, W, horizon - L.top + 1);
   const night = clamp((p - 0.4)/0.45, 0, 1);
-  if (night > 0) { g.fillStyle = `rgba(255,248,230,${0.8*night})`; for (let s = 0; s < 70; s++) { const x = (s*137.5) % W, y = L.top + ((s*71.3) % (horizon - L.top)); g.globalAlpha = night*(0.4 + 0.6*Math.abs(Math.sin(now*0.8 + s))); g.fillRect(x, y, 1.6, 1.6); } g.globalAlpha = 1; }
+  if (night > 0) { g.fillStyle = `rgba(255,248,230,${alphaF(0.8*night)})`; for (let s = 0; s < 70; s++) { const x = (s*137.5) % W, y = L.top + ((s*71.3) % (horizon - L.top)); g.globalAlpha = night*(0.4 + 0.6*Math.abs(Math.sin(now*0.8 + s))); g.fillRect(x, y, 1.6, 1.6); } g.globalAlpha = 1; }
   // the sun sinks ahead of him; the moon comes up behind
   const sunY = horizon - (horizon - L.top)*0.55*(1 - clamp(p/0.55, 0, 1)) + clamp((p - 0.5)/0.1, 0, 1)*30, sr = Math.min(W, L.fh)*0.07;
   if (p < 0.62) { g.save(); g.beginPath(); g.rect(0, L.top, W, horizon - L.top); g.clip();
@@ -129,12 +129,12 @@ function surfSky(G, p, now){   // sunset into moonrise over the song
   const sea = g.createLinearGradient(0, horizon, 0, L.bot); sea.addColorStop(0, rgb(mix(c[1], [40, 70, 110], 0.5))); sea.addColorStop(1, rgb(mix(c[0], [8, 22, 46], 0.65)));
   g.fillStyle = sea; g.fillRect(0, horizon, W, L.bot - horizon);
   const lx = p < 0.55 ? W*0.74 : W*0.2, la = p < 0.55 ? 0.35*(1 - clamp((p - 0.4)/0.15, 0, 1)) : 0.25*mk;
-  g.fillStyle = p < 0.55 ? `rgba(255,214,150,${la})` : `rgba(220,230,255,${la})`;
+  g.fillStyle = p < 0.55 ? `rgba(255,214,150,${alphaF(la)})` : `rgba(220,230,255,${alphaF(la)})`;
   for (let r = 0; r < 14; r++) { const y = horizon + 3 + r*r*1.4, w = 8 + r*5 + Math.sin(now*2 + r)*4; g.fillRect(lx - w/2 + Math.sin(now*1.3 + r*2)*6, y, w, 1.5); }
   // a liner far off on the horizon, lights on
   const sx = ((W*1.15 - (now*6) % (W*1.4)) + W*1.4) % (W*1.4) - W*0.2; g.fillStyle = 'rgba(12,10,20,.75)';
   g.fillRect(sx, horizon - 7, 46, 5); g.fillRect(sx + 12, horizon - 12, 6, 5); g.fillRect(sx + 24, horizon - 12, 6, 5);
-  g.fillStyle = `rgba(255,214,150,${0.3 + night*0.6})`; for (let i = 0; i < 6; i++) g.fillRect(sx + 4 + i*7, horizon - 5, 2, 1.5);
+  g.fillStyle = `rgba(255,214,150,${alphaF(0.3 + night*0.6)})`; for (let i = 0; i < 6; i++) g.fillRect(sx + 4 + i*7, horizon - 5, 2, 1.5);
 }
 function surfWave(G, t, p){   // the face he rides: deep at the trough, glassy near the lip, foam along the top
   const { L, lipY, troughY, horizon } = G, crest = x => lipY - 6 + Math.sin(x*0.012 + t*1.6)*5 + Math.sin(x*0.031 - t*2.3)*2.5;
@@ -149,7 +149,7 @@ function surfWave(G, t, p){   // the face he rides: deep at the trough, glassy n
   for (let i = 0; i < 14; i++) { const y = lipY + (troughY - lipY)*((i*0.37) % 1)*1.1 + 8, len = 40 + (i*53) % 90, x = W - ((t*G.speed*(0.7 + (i % 4)*0.12) + i*197) % (W + 200)); g.beginPath(); g.moveTo(x, y); g.lineTo(x + len, y + 2); g.stroke(); }
   // foam along the crest, thickening behind him where the wave breaks
   for (let x = 0; x <= W; x += 6) { const behind = clamp(1 - x/(G.jonX*1.1), 0, 1), y = crest(x);
-    g.fillStyle = `rgba(255,255,255,${0.55 + behind*0.4})`; const r = 2 + behind*9 + Math.abs(Math.sin(x*0.13 + t*5))*2.5; g.beginPath(); g.arc(x, y + 1 - behind*4, r, 0, 7); g.fill(); }
+    g.fillStyle = `rgba(255,255,255,${alphaF(0.55 + behind*0.4)})`; const r = 2 + behind*9 + Math.abs(Math.sin(x*0.13 + t*5))*2.5; g.beginPath(); g.arc(x, y + 1 - behind*4, r, 0, 7); g.fill(); }
   // behind him the wave stands up and curls over: a glassy wall rising to a lip that pitches forward into foam
   const x0 = G.jonX*0.95, top = lipY - (troughY - lipY)*0.55, wob = Math.sin(t*1.8)*4;
   const body = g.createLinearGradient(0, top, 0, troughY); body.addColorStop(0, `rgb(${glass.map(v => Math.min(255, v + 40))})`); body.addColorStop(0.5, `rgb(${glass})`); body.addColorStop(1, `rgb(${deep})`);
@@ -162,7 +162,7 @@ function surfWave(G, t, p){   // the face he rides: deep at the trough, glassy n
   g.fillStyle = 'rgba(0,20,30,.28)'; g.beginPath(); g.moveTo(x0*0.36, top + 20 + wob); g.bezierCurveTo(x0*0.2, top + 10, x0*0.1, top + 30, x0*0.12, top + (troughY - top)*0.36);
   g.bezierCurveTo(x0*0.3, top + (troughY - top)*0.5, x0*0.55, crest(x0*0.6) + 10, x0*0.7, crest(x0*0.7) + 6); g.closePath(); g.fill();
   for (let i = 0; i <= 40; i++) { const k = i/40, bx = x0*(0.95 - k*0.85), by = k < 0.6 ? lerp(crest(x0), top + wob, Math.sin(k/0.6*Math.PI/2)) : lerp(top + wob, top + (troughY - top)*0.34, (k - 0.6)/0.4);
-    g.fillStyle = `rgba(255,255,255,${0.6 + k*0.35})`; g.beginPath(); g.arc(bx, by + 2, 2 + k*6 + Math.abs(Math.sin(i*1.7 + t*6))*2.5, 0, 7); g.fill(); }
+    g.fillStyle = `rgba(255,255,255,${alphaF(0.6 + k*0.35)})`; g.beginPath(); g.arc(bx, by + 2, 2 + k*6 + Math.abs(Math.sin(i*1.7 + t*6))*2.5, 0, 7); g.fill(); }
   g.fillStyle = 'rgba(255,255,255,.6)';
   for (let i = 0; i < 18; i++) { const e = (((t*0.9 + i*0.37) % 1) + 1) % 1, sx2 = x0*0.25 - e*x0*0.2 + Math.sin(i*3.1)*10, sy2 = top + 6 - e*(troughY - top)*0.12 + e*e*(troughY - top)*0.6; g.globalAlpha = 1 - e; g.beginPath(); g.arc(sx2, sy2, 1.5 + e*2, 0, 7); g.fill(); }
   g.globalAlpha = 1;
@@ -217,9 +217,9 @@ function surfFrame(now){
   // spray off the tail on the wave; drops from takeoffs, landings and wipeouts
   if (LV.running && !LV.air && LV.down < 0) for (let i = 0; i < 2; i++) LV.spray.push({ t0: now, x: jonX - jh*0.3, y: boardY, vx: -(60 + Math.random()*90), vy: -(30 + Math.random()*80) - Math.abs(LV.vel)*40 });
   LV.spray = LV.spray.filter(q => now - q.t0 < 0.6);
-  for (const q of LV.spray) { const e = now - q.t0; g.fillStyle = `rgba(255,255,255,${0.7*(1 - e/0.6)})`; g.beginPath(); g.arc(q.x + q.vx*e, q.y + q.vy*e + 260*e*e, 1.6 + e*3, 0, 7); g.fill(); }
+  for (const q of LV.spray) { const e = now - q.t0; g.fillStyle = `rgba(255,255,255,${alphaF(0.7*(1 - e/0.6))})`; g.beginPath(); g.arc(q.x + q.vx*e, q.y + q.vy*e + 260*e*e, 1.6 + e*3, 0, 7); g.fill(); }
   LV.drops = LV.drops.filter(q => t - q.t0 < 0.9 && t >= q.t0 - 0.05);
-  for (const q of LV.drops) { const e = Math.max(0, t - q.t0); g.fillStyle = `rgba(255,255,255,${0.85*(1 - e/0.9)})`; g.beginPath(); g.arc(jonX + q.dx + q.vx*e, yOf(q.h) + q.vy*e + 520*e*e, q.r*(1 - e*0.5), 0, 7); g.fill(); }
+  for (const q of LV.drops) { const e = Math.max(0, t - q.t0); g.fillStyle = `rgba(255,255,255,${alphaF(0.85*(1 - e/0.9))})`; g.beginPath(); g.arc(jonX + q.dx + q.vx*e, yOf(q.h) + q.vy*e + 520*e*e, q.r*(1 - e*0.5), 0, 7); g.fill(); }
   // Jon on his board, or tumbling off it
   const pose = { running: false, amp: 0, phase: 0, idle: now*0.8, jumpK: -1, kick: false, stumble: 0, reach: 0, dir: 1, shades: true, glow: 0, holdHand: false, lookUp: false, surf: true, smile: LV.combo >= 10 };
   if (LV.wipe) {
@@ -246,8 +246,8 @@ function surfFrame(now){
     const fade = n.judged ? clamp(1 - (t - n.jt)/0.4, 0, 1) : 1; if (fade <= 0) continue;
     const y = yOf(n.h) - jh*0.45 + (n.judged ? (t - n.jt)*90 : 0);
     if (n.kind === 3) { const pulse = 1 + Math.sin(now*6)*0.08;
-      const gl = g.createRadialGradient(x, y, 0, x, y, G.gem*3); gl.addColorStop(0, `rgba(255,236,170,${0.45*fade})`); gl.addColorStop(1, 'rgba(255,236,170,0)'); g.fillStyle = gl; g.fillRect(x - G.gem*3, y - G.gem*3, G.gem*6, G.gem*6);
-      star(x, y, G.gem*1.35*pulse, now*1.5, `rgba(255,236,170,${n.judged ? fade*0.5 : 1})`, `rgba(255,255,255,${fade*0.85})`); }
+      const gl = g.createRadialGradient(x, y, 0, x, y, G.gem*3); gl.addColorStop(0, `rgba(255,236,170,${alphaF(0.45*fade)})`); gl.addColorStop(1, 'rgba(255,236,170,0)'); g.fillStyle = gl; g.fillRect(x - G.gem*3, y - G.gem*3, G.gem*6, G.gem*6);
+      star(x, y, G.gem*1.35*pulse, now*1.5, `rgba(255,236,170,${alphaF(n.judged ? fade*0.5 : 1)})`, `rgba(255,255,255,${alphaF(fade*0.85)})`); }
     else gemShape(x, y, G.gem, n.kind, Math.sin(now*2 + n.t)*0.25, n.judged ? fade*0.5 : 1);
   }
   // sparkles where gems were picked up
@@ -292,6 +292,6 @@ function surfFrame(now){
   // the end: the song fades out (or, after the last wipeout, the run is over)
   const endAt = LV.over ? LV.wipe.t + 1.0 : LV.endAt;
   if (LV.running && !LV.fading && t > endAt) { LV.fading = true; nodes.songplay.gn.gain.setTargetAtTime(0, ac.currentTime, LV.over ? 0.35 : 0.5); }
-  if (LV.fading) { g.fillStyle = `rgba(3,2,5,${clamp((t - endAt)/1.4, 0, LV.over ? 0.75 : 0.6)})`; g.fillRect(0, 0, W, H); }
+  if (LV.fading) { g.fillStyle = `rgba(3,2,5,${alphaF(clamp((t - endAt)/1.4, 0, LV.over ? 0.75 : 0.6))})`; g.fillRect(0, 0, W, H); }
   if (LV.running && !LV.ended && t > endAt + 1.4) levelEnd(LV.over);
 }

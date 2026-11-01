@@ -171,6 +171,10 @@ decisions and the person's preferences.
   reviews end title and the map (where he drops onto the record).
 
 ## Gotchas
+- **Canvas colours: always `rgba()` / `alphaF()` for computed alpha.** A fading alpha can hit values like 2e-16, which
+  Chrome accepts but Safari (the Claude app's preview on a Mac) rejects, keeping the previous colour: the outro's
+  fireworks went solid and "staticy" for the owner. Every `rgba(…,${x})` template goes through `alphaF` (3 decimals,
+  clamped 0..1). Don't name anything else `AF`/`alphaF` (drawJon's far arm is `AF`).
 - three.js is built INTO every page as a plain script (`window.THREE_MOD`), never a dynamic `import()`: the Claude
   app's file preview and other sandboxes block blob/module imports ("Failed to fetch dynamically imported module").
 
