@@ -11,9 +11,9 @@ Directions: 0 = top, counting clockwise in eighths of a turn. The lead melody st
 shield clockwise, down turns it back); runs of strums spin steadily around; each difficulty caps how far and how
 fast you have to turn.
 
-Phones play a front-facing version: ten paths fan in from ahead of Jon and a thumb slides the shield across them, so each
-note also gets a front lane (4th value, 0 = far left .. 9 = far right). Heartbreaks (lead) take the left five, hearts
-(rhythm) the right five. The melody moves the lead along its side (higher = toward the middle), strum runs sweep across
+Phones play a front-facing version: eight straight paths come in from ahead of Jon and a thumb slides the shield across
+them, so each note also gets a front lane (4th value, 0 = far left .. 7 = far right). Heartbreaks (lead) take the left
+four, hearts (rhythm) the right four. The melody moves the lead along its side (higher = toward the middle), strum runs sweep across
 theirs and bounce at the edge; every lane is checked to be reachable by a sliding thumb in time (FRONT below), looking
 ahead so a quick change of side can always be met through the middle lanes.
 """
@@ -41,7 +41,7 @@ LEVELS = {   # loudness floor, min gap between notes, extra weight on the beat, 
 }
 FRONT = {   # thumb: most lanes it moves between two notes, and how many lanes a second it can slide
   'easy': (4, 7), 'normal': (5, 9), 'hard': (5, 11), 'expert': (6, 13), 'expertplus': (6, 16)}
-SIDE = {1: (0, 4), 0: (5, 9)}
+SIDE = {1: (0, 3), 0: (4, 7)}
 def front_lanes(out, name):
     cap, speed = FRONT[name]; n = len(out)
     reach = lambda i: 0 if i == 0 else max(1, min(cap, int(speed*(out[i]['t'] - out[i - 1]['t']))))
@@ -56,8 +56,8 @@ def front_lanes(out, name):
         ws = [m for t, m in mids if abs(t - c['t']) < 6]
         if len(ws) < 4: return None
         lo, hi = np.percentile(ws, 10), np.percentile(ws, 90)
-        return int(round(np.clip((c['midi'] - lo)/max(hi - lo, 1), 0, 1)*4))
-    mem = {1: 2, 0: 7}; sweep = 1; pos = None; lanes = []
+        return int(round(np.clip((c['midi'] - lo)/max(hi - lo, 1), 0, 1)*3))
+    mem = {1: 1, 0: 5}; sweep = 1; pos = None; lanes = []
     for i, c in enumerate(out):
         k = c['kind']; lo, hi = SIDE[k]
         if k == 1:
@@ -99,7 +99,7 @@ for name, L in LEVELS.items():
     for nt, ln in zip(notes, front_lanes(out, name)): nt.append(ln)
     levels[name] = notes
     fl = np.array([x[3] for x in notes]); fj = np.abs(np.diff(fl))
-    print(f'{"":11s} front: lanes used {np.bincount(fl, minlength=10).tolist()}  moves none {np.mean(fj == 0)*100:.0f}% 1 {np.mean(fj == 1)*100:.0f}% 2+ {np.mean(fj > 1)*100:.0f}%')
+    print(f'{"":11s} front: lanes used {np.bincount(fl, minlength=8).tolist()}  moves none {np.mean(fj == 0)*100:.0f}% 1 {np.mean(fj == 1)*100:.0f}% 2+ {np.mean(fj > 1)*100:.0f}%')
     ks = np.array([x[2] for x in notes]); turns = np.array([min(abs(b[1] - a[1]), 8 - abs(b[1] - a[1])) for a, b in zip(notes, notes[1:])])
     print(f'{name:11s} {len(notes):4d} notes {len(notes)/dur:.2f}/s  hearts {np.sum(ks == 0)} heartbreaks {np.sum(ks == 1)}  turns: none {np.mean(turns == 0)*100:.0f}% 1/8 {np.mean(turns == 1)*100:.0f}% bigger {np.mean(turns > 1)*100:.0f}%')
 chart = dict(title='Deflect', track=3, duration=round(dur, 3), mode='deflect',

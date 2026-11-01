@@ -2,14 +2,14 @@
    Jon stands on the record's label. A golden shield circles him; hearts (the rhythm guitar) and heartbreaks (the lead
    guitar) fly in from eight directions and land on the beat. Point the shield at each one as it arrives:
    mouse or the arrow keys / WASD. Dead centre is PERFECT, the edge is GOOD.
-   Phones play it facing forward (LV.front): ten paths fan in from ahead of him, heartbreaks down the left five and hearts
-   down the right five, and the shield follows your thumb across them (snapped to the path under it; a tap jumps there). */
+   Phones play it facing forward (LV.front): eight unseen straight paths come in from ahead of him, heartbreaks down the
+   left four and hearts down the right four, and the shield follows your thumb across them (snapped to the path under it; a tap jumps there). */
 const SONGS = __SONGS__;                       // charts for the album songs that have been added (tools/make_deflect_chart.py)
 const DEF = { half: 34*Math.PI/180, perfect: 14*Math.PI/180, grace: 0.07, preroll: 2.6 };
 const dirAngle = d => -Math.PI/2 + d*Math.PI/4;   // 0 = top, clockwise
 const angDiff = (a, b) => Math.atan2(Math.sin(a - b), Math.cos(a - b));
-const FRONT = { n: 10, spread: 70*Math.PI/180 };   // phones: ten lanes over ±70° in front of him (the chart's 4th value)
-FRONT.sp = 2*FRONT.spread/(FRONT.n - 1);           // ≈15.6° between lanes: the right lane is PERFECT, the next one over GOOD
+const FRONT = { n: 8, spread: 70*Math.PI/180 };    // phones: eight lanes over ±70° in front of him (the chart's 4th value)
+FRONT.sp = 2*FRONT.spread/(FRONT.n - 1);           // 20° between lanes: the right lane is PERFECT, the next one over GOOD
 const laneAng = i => -Math.PI/2 + (i - (FRONT.n - 1)/2)*FRONT.sp;
 let LV = null;
 const SONGBUF = {};                           // decoded album songs, kept apart from the prologue's buffers
@@ -48,7 +48,7 @@ async function startLevel(track){
 }
 const levelTime = (p = performance.now()) => heardCtx(p) - LV.startAt - userDelay/1000;
 function levelAimFromPoint(x, y){ const G = levelGeo(); if (G.front) return frontAim(x); AIM.target = Math.atan2(y - G.cy, x - G.cx); }
-// front: the lane is wherever the thumb is across the screen (ten even strips), so sliding left and right is all it takes
+// front: the lane is wherever the thumb is across the screen (eight even strips), so sliding left and right is all it takes
 function frontLane(x){ const G = levelGeo(); return clamp(Math.floor((x - G.x0)/(G.x1 - G.x0)*FRONT.n), 0, FRONT.n - 1); }
 function frontAim(x){ const i = frontLane(x); LV.lane = i; AIM.target = laneAng(i); AIM.mouse = true; return i; }
 // phones: tap where it's coming from. The shield snaps to the nearest of the eight directions, so a tap anywhere in
@@ -122,14 +122,12 @@ function heartbreak(x, y, s, rot, split = 0){   // a heart split by a jagged cra
   if (!split) { g.beginPath(); g.moveTo(0, -s*0.62); g.lineTo(s*0.12, -s*0.32); g.lineTo(-s*0.1, -s*0.05); g.lineTo(s*0.1, s*0.22); g.lineTo(0, s*0.62); g.stroke(); }
   g.restore();
 }
-// front paths: each lane starts at its own strip along the top and curves in to meet the arc head-on
+// front paths (never drawn): a straight line from the lane's own strip along the top down to its spot on the arc
 function frontPath(G, i){
-  const a = laneAng(i), ca = Math.cos(a), sa = Math.sin(a), E = [G.cx + ca*G.R, G.cy + sa*G.R];
-  const room = Math.abs(ca) > 0.05 ? ((ca > 0 ? W*0.97 : W*0.03) - E[0])/ca : 1e9, D = Math.min((G.cy - G.L.top)*0.5, room);
-  return { S: [G.x0 + (i + 0.5)/FRONT.n*(G.x1 - G.x0), G.L.top - 24], C: [E[0] + ca*D, E[1] + sa*D], E };
+  const a = laneAng(i), E = [G.cx + Math.cos(a)*G.R, G.cy + Math.sin(a)*G.R], S = [G.x0 + (i + 0.5)/FRONT.n*(G.x1 - G.x0), G.L.top - 24];
+  return { S, C: [(S[0] + E[0])/2, (S[1] + E[1])/2], E };   // control point halfway: the curve is a straight line, at an even speed
 }
 const bez = (P, u) => { const v = 1 - u; return [v*v*P.S[0] + 2*u*v*P.C[0] + u*u*P.E[0], v*v*P.S[1] + 2*u*v*P.C[1] + u*u*P.E[1]]; };
-function strokePath(P, u0 = 0){ g.beginPath(); const p0 = bez(P, u0); g.moveTo(p0[0], p0[1]); for (let k = 1; k <= 16; k++) { const q = bez(P, u0 + (1 - u0)*k/16); g.lineTo(q[0], q[1]); } g.stroke(); }
 const swingPop = k => k >= 1 ? 1 : 0.7 + 0.3*k + Math.sin(Math.min(1, k)*Math.PI)*0.35;   // grow past full size, then settle
 function levelFrame(now){
   if (LV.mode === 'surf') return surfFrame(now);
@@ -150,16 +148,12 @@ function levelFrame(now){
   vinyl2D(cx, cy, R*(G.front ? 1.25 : 1.95), t*0.35, 0.18 + pulse*0.22);   // the label (about R*0.64) is the little stage he stands on
   g.strokeStyle = 'rgba(0,0,0,.4)'; g.lineWidth = R*(G.front ? 0.2 : 0.26); g.beginPath(); g.arc(cx, cy, R, a0, a1); g.stroke();          // the shield's track
   g.strokeStyle = 'rgba(230,184,92,.18)'; g.lineWidth = 1; [R*0.87, R*1.13].forEach(rr => { g.beginPath(); g.arc(cx, cy, rr, a0, a1); g.stroke(); });
-  // eight spokes (front: ten paths, violet down the lead's side, rose down the rhythm's); the slots where the next notes land light up
-  if (G.front) { g.lineCap = 'round';
-    FP.forEach((P, i) => { const on = LV.lane === i, lead = i < FRONT.n/2;
-      g.strokeStyle = lead ? `rgba(197,138,230,${on ? 0.4 : 0.17})` : `rgba(240,163,160,${on ? 0.4 : 0.17})`; g.lineWidth = on ? 3.5 : 2; strokePath(P); });
-    g.lineCap = 'butt'; }
-  else for (let d = 0; d < 8; d++) { const a = dirAngle(d); g.strokeStyle = 'rgba(243,230,200,.06)'; g.lineWidth = 1; g.beginPath(); g.moveTo(cx + Math.cos(a)*R*1.15, cy + Math.sin(a)*R*1.15); g.lineTo(cx + Math.cos(a)*G.spawn, cy + Math.sin(a)*G.spawn); g.stroke(); }
+  // eight spokes (front: the paths stay unseen); the slots where the next notes land light up
+  if (!G.front) for (let d = 0; d < 8; d++) { const a = dirAngle(d); g.strokeStyle = 'rgba(243,230,200,.06)'; g.lineWidth = 1; g.beginPath(); g.moveTo(cx + Math.cos(a)*R*1.15, cy + Math.sin(a)*R*1.15); g.lineTo(cx + Math.cos(a)*G.spawn, cy + Math.sin(a)*G.spawn); g.stroke(); }
   g.strokeStyle = `rgba(243,230,200,${alphaF(0.12 + pulse*0.12)})`; g.lineWidth = 1.5; g.beginPath(); g.arc(cx, cy, R, a0, a1); g.stroke();
   for (let i = LV.next, shown = 0; i < LV.notes.length && shown < 3; i++) { const n = LV.notes[i]; if (n.judged) continue; const k = 1 - clamp((n.t - t)/LV.approach, 0, 1); if (k <= 0) break; shown++;
     g.strokeStyle = n.kind ? `rgba(197,138,230,${alphaF(0.25 + 0.5*k)})` : `rgba(240,163,160,${alphaF(0.25 + 0.5*k)})`; g.lineWidth = 4; const w = G.front ? FRONT.sp*0.42 : 0.18; g.beginPath(); g.arc(cx, cy, R, n.ang - w, n.ang + w); g.stroke();
-    if (G.front) { g.lineWidth = 2; g.globalAlpha = 0.5*k; strokePath(FP[n.lane], 1 - clamp((n.t - t)/LV.approach, 0, 1)); g.globalAlpha = 1; } }
+ }
   // Jon, on the label, facing the way the shield points
   drawJon(cx, cy + G.jh*0.48, G.jh*0.9, { running: false, amp: 0, phase: 0, idle: now*0.8, jumpK: -1, kick: false, stumble: Math.max(0, 1 - (t - LV.shake)/0.3), reach: 0,
     dir: Math.cos(LV.aim) >= 0 ? 1 : -1, shades: true, glow: 0, holdHand: false, lookUp: false, smile: LV.combo >= 10 });
@@ -179,8 +173,7 @@ function levelFrame(now){
   }
   if (LV.tapFx) { const e = now - LV.tapFx.t; if (e < 0.3) { const k = e/0.3, a = G.front ? laneAng(LV.tapFx.d) : dirAngle(LV.tapFx.d);
     g.strokeStyle = `rgba(255,214,150,${alphaF((1 - k)*0.7)})`; g.lineWidth = 2; g.beginPath(); g.arc(LV.tapFx.x - sx, LV.tapFx.y - sy, 10 + k*22, 0, 7); g.stroke();
-    if (G.front) { g.strokeStyle = `rgba(255,214,150,${alphaF((1 - k)*0.3)})`; g.lineWidth = 6; g.lineCap = 'round'; strokePath(FP[LV.tapFx.d], 0.35); g.lineCap = 'butt'; }
-    else { g.strokeStyle = `rgba(255,214,150,${alphaF((1 - k)*0.18)})`; g.lineWidth = R*0.5; g.beginPath(); g.moveTo(cx + Math.cos(a)*R*1.3, cy + Math.sin(a)*R*1.3); g.lineTo(cx + Math.cos(a)*G.spawn*0.7, cy + Math.sin(a)*G.spawn*0.7); g.stroke(); } } }
+    if (!G.front) { g.strokeStyle = `rgba(255,214,150,${alphaF((1 - k)*0.18)})`; g.lineWidth = R*0.5; g.beginPath(); g.moveTo(cx + Math.cos(a)*R*1.3, cy + Math.sin(a)*R*1.3); g.lineTo(cx + Math.cos(a)*G.spawn*0.7, cy + Math.sin(a)*G.spawn*0.7); g.stroke(); } } }
   drawParts(t, cx, cy, R);
   // the shield: a golden arc of record rim, leaving a short fading smear when it turns fast
   const fl = Math.max(0, 1 - (t - LV.flash)/0.18);
@@ -244,7 +237,7 @@ function levelEnd(wiped){   // wiped: Void's last board went (no stars, nothing 
 /* ---------- coaching on the results card: one thing that went well, one thing to try, and a level nudge ---------- */
 const mmss = t => `${Math.floor(t/60)}:${String(Math.floor(t % 60)).padStart(2, '0')}`;
 const DIRNAME = ['above', 'the upper right', 'the right', 'the lower right', 'below', 'the lower left', 'the left', 'the upper left'];
-const FRONTNAME = ['the far left', 'the left', 'the middle', 'the right', 'the far right'];   // lanes in pairs
+const FRONTNAME = ['the far left', 'the left', 'the right', 'the far right'];   // lanes in pairs
 const LEVELS = ['easy', 'normal', 'hard', 'expert', 'expertplus'];
 function stretches(notes){   // accuracy over ~20 s stretches of the song: the best and the toughest
   const done = notes.filter(n => n.judged); if (done.length < 16) return null;

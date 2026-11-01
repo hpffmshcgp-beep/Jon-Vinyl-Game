@@ -105,10 +105,11 @@ decisions and the person's preferences.
   was coming from, snapped to the 8 directions; `levelTouch` still does that for a touch on a computer's level.)
   Owner tried and rejected: drag-around-Jon (unsnapped), slide-like-a-dial, and a wall-jumping redesign (reverted).
   **Phones play it facing forward** (owner's idea, `LV.front` when `TOUCH`; computers keep the full circle): Jon low on
-  the screen, ten paths fanning in from the top (`frontPath`, Béziers that meet the arc head-on over ±70°), **heartbreaks
-  (lead) down the left five, hearts (rhythm) down the right five** (paths tinted violet / rose). The **shield follows the
-  thumb**: the screen is ten even strips, the shield snaps to the path of the strip under the finger, a tap jumps there
-  (`frontLane`/`frontAim`; ← → step a lane). Right lane = PERFECT, the next one over = GOOD (shield ±1.25 lanes).
+  the screen, **eight unseen straight paths** from the top (`frontPath`: from the lane's strip along the top to its spot on
+  the arc, ±70°; owner: 8, invisible straight lines, just variety; ten tinted curved paths were tried first), **heartbreaks
+  (lead) down the left four, hearts (rhythm) down the right four**. The **shield follows the
+  thumb**: the screen is eight even strips, the shield snaps to the path of the strip under the finger, a tap jumps there
+  (`frontLane`/`frontAim`; ← → step a lane). Right lane = PERFECT, the next one over = GOOD (20° apart; shield ±1.25 lanes).
   Lanes are the chart's 4th value (`make_deflect_chart.py` `front_lanes`): the lead sits by its pitch within ±6 s (higher
   = nearer the middle), strum runs sweep and bounce, and a backward pass makes every note reachable by a sliding thumb
   (`FRONT` caps: lanes per note / lanes per second by level). The 360° charts are unchanged.

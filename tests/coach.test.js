@@ -24,7 +24,7 @@ const C = require('./config');
     check(JSON.stringify(gate) === '[false,true,false,true]', 'outro gate ' + JSON.stringify(gate));
     // Deflect: a strong run where what got through came from the left, and no heartbreak was missed
     await play(2);
-    await p.evaluate(() => { LV.notes.forEach((x, i) => { x.judged = true; const m = (LV.front ? x.lane >= 8 : x.dir === 6) && !x.kind && i % 2 === 0; x.hit = !m; x.k = m ? 'miss' : 'perfect'; x.late = 0; x.off = 0.3; });
+    await p.evaluate(() => { LV.notes.forEach((x, i) => { x.judged = true; const m = (LV.front ? x.lane >= 6 : x.dir === 6) && !x.kind && i % 2 === 0; x.hit = !m; x.k = m ? 'miss' : 'perfect'; x.late = 0; x.off = 0.3; });
       LV.counts = { perfect: LV.notes.filter(x => x.hit).length, good: 0, miss: LV.notes.filter(x => !x.hit).length }; levelEnd(); });
     let c = await card(); await p.waitForTimeout(900); await p.screenshot({ path: C.OUT + `coach-${n}-deflect.png` });
     console.log(n, 'deflect', JSON.stringify(c));
