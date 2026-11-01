@@ -163,7 +163,13 @@ decisions and the person's preferences.
   centred, walls and floor running on to the edges (taps convert through it). `SAFE` reads all four insets from
   `#safeProbe` (notch at the side): HUDs pad by `SAFE.x`. Short-and-wide screens split the title and results cards into
   two columns (`.pcol`, display: contents elsewhere); the record map puts the song card at the side, compact, and the
-  camera steps back (D 30 when wider than 1.75:1) so the whole record shows. Tests: `C.PHONE` is 844×390.
+  camera steps back (D 30 when wider than 1.75:1) so the whole record shows. **The Claude app on an iPhone** (owner's
+  iPhone 17 screenshot) reports a ~74 pt top inset for its floating ✕ / share buttons: sideways (`short`), the picture
+  runs up under it (`top` ignores `SAFE.t`) and only text keeps clear of it (`L.ui` = below the inset; dialogue box,
+  lesson card, title cards, Void hints; HUD rows at `SAFE.t + barH/2` over a soft shade drawn in `letterbox`).
+  `tests/app-inset.test.js` fakes that inset (874×402). **Owner: only itch.io matters** ("if it gets cut off bc of claude's browser
+  thing then idc"): judge phone layouts by a phone browser on itch.io (no top inset sideways there, so this is neutral);
+  don't spend effort on the Claude app's preview. Tests: `C.PHONE` is 844×390.
 - **Level and timing live in Settings** (owner): default level **Normal**; Settings (`#settings`, `openSettings(from)`)
   opens from the title, the lobby and the level chip on the record's stop card; it holds the five levels (Expert+ lock),
   timing ± and the sound check (which comes back to Settings). The lobby says "Playing on Normal. Change the level or

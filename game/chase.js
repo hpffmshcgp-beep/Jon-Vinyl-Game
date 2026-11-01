@@ -293,13 +293,13 @@ function drawLesson(L, now){
       g.fillText(left ? '◀ ◀' : '▶ ▶', sx, hy + 10);
     }
     const shake = wrong ? Math.sin(now*60)*6*(1 - (now - ls.wrong)/0.7) : 0;
-    const ty = L.top + L.fh*0.2;   // the words across the middle, so they fit on a phone
+    const ty = Math.max(L.top + L.fh*0.2, L.ui + 30);   // the words across the middle, so they fit on a phone
     g.textAlign = 'center'; g.fillStyle = PAL.cream; g.font = `400 ${clamp(W*0.075, 24, 42)}px ${FONT.deco}`; g.fillText(`SWIPE ${jump ? 'UP' : 'DOWN'} TO ${verb}`, W/2 + shake, ty);
     g.font = `700 ${clamp(W*0.032, 11, 14)}px ${FONT.type}`; g.fillStyle = rgba(col, 1); g.fillText(`OR TAP THE ${jump ? 'LEFT' : 'RIGHT'} SIDE`, W/2 + shake, ty + clamp(W*0.06, 20, 30));
     const ay = L.groundY - L.jh*1.25 + (jump ? -1 : 1)*((now*1.4) % 1)*L.jh*0.35;   // an arrow sweeping the way to swipe, by Jon
     g.globalAlpha = a*(1 - ((now*1.4) % 1)); g.fillStyle = rgba(col, 1); g.font = `700 ${clamp(W*0.09, 28, 48)}px ${FONT.type}`; g.fillText(jump ? '↑' : '↓', L.jx, ay); g.globalAlpha = a;
   } else {   // computers: a small card with the keys
-    const cw = Math.min(W - 40, 420), ch = 150, cx = (W - cw)/2, cy = L.top + L.fh*0.18, shake = wrong ? Math.sin(now*60)*8*(1 - (now - ls.wrong)/0.7) : 0;
+    const cw = Math.min(W - 40, 420), ch = 150, cx = (W - cw)/2, cy = Math.max(L.top + L.fh*0.18, L.ui + 8), shake = wrong ? Math.sin(now*60)*8*(1 - (now - ls.wrong)/0.7) : 0;
     g.translate(shake, 0);
     g.fillStyle = 'rgba(10,8,18,.92)'; g.fillRect(cx, cy, cw, ch); g.strokeStyle = PAL.gold; g.lineWidth = 1; g.strokeRect(cx + 0.5, cy + 0.5, cw - 1, ch - 1); g.strokeRect(cx + 5.5, cy + 5.5, cw - 11, ch - 11);
     g.textAlign = 'center'; g.fillStyle = col; g.font = `400 34px ${FONT.deco}`; g.fillText(verb + '!', W/2, cy + 48);

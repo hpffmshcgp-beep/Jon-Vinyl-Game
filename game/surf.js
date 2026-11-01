@@ -277,9 +277,9 @@ function surfFrame(now){
   g.fillStyle = 'rgba(230,184,92,.9)'; g.fillRect(0, L.top - 2, W*clamp(t/LV.endAt, 0, 1), 2);
   // the title while he paddles into the wave, with how to ride; then how to fly, and how to flip the first times up
   const first = LV.gems.length ? LV.gems[0].t : 14;
-  const hint = (txt, a) => { if (a <= 0) return; g.globalAlpha = a; g.textAlign = 'center'; g.fillStyle = PAL.gold; g.font = `700 ${clamp(W*0.03, 11, 14)}px ${FONT.type}`; g.fillText(txt, W/2, L.top + L.fh*0.1); g.globalAlpha = 1; };
+  const hint = (txt, a) => { if (a <= 0) return; g.globalAlpha = a; g.textAlign = 'center'; g.fillStyle = PAL.gold; g.font = `700 ${clamp(W*0.03, 11, 14)}px ${FONT.type}`; g.fillText(txt, W/2, Math.max(L.top + L.fh*0.1, L.ui + 34)); g.globalAlpha = 1; };
   if (t < first - 0.5) { const a = clamp(Math.min((t + SURF.preroll)*2, (first - 0.5 - t)*1.5), 0, 1); g.globalAlpha = a; g.textAlign = 'center';
-    const ty = L.top + L.fh*0.14;
+    const ty = Math.max(L.top + L.fh*0.14, L.ui + 40);
     g.fillStyle = PAL.cream; g.font = `italic 500 ${clamp(W*0.04, 15, 22)}px ${FONT.serif}`; g.fillText(`Track ${LV.track.n}`, W/2, ty);
     g.fillStyle = PAL.gold; g.font = `400 ${clamp(W*0.09, 34, 64)}px ${FONT.deco}`; g.fillText(LV.track.title, W/2, ty + clamp(W*0.08, 34, 58));
     g.fillStyle = PAL.cream; g.font = `700 ${clamp(W*0.026, 10, 13)}px ${FONT.type}`;

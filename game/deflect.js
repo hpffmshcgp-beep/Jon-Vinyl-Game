@@ -207,11 +207,11 @@ function levelFrame(now){
   g.fillStyle = 'rgba(230,184,92,.9)'; g.fillRect(0, G.front ? 0 : L.top - 2, W*clamp(t/LV.endAt, 0, 1), 2);
   // the title card while the needle drops, with how to turn the shield
   if (t < 3.2) { const a = clamp(Math.min((t + DEF.preroll)*3, (3.2 - t)*2), 0, 1); g.globalAlpha = a; g.textAlign = 'center';
-    g.fillStyle = PAL.cream; g.font = `italic 500 ${clamp(W*0.04, 15, 22)}px ${FONT.serif}`; g.fillText(`Track ${LV.track.n}`, W/2, L.top + L.fh*0.16);
-    g.fillStyle = PAL.gold; g.font = `400 ${clamp(W*0.09, 34, 64)}px ${FONT.deco}`; g.fillText(LV.track.title, W/2, L.top + L.fh*0.16 + clamp(W*0.08, 34, 58));
+    g.fillStyle = PAL.cream; g.font = `italic 500 ${clamp(W*0.04, 15, 22)}px ${FONT.serif}`; g.fillText(`Track ${LV.track.n}`, W/2, L.top + L.fh*(LV.front ? 0.1 : 0.16));
+    g.fillStyle = PAL.gold; g.font = `400 ${clamp(W*0.09, 34, 64)}px ${FONT.deco}`; g.fillText(LV.track.title, W/2, L.top + L.fh*(LV.front ? 0.1 : 0.16) + clamp(W*0.08, 34, 58));
     g.fillStyle = PAL.cream; g.font = `700 ${clamp(W*0.026, 10, 13)}px ${FONT.type}`;
     g.fillText(LV.front ? 'SLIDE YOUR THUMB TO MOVE THE SHIELD' : TOUCH ? 'TAP WHERE IT’S COMING FROM' : 'AIM THE SHIELD WITH THE MOUSE  ·  OR ARROWS / WASD', W/2,
-      LV.front ? L.top + L.fh*0.16 + clamp(W*0.08, 34, 58) + 28 : L.bot - L.fh*0.06);
+      LV.front ? L.top + L.fh*(LV.front ? 0.1 : 0.16) + clamp(W*0.08, 34, 58) + 28 : L.bot - L.fh*0.06);
     g.globalAlpha = 1; }
   if (LV.running && !LV.fading && t > LV.endAt) { LV.fading = true; nodes.songplay.gn.gain.setTargetAtTime(0, ac.currentTime, 0.35); }
   if (LV.fading) { g.fillStyle = `rgba(3,2,5,${alphaF(clamp((t - LV.endAt)/1.4, 0, 0.6))})`; g.fillRect(0, 0, W, H); }
