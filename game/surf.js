@@ -264,7 +264,7 @@ function surfFrame(now){
   g.restore();
   filmPost(0.55); letterbox(L);
   // HUD
-  const pad = 16, cyTop = SAFE.t + L.barH/2, sz = Math.min(24, L.barH*0.48);
+  const pad = 16 + SAFE.x, cyTop = SAFE.t + L.barH/2, sz = Math.min(24, L.barH*0.48);
   g.textAlign = 'left'; g.fillStyle = PAL.gold; g.font = `400 ${sz}px ${FONT.deco}`; g.fillText(LV.score.toLocaleString(), pad, cyTop + sz*0.35);
   const sw = g.measureText(LV.score.toLocaleString()).width;
   { const cp = LV.combo >= 2 ? swingPop(clamp((t - LV.comboT)/0.22, 0, 1)) : 1;

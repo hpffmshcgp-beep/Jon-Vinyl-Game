@@ -1,7 +1,8 @@
 # Star-Crossed
 
 **A fan-made rhythm game in the style of an old-Hollywood picture, set to the music of Jon Vinyl.**
-It runs in the browser on desktop and phones, built with plain HTML5 canvas, Web Audio and Three.js. No engine, no framework.
+It runs in the browser on desktop and phones (held sideways, like a film), built with plain HTML5 canvas, Web Audio and
+Three.js. No engine, no framework.
 
 > 🚧 **Work in progress.** The prologue, the record map and two of the album's seven songs are playable. The rest of
 > the songs and the ending are still being built, one at a time. See [Status](#status).

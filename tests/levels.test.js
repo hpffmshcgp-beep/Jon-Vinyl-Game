@@ -2,7 +2,7 @@ const { chromium } = require('playwright');
 const C = require('./config');
 (async () => {
   const b = await chromium.launch({ args: ['--autoplay-policy=no-user-gesture-required'] });
-  for (const LV of ['Easy','Normal','Hard','Expert','Expertplus']) for (const [n, o] of [['desk', { viewport: {width:1280,height:800} }], ['phone', { viewport: {width:375,height:740}, hasTouch: true, isMobile: true, deviceScaleFactor: 2 }]]) {
+  for (const LV of ['Easy','Normal','Hard','Expert','Expertplus']) for (const [n, o] of [['desk', { viewport: {width:1280,height:800} }], ['phone', C.PHONE]]) {
     const ctx = await b.newContext(o); const p = await ctx.newPage(); await C.skipLessons(p); const errs = []; p.on('pageerror', e => errs.push(e.message));
     await p.goto(C.FILE_URL);
     await p.waitForFunction(() => !document.getElementById('startBtn').disabled, null, { timeout: 30000 });

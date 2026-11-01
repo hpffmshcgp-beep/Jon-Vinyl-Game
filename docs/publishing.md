@@ -2,7 +2,7 @@
 
 1. `npm run build`
 2. New project → Kind of project: **HTML** → upload `dist/Star-Crossed-itch.zip` (index.html and the audio).
-3. Tick **"This file will be played in the browser"**. Set the embed size to about 960 × 600, and turn on **Mobile friendly** and **Fullscreen button**.
+3. Tick **"This file will be played in the browser"**. Set the embed size to about 960 × 600, and turn on **Mobile friendly** and **Fullscreen button**. Under Mobile friendly, set the **orientation to Landscape**: phones play the game sideways.
 4. Keep the page **Draft / Restricted** until Jon has given his OK.
 
 `dist/Star-Crossed.html` is the same game as one self-contained file (audio and Three.js embedded). It plays offline when opened from disk.

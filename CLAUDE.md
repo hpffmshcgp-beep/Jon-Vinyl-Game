@@ -149,6 +149,15 @@ decisions and the person's preferences.
   `song`, `seconds`, `measured` in album.json; the build ships `songs/<s>/<s>.mp3` (160 kbps) and the chart.
 
 ## Things the owner asked for / against (keep honouring these)
+- **Phones play sideways** (owner: "maybe this should be a landscape game… it's supposed to be an experience"; the
+  chase felt choppy upright because obstacles crossed Jon in 0.33 s there vs 0.21 s on a computer, so each move ran
+  long and the next note cut it off; sideways it's 0.16 s, like a computer). Held upright, a touch device gets the
+  `#rotate` card (a phone turning, "Turn your phone sideways"), and `resize` pauses a running song; the first touch asks
+  for full screen + `screen.orientation.lock('landscape')` where allowed (`holdLandscape`, Android). Computers are never
+  asked, however narrow the window. `SAFE` now reads all four insets from `#safeProbe` (notch at the side): HUDs pad by
+  `SAFE.x`. Short-and-wide screens split the title and results cards into two columns (`.pcol`, display: contents
+  elsewhere). Deflect's front layout sideways: Jon at the foot of the frame (`cy = L.bot - R*0.55`). Tests: `C.PHONE` is
+  844×390, `C.PHONE_UPRIGHT` 390×780, `tests/rotate.test.js`.
 - **Level and timing live in Settings** (owner): default level **Normal**; Settings (`#settings`, `openSettings(from)`)
   opens from the title, the lobby and the level chip on the record's stop card; it holds the five levels (Expert+ lock),
   timing ± and the sound check (which comes back to Settings). The lobby says "Playing on Normal. Change the level or

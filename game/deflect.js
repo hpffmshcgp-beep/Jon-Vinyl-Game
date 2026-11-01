@@ -17,7 +17,8 @@ const AIM = { target: -Math.PI/2, keys: new Set(), mouse: false };
 function levelGeo(){
   const L = layout();
   if (LV && LV.front) {   // Jon low and the arc in front of him, with the whole top of the screen to read what's coming
-    const R = clamp(Math.min(W*0.34, L.fh*0.26), 64, 150), cy = L.top + L.fh*0.64;
+    const land = W > H, R = land ? clamp(Math.min(L.fh*0.34, W*0.16), 64, 150) : clamp(Math.min(W*0.34, L.fh*0.26), 64, 150);
+    const cy = land ? L.bot - R*0.55 : L.top + L.fh*0.64;   // sideways: he stands at the foot of the frame, the record sinking below it
     return { L, cx: W/2, cy, R, front: true, spawn: cy - L.top, jh: Math.min(L.jh, R*0.95), x0: W*0.05, x1: W*0.95 };
   }
   const cx = W/2, cy = L.top + L.fh*0.54, R = clamp(Math.min(W, L.fh)*0.15, 46, 110);   // a small centre leaves a long way in to read the notes
@@ -193,7 +194,7 @@ function levelFrame(now){
   g.restore();
   filmPost(0.7); letterbox(L);
   // HUD: score, combo, the song, and how far through it you are
-  const pad = 16, cyTop = SAFE.t + L.barH/2, sz = Math.min(24, L.barH*0.48);
+  const pad = 16 + SAFE.x, cyTop = SAFE.t + L.barH/2, sz = Math.min(24, L.barH*0.48);
   g.textAlign = 'left'; g.fillStyle = PAL.gold; g.font = `400 ${sz}px ${FONT.deco}`; g.fillText(LV.score.toLocaleString(), pad, cyTop + sz*0.35);
   const sw = g.measureText(LV.score.toLocaleString()).width;
   { const cp = LV.combo >= 2 ? swingPop(clamp((t - LV.comboT)/0.22, 0, 1)) : 1;   // the combo hops each time it grows
@@ -205,7 +206,8 @@ function levelFrame(now){
     g.fillStyle = PAL.cream; g.font = `italic 500 ${clamp(W*0.04, 15, 22)}px ${FONT.serif}`; g.fillText(`Track ${LV.track.n}`, W/2, L.top + L.fh*0.16);
     g.fillStyle = PAL.gold; g.font = `400 ${clamp(W*0.09, 34, 64)}px ${FONT.deco}`; g.fillText(LV.track.title, W/2, L.top + L.fh*0.16 + clamp(W*0.08, 34, 58));
     g.fillStyle = PAL.cream; g.font = `700 ${clamp(W*0.026, 10, 13)}px ${FONT.type}`;
-    g.fillText(LV.front ? 'SLIDE YOUR THUMB TO MOVE THE SHIELD' : TOUCH ? 'TAP WHERE IT’S COMING FROM' : 'AIM THE SHIELD WITH THE MOUSE  ·  OR ARROWS / WASD', W/2, L.bot - L.fh*0.06);
+    g.fillText(LV.front ? 'SLIDE YOUR THUMB TO MOVE THE SHIELD' : TOUCH ? 'TAP WHERE IT’S COMING FROM' : 'AIM THE SHIELD WITH THE MOUSE  ·  OR ARROWS / WASD', W/2,
+      LV.front ? L.top + L.fh*0.16 + clamp(W*0.08, 34, 58) + 28 : L.bot - L.fh*0.06);
     g.globalAlpha = 1; }
   if (LV.running && !LV.fading && t > LV.endAt) { LV.fading = true; nodes.songplay.gn.gain.setTargetAtTime(0, ac.currentTime, 0.35); }
   if (LV.fading) { g.fillStyle = `rgba(3,2,5,${alphaF(clamp((t - LV.endAt)/1.4, 0, 0.6))})`; g.fillRect(0, 0, W, H); }
