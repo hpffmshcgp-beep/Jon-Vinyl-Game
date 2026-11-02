@@ -323,12 +323,12 @@ function tapTarget(x, y, r, now, col){   // a pulsing button-like target that sa
    swipe is as precise as a tap; a finger that doesn't move counts as a tap on its side (after up to 120 ms). */
 const GEST = new Map();
 function gestStart(e){
-  const id = e.pointerId, gs = { x: e.clientX, y: e.clientY, p: evTime(e), side: e.clientX >= innerWidth/2 ? 1 : 0 };
+  const id = e.pointerId, gs = { x: ptX(e), y: ptY(e), p: evTime(e), side: ptX(e) >= W/2 ? 1 : 0 };
   gs.timer = setTimeout(() => gestEnd(id, null), 120); GEST.set(id, gs);
 }
 function gestMove(e){
   const gs = GEST.get(e.pointerId); if (!gs) return;
-  const dx = e.clientX - gs.x, dy = e.clientY - gs.y;
+  const dx = ptX(e) - gs.x, dy = ptY(e) - gs.y;
   if (Math.abs(dy) > 16 && Math.abs(dy) > Math.abs(dx)*1.2) gestEnd(e.pointerId, dy < 0 ? 0 : 1);
 }
 function gestEnd(id, lane){

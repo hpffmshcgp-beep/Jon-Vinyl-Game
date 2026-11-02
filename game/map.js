@@ -24,7 +24,7 @@ async function buildMap(){
   const T = await loadThree();
   const cvm = $('map');
   const R = new T.WebGLRenderer({ canvas: cvm, antialias: true, powerPreference: 'high-performance' });
-  R.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.5)); R.setSize(innerWidth, innerHeight, false);
+  R.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.5)); R.setSize(W, H, false);
   R.toneMapping = T.ACESFilmicToneMapping; R.toneMappingExposure = 1.05; R.outputColorSpace = T.SRGBColorSpace;
   R.shadowMap.enabled = true; R.shadowMap.type = T.PCFSoftShadowMap;
   const scene = new T.Scene();
@@ -32,7 +32,7 @@ async function buildMap(){
   scene.background = canvasTex(T, 8, 512, (x, w, h) => { const gr = x.createLinearGradient(0, 0, 0, h);
     gr.addColorStop(0, '#12091a'); gr.addColorStop(.35, '#3b1d2c'); gr.addColorStop(.62, '#b5653a'); gr.addColorStop(.8, '#e8a35e'); gr.addColorStop(1, '#f3cf98'); x.fillStyle = gr; x.fillRect(0, 0, w, h); });
   scene.fog = new T.Fog('#7a3f2e', 26, 62);
-  const cam = new T.PerspectiveCamera(40, innerWidth/innerHeight, 0.1, 300);
+  const cam = new T.PerspectiveCamera(40, W/H, 0.1, 300);
 
   // ---- lights ----
   scene.add(new T.HemisphereLight('#ffd7a8', '#1c0d16', 0.85));
@@ -144,7 +144,7 @@ async function buildMap(){
 
   Object.assign(MAP, { T, R, scene, cam, disc, label, sheen, veils, path, pathPts, stops, arm, armRig, pivotAng: Math.atan2(pivot.z, pivot.x), beam, needleTo, jon, jc, jTex, blob, dust, goal, glow, ready: true,
     camPos: new T.Vector3(0, 32, 0.1), camLook: new T.Vector3(0, 0, 0), at: 0, walk: null, fall: 0, armA: needleTo(REC.rOut - 0.3) });
-  addEventListener('resize', () => { if (!MAP.ready) return; MAP.R.setSize(innerWidth, innerHeight, false); MAP.cam.aspect = innerWidth/innerHeight; MAP.cam.updateProjectionMatrix(); });
+  addEventListener('resize', () => { if (!MAP.ready) return; MAP.R.setSize(W, H, false); MAP.cam.aspect = W/H; MAP.cam.updateProjectionMatrix(); });
 }
 
 /* progress: how far round the record you are */
@@ -202,7 +202,7 @@ function mapFrame(now){
   // camera: outside Jon, looking in across the record toward the label
   const r = Math.hypot(jx, jz) || 1, ux = jx/r, uz = jz/r;
   // high and well back, so most of the record is in view and you can see where Jon is on it (he stands on the near side)
-  const asp = innerWidth/innerHeight, el = (asp < 1 ? 60 : 52)*Math.PI/180, D = asp < 1 ? 40 : asp > 1.75 ? 30 : 26.5;   // short and wide (a phone sideways): a little further back, so the near edge stays in
+  const asp = W/H, el = (asp < 1 ? 60 : 52)*Math.PI/180, D = asp < 1 ? 40 : asp > 1.75 ? 30 : 26.5;   // short and wide (a phone sideways): a little further back, so the near edge stays in
   const look = new T.Vector3(jx*0.32, 0, jz*0.32), want = new T.Vector3(look.x + ux*Math.cos(el)*D, Math.sin(el)*D, look.z + uz*Math.cos(el)*D);
   const intro = clamp((now - (MAP.enterT || 0))/2.6, 0, 1), k = MAP.first ? easeIO(intro) : 1;
   const from = new T.Vector3(0, 30, 0.1);
@@ -211,11 +211,11 @@ function mapFrame(now){
   MAP.camPos.lerp(target, MAP.first && intro < 1 ? 1 : s); MAP.camLook.lerp(lookT, MAP.first && intro < 1 ? 1 : s);
   cam.position.copy(MAP.camPos); cam.lookAt(MAP.camLook);
   // keep Jon clear of the song card: the picture's centre moves into the open space beside or above it
-  const card = $('mapUI').querySelector('.stopCard').getBoundingClientRect(), side = card.left > innerWidth*0.45;
-  const ox = side ? (innerWidth - card.left)*0.5 : 0, oy = side ? 0 : (innerHeight - card.top)*0.5;
-  cam.setViewOffset(innerWidth + 2*ox, innerHeight + 2*oy, 2*ox, 2*oy, innerWidth, innerHeight);
+  const card = gRect($('mapUI').querySelector('.stopCard')), side = card.left > W*0.45;
+  const ox = side ? (W - card.left)*0.5 : 0, oy = side ? 0 : (H - card.top)*0.5;
+  cam.setViewOffset(W + 2*ox, H + 2*oy, 2*ox, 2*oy, W, H);
   cam.fov = asp < 1 ? 2*Math.atan(Math.tan(20*Math.PI/180)/asp)*180/Math.PI : 40;
-  cam.aspect = (innerWidth + 2*ox)/(innerHeight + 2*oy); cam.updateProjectionMatrix();
+  cam.aspect = (W + 2*ox)/(H + 2*oy); cam.updateProjectionMatrix();
   // the sheen follows the camera, veils lift as songs are beaten, the arm swings in, dust drifts
   MAP.sheen.rotation.z = Math.atan2(cam.position.z, cam.position.x) + Math.PI/2;
   // the label turns to read upright toward the camera (the grooves look the same all the way round, so the record seems to turn)

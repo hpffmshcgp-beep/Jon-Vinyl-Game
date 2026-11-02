@@ -61,12 +61,12 @@ const TOUCHES = new Set();
 function levelTouch(e, ph){
   if (ph === 'up') { TOUCHES.delete(e.pointerId); return; }
   if (ph === 'down') TOUCHES.add(e.pointerId); else if (!TOUCHES.has(e.pointerId)) return;
-  if (LV && LV.front) { const i = frontAim(e.clientX); if (ph === 'down') LV.tapFx = { x: e.clientX, y: e.clientY, t: performance.now()/1000, d: i }; return; }
-  const G = levelGeo(), dx = e.clientX - G.cx, dy = e.clientY - G.cy;
+  if (LV && LV.front) { const i = frontAim(ptX(e)); if (ph === 'down') LV.tapFx = { x: ptX(e), y: ptY(e), t: performance.now()/1000, d: i }; return; }
+  const G = levelGeo(), dx = ptX(e) - G.cx, dy = ptY(e) - G.cy;
   if (Math.hypot(dx, dy) < G.R*0.45) return;
   const d = ((Math.round((Math.atan2(dy, dx) + Math.PI/2)/(Math.PI/4)) % 8) + 8) % 8;
   AIM.target = dirAngle(d); AIM.mouse = true;
-  if (ph === 'down' && LV) LV.tapFx = { x: e.clientX, y: e.clientY, t: performance.now()/1000, d };
+  if (ph === 'down' && LV) LV.tapFx = { x: ptX(e), y: ptY(e), t: performance.now()/1000, d };
 }
 function levelKeys(){   // arrows / WASD give eight directions (front: ← → step a lane, repeating while held)
   const k = AIM.keys, dx = (k.has('ArrowRight') || k.has('KeyD') ? 1 : 0) - (k.has('ArrowLeft') || k.has('KeyA') ? 1 : 0),

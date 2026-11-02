@@ -155,8 +155,14 @@ decisions and the person's preferences.
 - **Phones play sideways** (owner: "maybe this should be a landscape game… it's supposed to be an experience"; the
   chase felt choppy upright because obstacles crossed Jon in 0.33 s there vs 0.21 s on a computer, so each move ran
   long and the next note cut it off; sideways it's 0.16 s, like a computer). **No "turn your phone" card** (owner: a
-  sideways game makes it obvious; a card and a pause on turning upright were tried and removed); held upright it still
-  plays. The first touch asks for full screen + `screen.orientation.lock('landscape')` where allowed (`holdLandscape`,
+  sideways game makes it obvious; a card and a pause on turning upright were tried and removed). **Portrait is not an
+  option** (owner: "you have to make the game only playable in sideways mode"): a touch device held upright draws the
+  whole page turned a quarter turn (`ROT`, `gameFrame()`: `html.rot` rotates `body` 90°, the game's top at the phone's
+  right edge), so it reads as a sideways game and you turn the phone; with rotation lock on it still plays turned.
+  `W × H` is always the game's frame; touches go through `ptX(e)`/`ptY(e)` (never `e.clientX`/`innerWidth`), page
+  boxes through `gRect(el)`; CSS uses `var(--vw)` and `var(--sa-t/r/b/l)` (never `vw` or `env()` outside `#safeProbe`)
+  and classes `html.short/.wide/.w480/.w700` (wrapped in `:where()`) instead of size media queries.
+  `tests/upright.test.js` (390×844). The first touch asks for full screen + `screen.orientation.lock('landscape')` where allowed (`holdLandscape`,
   Android). **Sideways it should look like the computer version** (owner: the bars were huge, the cabin too spread out):
   `layout()` `short` (landscape, H < 500) uses slim bars (6.5 % of H, 22–28 px; the home-indicator inset overlaps the
   bottom bar); the **cabin sits on a stage 2.05 × the frame's height wide** (`cabStage`: the computer's proportions),
